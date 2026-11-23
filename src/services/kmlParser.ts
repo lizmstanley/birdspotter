@@ -61,7 +61,7 @@ function kmlColorToHex(kmlColor: string | null | undefined): string | null {
   return `#${rr}${gg}${bb}`.toLowerCase();
 }
 
-function isOuterCircleName(name: string): boolean {
+export function isOuterCircleName(name: string): boolean {
   return /full\s+.*cbc|circle\s*boundary|15[- ]?mile|outer\s*circle/i.test(name);
 }
 

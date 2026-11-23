@@ -543,6 +543,21 @@ tbody tr:hover {
   gap: 6px;
 }
 
+.collapsible-card > summary {
+  cursor: pointer;
+  list-style-position: outside;
+  margin-left: 18px;
+}
+
+.collapsible-card > summary h2 {
+  display: inline;
+  margin: 0;
+}
+
+.collapsible-card[open] > summary {
+  margin-bottom: 12px;
+}
+
 .app-footer {
   margin-top: 24px;
   padding: 12px 0;

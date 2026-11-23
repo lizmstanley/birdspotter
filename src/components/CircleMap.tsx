@@ -3,7 +3,7 @@
  * with hover highlighting & click-to-open area details, and BYOK eBird scouting map.
  * Zero dependency on CBC roster tables—can be lifted directly into Aviscout.
  */
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -19,9 +19,11 @@ import {
   withAudubonPageDetails,
   type AudubonCircleResult,
 } from '../services/audubonCircles';
+import { findAreaAt } from '../services/areaLookup';
 import {
   computeGeometryCenter,
   getPaletteColorForCode,
+  isOuterCircleName,
   parseGeoJsonText,
   parseKmlText,
   parseKmzBuffer,
@@ -95,9 +97,12 @@ function escapeHtml(text: string): string {
 }
 
 function isOuterCircleBoundary(code: string, label?: string | null): boolean {
-  return /full\s+.*cbc|circle\s*boundary|15[- ]?mile|outer\s*circle/i.test(
-    `${code} ${label ?? ''}`
-  );
+  return isOuterCircleName(`${code} ${label ?? ''}`);
+}
+
+function areaLabel(code: string | null): string {
+  if (!code) return '—';
+  return /^\d/.test(code) ? `Area ${code}` : code;
 }
 
 function createIconMarkerElement(kind: 'hotspot' | 'sighting', title: string): HTMLDivElement {
@@ -206,6 +211,23 @@ export function CircleMap({
   const [sightings, setSightings] = useState<EbirdObservation[]>([]);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+
+  // Your areas aren't on the map while scouting somewhere else, so no area applies then.
+  // An area marked Not Counted (a neighboring count's outline, for example) never claims a spot.
+  const areaOutlines = useMemo(() => {
+    if (isScouting) return [];
+    const notCounted = new Set(notCountedAreaCodes.map((c) => c.toUpperCase()));
+    return areaBoundaries.filter((b) => !notCounted.has(b.code.toUpperCase()));
+  }, [isScouting, areaBoundaries, notCountedAreaCodes]);
+  const hasAreas = areaOutlines.length > 0;
+  const hotspotRows = useMemo(
+    () => hotspots.map((h) => ({ ...h, area: findAreaAt(areaOutlines, h.lng, h.lat) })),
+    [hotspots, areaOutlines]
+  );
+  const sightingRows = useMemo(
+    () => sightings.map((s) => ({ ...s, area: findAreaAt(areaOutlines, s.lng, s.lat) })),
+    [sightings, areaOutlines]
+  );
 
   useEffect(() => {
     setScoutTarget(null);
@@ -973,30 +995,66 @@ export function CircleMap({
         <div ref={containerRef} className="map-container" />
       </div>
 
-      {sightings.length > 0 && (
-        <div className="card">
-          <h2>Recent eBird Sightings Inside {effectiveCode} ({sightings.length} species)</h2>
+      {sightingRows.length > 0 && (
+        <details className="card collapsible-card">
+          <summary>
+            <h2>Recent eBird Sightings Inside {effectiveCode} ({sightingRows.length} species)</h2>
+          </summary>
           <table>
             <thead>
               <tr>
                 <th>Species</th>
                 <th>Count</th>
+                {hasAreas && <th>Area</th>}
                 <th>Location</th>
                 <th>Date</th>
               </tr>
             </thead>
             <tbody>
-              {sightings.slice(0, 60).map((s) => (
+              {sightingRows.map((s) => (
                 <tr key={`${s.subId}-${s.speciesCode}`}>
                   <td><strong>{s.comName}</strong></td>
                   <td>{s.howMany ?? 'X'}</td>
+                  {hasAreas && <td>{areaLabel(s.area)}</td>}
                   <td>{s.locName}</td>
                   <td>{s.obsDt}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </details>
+      )}
+
+      {hotspotRows.length > 0 && (
+        <details className="card collapsible-card">
+          <summary>
+            <h2>eBird Hotspots Inside {effectiveCode} ({hotspotRows.length})</h2>
+          </summary>
+          <table>
+            <thead>
+              <tr>
+                <th>Hotspot</th>
+                {hasAreas && <th>Area</th>}
+                <th>All-Time Species</th>
+                <th>Latest Checklist</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hotspotRows.map((h) => (
+                <tr key={h.locId}>
+                  <td>
+                    <a href={`https://ebird.org/hotspot/${encodeURIComponent(h.locId)}`} target="_blank" rel="noreferrer">
+                      {h.locName}
+                    </a>
+                  </td>
+                  {hasAreas && <td>{areaLabel(h.area)}</td>}
+                  <td>{h.numSpeciesAllTime ?? '—'}</td>
+                  <td>{h.latestObsDt ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
       )}
     </div>
   );
