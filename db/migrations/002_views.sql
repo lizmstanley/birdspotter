@@ -118,6 +118,7 @@ HAVING COUNT(p.id) FILTER (
 ORDER BY a.sort_order, a.code;
 
 -- One row per active person with no answer yet this season, using their best working email.
+-- Once the circle has a current list, only people on it need a reminder.
 CREATE OR REPLACE VIEW public.v_needs_reminder AS
 SELECT
     pe.circle_code,
@@ -144,6 +145,16 @@ LEFT JOIN public.participations p_curr
    AND p_curr.count_year = cy.year
 WHERE pe.roster_status = 'active'
   AND (p_curr.id IS NULL OR p_curr.rsvp_status = 'no_response')
+  AND (
+      EXISTS (
+          SELECT 1 FROM public.person_emails e
+          WHERE e.person_id = pe.id AND e.on_current_list
+      )
+      OR NOT EXISTS (
+          SELECT 1 FROM public.person_emails e
+          WHERE e.circle_code = pe.circle_code AND e.on_current_list
+      )
+  )
 ORDER BY last_year_counted DESC NULLS LAST, pe.full_name;
 
 DROP VIEW IF EXISTS public.v_outreach_candidates;

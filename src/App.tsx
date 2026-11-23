@@ -983,7 +983,10 @@ export function App() {
                     Copy BCC List
                   </button>
                 </div>
-                <p className="muted">Active people with no answer yet for this season.</p>
+                <p className="muted">
+                  Active people on your current list with no answer yet for this season. Until you mark a current list
+                  when you import, this shows every active person with no answer.
+                </p>
                 <table>
                   <thead>
                     <tr>
