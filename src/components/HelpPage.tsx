@@ -44,6 +44,15 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             Your key is saved only in your browser&apos;s <code>localStorage</code> and sent
             directly from your browser to <code>api.ebird.org</code>.
           </li>
+          <li>
+            eBird results are saved in this browser for the rest of the day, so the same circle and day
+            range calls eBird at most once a day. Bird data comes from{' '}
+            <a href="https://ebird.org" target="_blank" rel="noreferrer">eBird.org</a> under the{' '}
+            <a href="https://www.birds.cornell.edu/home/ebird-api-terms-of-use/" target="_blank" rel="noreferrer">
+              eBird API Terms of Use
+            </a>
+            .
+          </li>
         </ol>
 
         <div className="ebird-bar">

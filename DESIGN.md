@@ -49,6 +49,14 @@ Rejected: checking for columns in application code on every start. Each schema c
 
 The key stays in the browser and goes only to eBird. No key is stored by the app's host, and there is no shared quota to exhaust. Scouting a circle does not need a key.
 
+### eBird results are kept for the day
+
+Each eBird response is saved in `localStorage` under the local date and the request URL, so the same hotspot or sighting request runs at most once a day. The URL holds the center, radius, and day range, and never the key. Writing a new copy drops copies from earlier days, which bounds storage to one day of requests. Errors and responses that fail validation are not saved, and a saved copy is validated again on read.
+
+Rejected: a PGlite table. The data is a disposable copy of eBird's, not circle data, so it stays out of backups and migrations.
+
+Every place that shows eBird data credits eBird.org with a link, as the eBird API Terms of Use require.
+
 ### Import rules
 
 - Audubon imports never overwrite existing people or season records.

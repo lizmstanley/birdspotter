@@ -39,7 +39,7 @@ export function useEbirdData({ ebirdApiKey, radiusMiles, setStatus }: EbirdDataO
       setHotspots(hs);
       setSightings(obs);
       setStatus(
-        `Found ${hs.length} hotspots and ${obs.length} recent species inside ${circleCode}. Hover any icon for details or click to open in eBird.`
+        `Found ${hs.length} hotspots and ${obs.length} recent species inside ${circleCode}. Hover any icon for details or click to open in eBird. Data from eBird.org, refreshed once a day.`
       );
     } catch (err) {
       setStatus(describeError(err));
