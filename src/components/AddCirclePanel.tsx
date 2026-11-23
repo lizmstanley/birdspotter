@@ -26,120 +26,16 @@ interface Props {
   onClose: () => void;
 }
 
+interface SectionProps {
+  onAdd: (payload: NewCirclePayload) => Promise<void>;
+  onStatus: (status: string | null) => void;
+}
+
 export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<AudubonCircleResult[]>([]);
   const [status, setStatus] = useState<string | null>(null);
-  const [addingCode, setAddingCode] = useState<string | null>(null);
 
-  // KML / KMZ circle creation state
-  const [kmlCode, setKmlCode] = useState('');
-  const [kmlName, setKmlName] = useState('');
-  const [kmlBusy, setKmlBusy] = useState(false);
-
-  // Manual coordinates state
-  const [manualCode, setManualCode] = useState('');
-  const [manualName, setManualName] = useState('');
-  const [manualLat, setManualLat] = useState('');
-  const [manualLng, setManualLng] = useState('');
-
-  async function handleSearch() {
-    if (searchQuery.trim().length < 2) {
-      setStatus('Enter at least 2 characters (e.g. Isabella, MN or MNBL or Hastings).');
-      return;
-    }
-    setSearching(true);
-    setStatus(null);
-    try {
-      const res = await searchAudubonCircles(searchQuery);
-      setSearchResults(res);
-      if (res.length === 0) {
-        setStatus('No matching circles or places found. Try adding a state (e.g. "Isabella, MN"), import a KML/KMZ, or enter coordinates below.');
-      }
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  async function handleKmlCreate(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setKmlBusy(true);
-    setStatus(null);
-    try {
-      const parsed = await parseBoundaryFile(file);
-      if (parsed.length === 0) {
-        setStatus('No polygons or lines found in that KML/KMZ/GeoJSON file.');
-        return;
-      }
-
-      const center = computeCollectionCenter(parsed);
-      if (!center) {
-        setStatus('Could not compute center coordinates from that file.');
-        return;
-      }
-
-      const baseFileName = file.name.replace(/\.(kml|kmz|geojson|json)$/i, '').trim();
-      const derivedName = kmlName.trim() || baseFileName || 'Imported Circle';
-      const derivedCode =
-        kmlCode.trim().toUpperCase() ||
-        baseFileName.replace(/[^A-Za-z0-9]/g, '').slice(0, 6).toUpperCase() ||
-        'KML1';
-
-      const isAdded = await onCreateCircle({
-        code: derivedCode,
-        name: derivedName,
-        center_lat: center[1],
-        center_lng: center[0],
-        initialBoundaries: parsed,
-      });
-      if (isAdded) onClose();
-    } catch (err) {
-      setStatus(`KML/KMZ import error: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setKmlBusy(false);
-      e.target.value = '';
-    }
-  }
-
-  async function handleAddSearchResult(result: AudubonCircleResult) {
-    setAddingCode(result.code);
-    setStatus(null);
-    try {
-      const c = await withAudubonPageDetails(result);
-      const isAdded = await onCreateCircle({
-        code: c.code,
-        name: c.name,
-        state_province: c.state || null,
-        center_lat: c.lat,
-        center_lng: c.lng,
-        compiler_name: c.compilerName ?? null,
-        compiler_email: c.compilerEmail ?? null,
-        count_date: c.countDate ?? null,
-        audubon_url: c.source === 'audubon' ? c.joinUrl : null,
-      });
-      if (isAdded) onClose();
-    } finally {
-      setAddingCode(null);
-    }
-  }
-
-  async function handleManualCreate() {
-    const center = parseCircleCenter(manualLat, manualLng);
-    if (!manualCode.trim() || !manualName.trim() || !center) {
-      setStatus('Enter a Circle Code, Name, Latitude (-90 to 90), and Longitude (-180 to 180).');
-      return;
-    }
-    const isAdded = await onCreateCircle({
-      code: manualCode.trim().toUpperCase(),
-      name: manualName.trim(),
-      center_lat: center.lat,
-      center_lng: center.lng,
-    });
-    if (isAdded) onClose();
+  async function addCircle(payload: NewCirclePayload) {
+    if (await onCreateCircle(payload)) onClose();
   }
 
   return (
@@ -153,129 +49,264 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
 
       {status && <p className="status-banner">{status}</p>}
 
-      {/* Option 1: Search Audubon / OSM */}
-      <div className="add-section">
-        <h3>1. Search by Circle Code or Place Name</h3>
-        <p className="muted">
-          Searches Audubon&apos;s ArcGIS CBC layer, then OpenStreetMap places. Adding an Audubon circle
-          pulls its count date and compiler from its Audubon circle page. Reference:{' '}
-          <a href="https://cbc.audubon.org/en/join" target="_blank" rel="noreferrer">
-            cbc.audubon.org/en/join
-          </a>
-        </p>
-        <div className="ebird-bar">
-          <input
-            type="text"
-            placeholder="e.g. Isabella, MN or MNBL or Hastings..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void handleSearch();
-            }}
-          />
-          <button className="btn-primary" disabled={searching} onClick={() => void handleSearch()}>
-            {searching ? 'Searching...' : 'Search'}
-          </button>
-        </div>
+      <SearchSection onAdd={addCircle} onStatus={setStatus} />
+      <BoundaryFileSection onAdd={addCircle} onStatus={setStatus} />
+      <ManualSection onAdd={addCircle} onStatus={setStatus} />
+    </div>
+  );
+}
 
-        {searchResults.length > 0 && (
-          <table>
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Source</th>
-                <th>Center</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {searchResults.map((c, idx) => (
-                <tr key={`${c.code}-${idx}`}>
-                  <td><strong>{c.code}</strong></td>
-                  <td>{c.name}</td>
-                  <td>{c.source === 'audubon' ? 'Audubon CBC' : 'OSM Place'}</td>
-                  <td><code>{c.lat.toFixed(4)}, {c.lng.toFixed(4)}</code></td>
-                  <td>
-                    <button
-                      className="btn-primary"
-                      disabled={addingCode !== null}
-                      onClick={() => void handleAddSearchResult(c)}
-                    >
-                      {addingCode === c.code ? 'Adding...' : 'Add & Select'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+function SearchSection({ onAdd, onStatus }: SectionProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<AudubonCircleResult[]>([]);
+  const [addingCode, setAddingCode] = useState<string | null>(null);
+
+  async function handleSearch() {
+    if (searchQuery.trim().length < 2) {
+      onStatus('Enter at least 2 characters (e.g. Isabella, MN or MNBL or Hastings).');
+      return;
+    }
+    setIsSearching(true);
+    onStatus(null);
+    try {
+      const res = await searchAudubonCircles(searchQuery);
+      setSearchResults(res);
+      if (res.length === 0) {
+        onStatus('No matching circles or places found. Try adding a state (e.g. "Isabella, MN"), import a KML/KMZ, or enter coordinates below.');
+      }
+    } catch (err) {
+      onStatus(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  async function handleAddSearchResult(result: AudubonCircleResult) {
+    setAddingCode(result.code);
+    onStatus(null);
+    try {
+      const c = await withAudubonPageDetails(result);
+      await onAdd({
+        code: c.code,
+        name: c.name,
+        state_province: c.state || null,
+        center_lat: c.lat,
+        center_lng: c.lng,
+        compiler_name: c.compilerName ?? null,
+        compiler_email: c.compilerEmail ?? null,
+        count_date: c.countDate ?? null,
+        audubon_url: c.source === 'audubon' ? c.joinUrl : null,
+      });
+    } finally {
+      setAddingCode(null);
+    }
+  }
+
+  return (
+    <div className="add-section">
+      <h3>1. Search by Circle Code or Place Name</h3>
+      <p className="muted">
+        Searches Audubon&apos;s ArcGIS CBC layer, then OpenStreetMap places. Adding an Audubon circle
+        pulls its count date and compiler from its Audubon circle page. Reference:{' '}
+        <a href="https://cbc.audubon.org/en/join" target="_blank" rel="noreferrer">
+          cbc.audubon.org/en/join
+        </a>
+      </p>
+      <div className="ebird-bar">
+        <input
+          type="text"
+          placeholder="e.g. Isabella, MN or MNBL or Hastings..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void handleSearch();
+          }}
+        />
+        <button className="btn-primary" disabled={isSearching} onClick={() => void handleSearch()}>
+          {isSearching ? 'Searching...' : 'Search'}
+        </button>
       </div>
 
-      {/* Option 2: Create Circle Directly from KML / KMZ / GeoJSON */}
-      <div className="add-section">
-        <h3>2. Create Circle by Importing a KML / KMZ / GeoJSON File</h3>
-        <p className="muted">
-          Automatically calculates the circle center from your polygons and imports all areas into the new circle.
-        </p>
-        <div className="ebird-bar">
-          <input
-            type="text"
-            placeholder="Circle Code (optional, e.g. MNIS)"
-            value={kmlCode}
-            onChange={(e) => setKmlCode(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Circle Name (optional, defaults to filename)"
-            value={kmlName}
-            onChange={(e) => setKmlName(e.target.value)}
-          />
-          <label className="btn-primary file-btn">
-            {kmlBusy ? 'Importing...' : 'Choose .kml / .kmz / .geojson'}
-            <input
-              type="file"
-              accept=".kml,.kmz,.geojson,.json"
-              style={{ display: 'none' }}
-              disabled={kmlBusy}
-              onChange={(e) => void handleKmlCreate(e)}
-            />
-          </label>
-        </div>
-      </div>
+      {searchResults.length > 0 && (
+        <SearchResultsTable
+          results={searchResults}
+          addingCode={addingCode}
+          onAdd={(c) => void handleAddSearchResult(c)}
+        />
+      )}
+    </div>
+  );
+}
 
-      {/* Option 3: Manual Coordinates */}
-      <div className="add-section">
-        <h3>3. Enter Exact Coordinates Manually</h3>
-        <div className="ebird-bar">
+interface SearchResultsTableProps {
+  results: AudubonCircleResult[];
+  addingCode: string | null;
+  onAdd: (result: AudubonCircleResult) => void;
+}
+
+function SearchResultsTable({ results, addingCode, onAdd }: SearchResultsTableProps) {
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Source</th>
+          <th>Center</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {results.map((c, idx) => (
+          <tr key={`${c.code}-${idx}`}>
+            <td><strong>{c.code}</strong></td>
+            <td>{c.name}</td>
+            <td>{c.source === 'audubon' ? 'Audubon CBC' : 'OSM Place'}</td>
+            <td><code>{c.lat.toFixed(4)}, {c.lng.toFixed(4)}</code></td>
+            <td>
+              <button className="btn-primary" disabled={addingCode !== null} onClick={() => onAdd(c)}>
+                {addingCode === c.code ? 'Adding...' : 'Add & Select'}
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function circleIdentityFromFile(fileName: string, code: string, name: string): { code: string; name: string } {
+  const baseFileName = fileName.replace(/\.(kml|kmz|geojson|json)$/i, '').trim();
+  return {
+    name: name.trim() || baseFileName || 'Imported Circle',
+    code:
+      code.trim().toUpperCase() ||
+      baseFileName.replace(/[^A-Za-z0-9]/g, '').slice(0, 6).toUpperCase() ||
+      'KML1',
+  };
+}
+
+function BoundaryFileSection({ onAdd, onStatus }: SectionProps) {
+  const [kmlCode, setKmlCode] = useState('');
+  const [kmlName, setKmlName] = useState('');
+  const [isKmlLoading, setIsKmlLoading] = useState(false);
+
+  async function handleKmlCreate(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsKmlLoading(true);
+    onStatus(null);
+    try {
+      const parsed = await parseBoundaryFile(file);
+      if (parsed.length === 0) {
+        onStatus('No polygons or lines found in that KML/KMZ/GeoJSON file.');
+        return;
+      }
+      const center = computeCollectionCenter(parsed);
+      if (!center) {
+        onStatus('Could not compute center coordinates from that file.');
+        return;
+      }
+      await onAdd({
+        ...circleIdentityFromFile(file.name, kmlCode, kmlName),
+        center_lat: center[1],
+        center_lng: center[0],
+        initialBoundaries: parsed,
+      });
+    } catch (err) {
+      onStatus(`KML/KMZ import error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsKmlLoading(false);
+      e.target.value = '';
+    }
+  }
+
+  return (
+    <div className="add-section">
+      <h3>2. Create Circle by Importing a KML / KMZ / GeoJSON File</h3>
+      <p className="muted">
+        Automatically calculates the circle center from your polygons and imports all areas into the new circle.
+      </p>
+      <div className="ebird-bar">
+        <input
+          type="text"
+          placeholder="Circle Code (optional, e.g. MNIS)"
+          value={kmlCode}
+          onChange={(e) => setKmlCode(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Circle Name (optional, defaults to filename)"
+          value={kmlName}
+          onChange={(e) => setKmlName(e.target.value)}
+        />
+        <label className="btn-primary file-btn">
+          {isKmlLoading ? 'Importing...' : 'Choose .kml / .kmz / .geojson'}
           <input
-            type="text"
-            placeholder="Code (e.g. MNIS)"
-            value={manualCode}
-            onChange={(e) => setManualCode(e.target.value)}
+            type="file"
+            accept=".kml,.kmz,.geojson,.json"
+            style={{ display: 'none' }}
+            disabled={isKmlLoading}
+            onChange={(e) => void handleKmlCreate(e)}
           />
-          <input
-            type="text"
-            placeholder="Name (e.g. Isabella, MN)"
-            value={manualName}
-            onChange={(e) => setManualName(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Lat (e.g. 47.6186)"
-            value={manualLat}
-            onChange={(e) => setManualLat(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Lng (e.g. -91.3564)"
-            value={manualLng}
-            onChange={(e) => setManualLng(e.target.value)}
-          />
-          <button type="button" onClick={() => void handleManualCreate()}>
-            Save Circle
-          </button>
-        </div>
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function ManualSection({ onAdd, onStatus }: SectionProps) {
+  const [manualCode, setManualCode] = useState('');
+  const [manualName, setManualName] = useState('');
+  const [manualLat, setManualLat] = useState('');
+  const [manualLng, setManualLng] = useState('');
+
+  async function handleManualCreate() {
+    const center = parseCircleCenter(manualLat, manualLng);
+    if (!manualCode.trim() || !manualName.trim() || !center) {
+      onStatus('Enter a Circle Code, Name, Latitude (-90 to 90), and Longitude (-180 to 180).');
+      return;
+    }
+    await onAdd({
+      code: manualCode.trim().toUpperCase(),
+      name: manualName.trim(),
+      center_lat: center.lat,
+      center_lng: center.lng,
+    });
+  }
+
+  return (
+    <div className="add-section">
+      <h3>3. Enter Exact Coordinates Manually</h3>
+      <div className="ebird-bar">
+        <input
+          type="text"
+          placeholder="Code (e.g. MNIS)"
+          value={manualCode}
+          onChange={(e) => setManualCode(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Name (e.g. Isabella, MN)"
+          value={manualName}
+          onChange={(e) => setManualName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Lat (e.g. 47.6186)"
+          value={manualLat}
+          onChange={(e) => setManualLat(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Lng (e.g. -91.3564)"
+          value={manualLng}
+          onChange={(e) => setManualLng(e.target.value)}
+        />
+        <button type="button" onClick={() => void handleManualCreate()}>
+          Save Circle
+        </button>
       </div>
     </div>
   );

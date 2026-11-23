@@ -39,6 +39,145 @@ async function storedRsvp(
   return res.rows[0]?.rsvp_status;
 }
 
+async function prepareSeasonForImport(tx: Transaction, circleCode: string, isCurrentList: boolean): Promise<number> {
+  const currentYear = await currentSeasonOf(tx, circleCode);
+  await tx.query(
+    `INSERT INTO public.count_years (circle_code, year, is_current)
+     VALUES ($1, $2, TRUE)
+     ON CONFLICT (circle_code, year) DO NOTHING`,
+    [circleCode, currentYear]
+  );
+  if (isCurrentList) {
+    await tx.query('UPDATE public.person_emails SET on_current_list = FALSE WHERE circle_code = $1', [circleCode]);
+  }
+  return currentYear;
+}
+
+interface EmailListFlags {
+  inAudubonList: boolean;
+  onCurrentList: boolean;
+}
+
+async function upsertPersonByEmail(
+  tx: Transaction,
+  circleCode: string,
+  email: string,
+  fullName: string,
+  flags: EmailListFlags
+): Promise<number> {
+  const existing = await tx.query<{ person_id: number }>(
+    'SELECT person_id FROM public.person_emails WHERE circle_code = $1 AND email = $2 LIMIT 1',
+    [circleCode, email]
+  );
+  if (existing.rows[0]) {
+    await tx.query(
+      `UPDATE public.person_emails
+       SET in_audubon_list = in_audubon_list OR $3, on_current_list = on_current_list OR $4
+       WHERE circle_code = $1 AND email = $2`,
+      [circleCode, email, flags.inAudubonList, flags.onCurrentList]
+    );
+    return existing.rows[0].person_id;
+  }
+
+  const inserted = await tx.query<{ id: number }>(
+    `INSERT INTO public.people (circle_code, full_name, roster_status)
+     VALUES ($1, $2, 'active')
+     RETURNING id`,
+    [circleCode, fullName]
+  );
+  const personId = inserted.rows[0].id;
+  await tx.query(
+    `INSERT INTO public.person_emails (circle_code, person_id, email, is_primary, in_audubon_list, on_current_list)
+     VALUES ($1, $2, $3, TRUE, $4, $5)
+     ON CONFLICT (circle_code, email) DO NOTHING`,
+    [circleCode, personId, email, flags.inAudubonList, flags.onCurrentList]
+  );
+  return personId;
+}
+
+interface ImportTarget {
+  circleCode: string;
+  currentYear: number;
+  personId: number;
+  email: string;
+}
+
+async function upsertParticipation(
+  tx: Transaction,
+  target: ImportTarget,
+  row: ImportedParticipantRow,
+  areaCode: string | null,
+  options: ImportOptions
+): Promise<void> {
+  const { circleCode, currentYear, personId } = target;
+  const fileRsvp = row.rsvp_status ? normalizeRsvp(row.rsvp_status) : null;
+  const fileCounterType = row.counter_type ? normalizeCounterType(row.counter_type) : null;
+  const newRsvp = fileRsvp ?? (await storedRsvp(tx, circleCode, currentYear, personId)) ?? options.defaultRsvp;
+  if (!newRsvp) throw new MissingDefaultRsvpError(target.email);
+
+  // A value the file does not give keeps the one already stored.
+  await tx.query(
+    `INSERT INTO public.participations (
+        circle_code, count_year, person_id, rsvp_status, counter_type, assigned_area_code
+     )
+     VALUES ($1, $2, $3, $4::public.rsvp_status, $5::public.counter_type, $6)
+     ON CONFLICT (circle_code, count_year, person_id) DO UPDATE SET
+        rsvp_status = COALESCE($7::public.rsvp_status, public.participations.rsvp_status),
+        counter_type = COALESCE($8::public.counter_type, public.participations.counter_type),
+        assigned_area_code = COALESCE(EXCLUDED.assigned_area_code, public.participations.assigned_area_code)
+     WHERE $9::BOOLEAN`,
+    [
+      circleCode,
+      currentYear,
+      personId,
+      newRsvp,
+      fileCounterType ?? 'field',
+      areaCode,
+      fileRsvp,
+      fileCounterType,
+      options.updateExisting,
+    ]
+  );
+}
+
+async function addNoteOnce(tx: Transaction, target: ImportTarget, areaCode: string | null, body: string): Promise<void> {
+  // Importing the same file again must not repeat the note.
+  await tx.query(
+    `INSERT INTO public.notes (circle_code, person_id, area_code, count_year, category, body, is_pinned)
+     SELECT $1, $2, $3::TEXT, $4::SMALLINT, 'general', $5::TEXT, FALSE
+     WHERE NOT EXISTS (
+       SELECT 1 FROM public.notes
+       WHERE circle_code = $1 AND person_id = $2 AND count_year = $4::SMALLINT AND body = $5::TEXT
+     )`,
+    [target.circleCode, target.personId, areaCode, target.currentYear, body]
+  );
+}
+
+/** @returns whether the row was imported; a row without a usable email is skipped. */
+async function importRow(
+  tx: Transaction,
+  circleCode: string,
+  currentYear: number,
+  row: ImportedParticipantRow,
+  options: ImportOptions
+): Promise<boolean> {
+  const email = row.email.trim().toLowerCase();
+  const fullName = row.full_name.trim() || email.split('@')[0];
+  if (!email || !email.includes('@')) return false;
+
+  const fileAreaCode = row.area_code?.trim() || null;
+  const areaCode = fileAreaCode ? await ensureArea(tx, circleCode, fileAreaCode) : null;
+  const personId = await upsertPersonByEmail(tx, circleCode, email, fullName, {
+    inAudubonList: Boolean(row.in_audubon_list),
+    onCurrentList: options.isCurrentList,
+  });
+  const target: ImportTarget = { circleCode, currentYear, personId, email };
+  await upsertParticipation(tx, target, row, areaCode, options);
+  const note = row.note?.trim();
+  if (note) await addNoteOnce(tx, target, areaCode, note);
+  return true;
+}
+
 export async function importParticipants(
   db: PGlite,
   circleCode: string,
@@ -46,106 +185,11 @@ export async function importParticipants(
   options: ImportOptions
 ): Promise<{ imported: number }> {
   let imported = 0;
-
   await db.transaction(async (tx) => {
-    const currentYear = await currentSeasonOf(tx, circleCode);
-    await tx.query(
-      `INSERT INTO public.count_years (circle_code, year, is_current)
-       VALUES ($1, $2, TRUE)
-       ON CONFLICT (circle_code, year) DO NOTHING`,
-      [circleCode, currentYear]
-    );
-    if (options.isCurrentList) {
-      await tx.query('UPDATE public.person_emails SET on_current_list = FALSE WHERE circle_code = $1', [
-        circleCode,
-      ]);
-    }
-
-    for (const r of rows) {
-      const email = r.email.trim().toLowerCase();
-      const fullName = r.full_name.trim() || email.split('@')[0];
-      if (!email || !email.includes('@')) continue;
-
-      const fileAreaCode = r.area_code?.trim() || null;
-      const areaCode = fileAreaCode ? await ensureArea(tx, circleCode, fileAreaCode) : null;
-
-      const existing = await tx.query<{ person_id: number }>(
-        'SELECT person_id FROM public.person_emails WHERE circle_code = $1 AND email = $2 LIMIT 1',
-        [circleCode, email]
-      );
-
-      let personId: number;
-      if (existing.rows[0]) {
-        personId = existing.rows[0].person_id;
-        await tx.query(
-          `UPDATE public.person_emails
-           SET in_audubon_list = in_audubon_list OR $3, on_current_list = on_current_list OR $4
-           WHERE circle_code = $1 AND email = $2`,
-          [circleCode, email, Boolean(r.in_audubon_list), options.isCurrentList]
-        );
-      } else {
-        const inserted = await tx.query<{ id: number }>(
-          `INSERT INTO public.people (circle_code, full_name, roster_status)
-           VALUES ($1, $2, 'active')
-           RETURNING id`,
-          [circleCode, fullName]
-        );
-        personId = inserted.rows[0].id;
-
-        await tx.query(
-          `INSERT INTO public.person_emails (circle_code, person_id, email, is_primary, in_audubon_list, on_current_list)
-           VALUES ($1, $2, $3, TRUE, $4, $5)
-           ON CONFLICT (circle_code, email) DO NOTHING`,
-          [circleCode, personId, email, Boolean(r.in_audubon_list), options.isCurrentList]
-        );
-      }
-
-      const fileRsvp = r.rsvp_status ? normalizeRsvp(r.rsvp_status) : null;
-      const fileCounterType = r.counter_type ? normalizeCounterType(r.counter_type) : null;
-      const newRsvp =
-        fileRsvp ?? (await storedRsvp(tx, circleCode, currentYear, personId)) ?? options.defaultRsvp;
-      if (!newRsvp) throw new MissingDefaultRsvpError(email);
-
-      // A value the file does not give keeps the one already stored.
-      await tx.query(
-        `INSERT INTO public.participations (
-            circle_code, count_year, person_id, rsvp_status, counter_type, assigned_area_code
-         )
-         VALUES ($1, $2, $3, $4::public.rsvp_status, $5::public.counter_type, $6)
-         ON CONFLICT (circle_code, count_year, person_id) DO UPDATE SET
-            rsvp_status = COALESCE($7::public.rsvp_status, public.participations.rsvp_status),
-            counter_type = COALESCE($8::public.counter_type, public.participations.counter_type),
-            assigned_area_code = COALESCE(EXCLUDED.assigned_area_code, public.participations.assigned_area_code)
-         WHERE $9::BOOLEAN`,
-        [
-          circleCode,
-          currentYear,
-          personId,
-          newRsvp,
-          fileCounterType ?? 'field',
-          areaCode,
-          fileRsvp,
-          fileCounterType,
-          options.updateExisting,
-        ]
-      );
-
-      if (r.note?.trim()) {
-        // Importing the same file again must not repeat the note.
-        await tx.query(
-          `INSERT INTO public.notes (circle_code, person_id, area_code, count_year, category, body, is_pinned)
-           SELECT $1, $2, $3::TEXT, $4::SMALLINT, 'general', $5::TEXT, FALSE
-           WHERE NOT EXISTS (
-             SELECT 1 FROM public.notes
-             WHERE circle_code = $1 AND person_id = $2 AND count_year = $4::SMALLINT AND body = $5::TEXT
-           )`,
-          [circleCode, personId, areaCode, currentYear, r.note.trim()]
-        );
-      }
-
-      imported += 1;
+    const currentYear = await prepareSeasonForImport(tx, circleCode, options.isCurrentList);
+    for (const row of rows) {
+      if (await importRow(tx, circleCode, currentYear, row, options)) imported += 1;
     }
   });
-
   return { imported };
 }

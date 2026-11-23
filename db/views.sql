@@ -1,6 +1,3 @@
--- views.sql
--- Circle-scoped operational views for assignments, open areas, reminders, and possible outreach.
-
 CREATE OR REPLACE VIEW public.v_current_assignments AS
 SELECT
     p.circle_code,

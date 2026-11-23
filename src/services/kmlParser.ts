@@ -1,9 +1,3 @@
-/**
- * Client-side KML, KMZ & GeoJSON parser for CBC area boundaries.
- * Extracts KML <Style>/<StyleMap> fill & stroke colors when present,
- * and falls back to a curated distinct cartographic palette.
- * Intentionally decoupled from PGlite so it can be reused directly in Aviscout.
- */
 import { strFromU8, unzipSync } from 'fflate';
 import { OUTER_CIRCLE_COLORS } from './cbcCircle.ts';
 import { isLatitude, isLongitude } from './coordinates.ts';

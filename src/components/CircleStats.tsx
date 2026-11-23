@@ -7,7 +7,7 @@ interface Props {
   openAreaCount: number;
   awaitingResultsCount: number;
   countedAreaTotal: number;
-  resultsDue: boolean;
+  areResultsDue: boolean;
   countDate: string | null;
   onOpenTab: (tab: Tab) => void;
 }
@@ -43,7 +43,7 @@ export function CircleStats({
   openAreaCount,
   awaitingResultsCount,
   countedAreaTotal,
-  resultsDue,
+  areResultsDue,
   countDate,
   onOpenTab,
 }: Props) {
@@ -81,7 +81,7 @@ export function CircleStats({
         onOpenTab={onOpenTab}
       >
         <div className="stat-label">Awaiting Results</div>
-        {resultsDue ? (
+        {areResultsDue ? (
           <>
             <div className="stat-value">{awaitingResultsCount}</div>
             <div className="stat-sub">of {countedAreaTotal} counted areas &middot; Click to follow up</div>

@@ -2,22 +2,13 @@ import { useMemo, useState } from 'react';
 import { LocalCbcDb } from './db/pgliteDb';
 import { AddCirclePanel } from './components/AddCirclePanel';
 import { AppHeader } from './components/AppHeader';
-import { AreaDetailPage } from './components/AreaDetailPage';
-import { AllAreasPage } from './components/AllAreasPage';
-import { AssignmentsTab } from './components/AssignmentsTab';
-import { AwaitingResultsPage } from './components/AwaitingResultsPage';
-import { CircleInfoBar } from './components/CircleInfoBar';
-import { CircleMap } from './components/CircleMap';
-import { CircleStats } from './components/CircleStats';
+import { CircleOverview } from './components/CircleOverview';
 import { ConfirmDialog, type ConfirmDialogConfig } from './components/ConfirmDialog';
 import { FirstCircleCard } from './components/FirstCircleCard';
 import { DISCUSSIONS_URL, HelpPage } from './components/HelpPage';
-import { OpenAreasTab } from './components/OpenAreasTab';
-import { OutreachTab } from './components/OutreachTab';
 import { PersonHistoryDialog } from './components/PersonHistoryDialog';
-import { SeasonRolloverBanner } from './components/SeasonRolloverBanner';
 import { SeasonRolloverDialog } from './components/SeasonRolloverDialog';
-import { SpreadsheetImporter } from './components/SpreadsheetImporter';
+import { TabContent } from './components/TabContent';
 import { TabNav } from './components/TabNav';
 import { useAreaActions } from './hooks/useAreaActions';
 import { useAutoSave } from './hooks/useAutoSave';
@@ -29,10 +20,9 @@ import { useRosterActions } from './hooks/useRosterActions';
 import { useSeasonActions } from './hooks/useSeasonActions';
 import { areResultsDue } from './services/countDay';
 import { seasonToRollOverTo } from './services/season';
-import { countCountersByArea } from './services/rosterSummary';
 import { describeError } from './services/describeError';
 import { shareApp } from './services/shareApp';
-import { AREA_RETURN_LABELS, type AreaReturnTab, type SelectedArea, type Tab } from './tabs';
+import type { AreaReturnTab, SelectedArea, Tab } from './tabs';
 
 export function App() {
   const db = useMemo(() => new LocalCbcDb(), []);
@@ -47,8 +37,8 @@ export function App() {
   const { toast, error, setError, flash } = useNotices();
   const { ebirdApiKey, saveEbirdKey } = useEbirdKey(setError);
   const autoSave = useAutoSave(db, setError, flash);
-  const { savedCircles, activeCircle, assignments, openAreas, reminders, outreach, areas, areaBoundaries, loading, reload } =
-    useCircleData(db, setError, autoSave.scheduleSave);
+  const { savedCircles, activeCircle, loading, reload, ...circleData } = useCircleData(db, setError, autoSave.scheduleSave);
+  const { assignments, openAreas, reminders, outreach, areas } = circleData;
 
   const actionContext = { db, activeCircle, reload, flash, setError, confirm: setConfirmConfig };
   const circleActions = useCircleActions(
@@ -62,7 +52,7 @@ export function App() {
       afterCreate: () => setTab('map'),
     }
   );
-  const areaActions = useAreaActions(actionContext, areaBoundaries.length);
+  const areaActions = useAreaActions(actionContext, circleData.areaBoundaries.length);
   const rosterActions = useRosterActions(actionContext);
   const seasonActions = useSeasonActions(actionContext);
 
@@ -70,11 +60,8 @@ export function App() {
   const notCountedAreas = useMemo(() => areas.filter((a) => !a.is_counted), [areas]);
   const currentSeason = activeCircle?.current_year ?? null;
   const rolloverSeason = seasonToRollOverTo(currentSeason, new Date());
-  const resultsDue = areResultsDue(activeCircle?.count_date, new Date(), currentSeason ?? undefined);
-  const awaitingResultsCount = resultsDue ? countedAreas.filter((a) => !a.results_received).length : 0;
-  const areaParticipantCounts = useMemo(() => countCountersByArea(assignments), [assignments]);
-  const selectedAreaInfo =
-    areas.find((a) => a.code.toUpperCase() === selectedArea?.code.toUpperCase()) ?? null;
+  const areResultsDueNow = areResultsDue(activeCircle?.count_date, new Date(), currentSeason ?? undefined);
+  const awaitingResultsCount = areResultsDueNow ? countedAreas.filter((a) => !a.results_received).length : 0;
   // An area page has no tab of its own; highlight the tab it was opened from.
   const activeNavTab: Tab = tab === 'area' ? (selectedArea?.from ?? 'map') : tab;
 
@@ -114,33 +101,21 @@ export function App() {
       )}
 
       {!loading && activeCircle && (
-        <>
-          <CircleInfoBar
-            circle={activeCircle}
-            isRefreshing={circleActions.refreshingAudubon}
-            onRefreshFromAudubon={() => void circleActions.refreshFromAudubon()}
-            onSave={circleActions.saveCircleInfo}
-          />
-          {rolloverSeason !== null && currentSeason !== null && dismissedRolloverCircle !== activeCircle.code && (
-            <SeasonRolloverBanner
-              circleCode={activeCircle.code}
-              currentSeason={currentSeason}
-              nextSeason={rolloverSeason}
-              onStart={() => setIsRolloverOpen(true)}
-              onDismiss={() => setDismissedRolloverCircle(activeCircle.code)}
-            />
-          )}
-          <CircleStats
-            countedAreaCount={countedAreas.length}
-            activeCounterCount={assignments.length}
-            openAreaCount={openAreas.length}
-            awaitingResultsCount={awaitingResultsCount}
-            countedAreaTotal={countedAreas.length}
-            resultsDue={resultsDue}
-            countDate={activeCircle.count_date}
-            onOpenTab={setTab}
-          />
-        </>
+        <CircleOverview
+          circle={activeCircle}
+          circleActions={circleActions}
+          currentSeason={currentSeason}
+          rolloverSeason={rolloverSeason}
+          isRolloverDismissed={dismissedRolloverCircle === activeCircle.code}
+          countedAreaCount={countedAreas.length}
+          activeCounterCount={assignments.length}
+          openAreaCount={openAreas.length}
+          awaitingResultsCount={awaitingResultsCount}
+          areResultsDue={areResultsDueNow}
+          onStartRollover={() => setIsRolloverOpen(true)}
+          onDismissRollover={() => setDismissedRolloverCircle(activeCircle.code)}
+          onOpenTab={setTab}
+        />
       )}
 
       <TabNav
@@ -161,143 +136,102 @@ export function App() {
           {!activeCircle && tab !== 'help' && !showAddCircle && (
             <FirstCircleCard onAddCircle={() => setShowAddCircle(true)} />
           )}
-
-          {tab === 'assignments' && activeCircle && (
-            <AssignmentsTab
-              circleCode={activeCircle.code}
-              assignments={assignments}
+          {activeCircle && (
+            <TabContent
+              tab={tab}
+              circle={activeCircle}
+              data={circleData}
               countedAreas={countedAreas}
-              onReassign={(participationId, newArea) => void areaActions.reassign(participationId, newArea)}
-              onOpenPerson={setHistoryPersonId}
-            />
-          )}
-
-          {tab === 'open' && activeCircle && (
-            <OpenAreasTab
-              circleCode={activeCircle.code}
-              openAreas={openAreas}
               notCountedAreas={notCountedAreas}
-              onToggleCounted={(code, isCounted) => void areaActions.toggleAreaCounted(code, isCounted)}
-              onDeleteArea={areaActions.deleteArea}
-            />
-          )}
-
-          {tab === 'outreach' && activeCircle && (
-            <OutreachTab
-              reminders={reminders}
-              outreach={outreach}
-              onCopyBcc={copyBcc}
-              onOpenPerson={setHistoryPersonId}
-            />
-          )}
-
-          {tab === 'map' && activeCircle && (
-            <CircleMap
-              activeCode={activeCircle.code}
-              activeName={activeCircle.name}
-              centerLat={activeCircle.center_lat}
-              centerLng={activeCircle.center_lng}
-              radiusMiles={activeCircle.radius_miles}
-              areaBoundaries={areaBoundaries}
-              areaParticipantCounts={areaParticipantCounts}
-              notCountedAreaCodes={notCountedAreas.map((a) => a.code)}
-              onCenterChange={(lat, lng) => void areaActions.changeCenter(lat, lng)}
-              onSelectArea={(code, label) => openArea(code, label, 'map')}
-              onImportBoundaries={areaActions.importBoundaries}
-              onClearBoundaries={areaActions.clearBoundaries}
-              onSaveScoutedCircle={circleActions.createCircle}
+              areResultsDue={areResultsDueNow}
+              selectedArea={selectedArea}
               ebirdApiKey={ebirdApiKey}
-            />
-          )}
-
-          {tab === 'area' && activeCircle && selectedArea && (
-            <AreaDetailPage
-              circleCode={activeCircle.code}
-              areaCode={selectedArea.code}
-              areaLabel={selectedArea.label}
-              isCounted={!notCountedAreas.some((a) => a.code.toUpperCase() === selectedArea.code.toUpperCase())}
-              resultsReceived={Boolean(selectedAreaInfo?.results_received)}
-              areaInfo={selectedAreaInfo}
-              allAreas={countedAreas}
-              assignments={assignments}
-              backLabel={AREA_RETURN_LABELS[selectedArea.from]}
-              onBack={() => setTab(selectedArea.from)}
+              areaActions={areaActions}
+              circleActions={circleActions}
+              rosterActions={rosterActions}
               onOpenPerson={setHistoryPersonId}
-              onReassign={areaActions.reassign}
               onCopyBcc={copyBcc}
-              onToggleCounted={areaActions.toggleAreaCounted}
-              onToggleResultsReceived={areaActions.toggleResultsReceived}
-            />
-          )}
-
-          {tab === 'areas' && activeCircle && (
-            <AllAreasPage
-              circleCode={activeCircle.code}
-              resultsDue={resultsDue}
-              areas={areas}
-              assignments={assignments}
-              onSelectArea={(code) => openArea(code, null, 'areas')}
-            />
-          )}
-
-          {tab === 'results' && activeCircle && (
-            <AwaitingResultsPage
-              circleCode={activeCircle.code}
-              countDate={activeCircle.count_date}
-              resultsDue={resultsDue}
-              countedAreas={countedAreas}
-              assignments={assignments}
-              onToggleResultsReceived={areaActions.toggleResultsReceived}
-              onSelectArea={(code) => openArea(code, null, 'results')}
-              onCopyBcc={copyBcc}
-            />
-          )}
-
-          {tab === 'import' && activeCircle && (
-            <SpreadsheetImporter
-              circleCode={activeCircle.code}
-              assignments={assignments}
-              areas={areas}
-              onImport={rosterActions.importRows}
-              onClearRoster={rosterActions.clearRoster}
+              onOpenArea={openArea}
+              onSelectTab={setTab}
             />
           )}
           {tab === 'help' && <HelpPage ebirdApiKey={ebirdApiKey} onSaveEbirdKey={saveEbirdKey} />}
         </main>
       )}
 
-      <footer className="app-footer">
-        Questions, ideas, or something not working?{' '}
-        <a href={DISCUSSIONS_URL} target="_blank" rel="noreferrer">
-          Let me know on GitHub Discussions
-        </a>
-        .
-      </footer>
+      <AppFooter />
 
-      {isRolloverOpen && activeCircle && currentSeason !== null && rolloverSeason !== null && (
+      <AppDialogs
+        db={db}
+        rollover={
+          isRolloverOpen && activeCircle && currentSeason !== null && rolloverSeason !== null
+            ? { circleCode: activeCircle.code, currentSeason, nextSeason: rolloverSeason }
+            : null
+        }
+        onCloseRollover={() => setIsRolloverOpen(false)}
+        onRollOver={seasonActions.rollOver}
+        historyPersonId={historyPersonId}
+        onCloseHistory={() => setHistoryPersonId(null)}
+        confirmConfig={confirmConfig}
+        onCloseConfirm={() => setConfirmConfig(null)}
+        onExportBackup={rosterActions.downloadBackup}
+      />
+    </div>
+  );
+}
+
+interface AppDialogsProps {
+  db: LocalCbcDb;
+  rollover: { circleCode: string; currentSeason: number; nextSeason: number } | null;
+  onCloseRollover: () => void;
+  onRollOver: ReturnType<typeof useSeasonActions>['rollOver'];
+  historyPersonId: number | null;
+  onCloseHistory: () => void;
+  confirmConfig: ConfirmDialogConfig | null;
+  onCloseConfirm: () => void;
+  onExportBackup: () => Promise<boolean>;
+}
+
+function AppDialogs({
+  db,
+  rollover,
+  onCloseRollover,
+  onRollOver,
+  historyPersonId,
+  onCloseHistory,
+  confirmConfig,
+  onCloseConfirm,
+  onExportBackup,
+}: AppDialogsProps) {
+  return (
+    <>
+      {rollover && (
         <SeasonRolloverDialog
-          circleCode={activeCircle.code}
-          currentSeason={currentSeason}
-          nextSeason={rolloverSeason}
-          onClose={() => setIsRolloverOpen(false)}
-          onConfirm={(carryAssignments) => seasonActions.rollOver(rolloverSeason, carryAssignments)}
+          circleCode={rollover.circleCode}
+          currentSeason={rollover.currentSeason}
+          nextSeason={rollover.nextSeason}
+          onClose={onCloseRollover}
+          onConfirm={(carryAssignments) => onRollOver(rollover.nextSeason, carryAssignments)}
         />
       )}
 
       {historyPersonId !== null && (
-        <PersonHistoryDialog
-          key={historyPersonId}
-          db={db}
-          personId={historyPersonId}
-          onClose={() => setHistoryPersonId(null)}
-        />
+        <PersonHistoryDialog key={historyPersonId} db={db} personId={historyPersonId} onClose={onCloseHistory} />
       )}
 
-      <ConfirmDialog
-        config={confirmConfig}
-        onClose={() => setConfirmConfig(null)}
-        onExportBackup={rosterActions.downloadBackup}
-      />
-    </div>
+      <ConfirmDialog config={confirmConfig} onClose={onCloseConfirm} onExportBackup={onExportBackup} />
+    </>
+  );
+}
+
+function AppFooter() {
+  return (
+    <footer className="app-footer">
+      Questions, ideas, or something not working?{' '}
+      <a href={DISCUSSIONS_URL} target="_blank" rel="noreferrer">
+        Let me know on GitHub Discussions
+      </a>
+      .
+    </footer>
   );
 }

@@ -171,7 +171,7 @@ export function CircleMap({
         <EbirdControls
           hasKey={Boolean(ebirdApiKey)}
           backDays={ebird.backDays}
-          isBusy={ebird.busy}
+          isBusy={ebird.isBusy}
           onBackDaysChange={ebird.setBackDays}
           onLoad={() => void ebird.load(effectiveCode, effectiveLat, effectiveLng)}
         />

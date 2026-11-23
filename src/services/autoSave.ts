@@ -1,6 +1,3 @@
-// Auto-save the JSON backup to a file the user picks (File System Access API, Chrome and Edge),
-// and ask the browser not to evict local storage.
-
 interface WritableLike {
   write(data: string): Promise<void>;
   close(): Promise<void>;
@@ -72,7 +69,7 @@ export async function clearHandle(): Promise<void> {
   await idbRequest('readwrite', (s) => s.delete(HANDLE_KEY));
 }
 
-/** Prompts the user for a file. Must run from a click. Returns the file name, or null if cancelled. */
+/** Prompts the user for a file. Must run from a click. Returns the file handle, or null if cancelled. */
 export async function chooseAutoSaveFile(): Promise<FileHandleLike | null> {
   const picker = (window as unknown as { showSaveFilePicker: SaveFilePicker }).showSaveFilePicker;
   try {

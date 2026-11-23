@@ -4,13 +4,13 @@ import { areaDisplayName } from './map/mapText';
 interface Props {
   circleCode: string;
   /** False before count day: no area is waiting on results yet */
-  resultsDue: boolean;
+  areResultsDue: boolean;
   areas: AreaOption[];
   assignments: AssignmentRow[];
   onSelectArea: (areaCode: string) => void;
 }
 
-export function AllAreasPage({ circleCode, resultsDue, areas, assignments, onSelectArea }: Props) {
+export function AllAreasPage({ circleCode, areResultsDue, areas, assignments, onSelectArea }: Props) {
   function countersIn(areaCode: string): AssignmentRow[] {
     return assignments.filter((r) => (r.area ?? '').toUpperCase() === areaCode.toUpperCase());
   }
@@ -63,7 +63,7 @@ export function AllAreasPage({ circleCode, resultsDue, areas, assignments, onSel
                       <span className="muted">—</span>
                     ) : area.results_received ? (
                       'Received'
-                    ) : resultsDue ? (
+                    ) : areResultsDue ? (
                       <span className="muted">Awaiting</span>
                     ) : (
                       <span className="muted">After count day</span>

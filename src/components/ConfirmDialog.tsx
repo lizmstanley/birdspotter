@@ -21,41 +21,41 @@ interface Props {
 
 export function ConfirmDialog({ config, onClose, onExportBackup }: Props) {
   const [typed, setTyped] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [backupDone, setBackupDone] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+  const [isBackupDone, setIsBackupDone] = useState(false);
   const [shownConfig, setShownConfig] = useState(config);
 
   if (config !== shownConfig) {
     setShownConfig(config);
     setTyped('');
-    setBusy(false);
-    setBackupDone(false);
+    setIsBusy(false);
+    setIsBackupDone(false);
   }
 
   if (!config) return null;
 
   const expected = config.requireTypedText?.trim() ?? '';
   const canConfirm =
-    !busy &&
+    !isBusy &&
     (!expected || typed.trim().toUpperCase() === expected.toUpperCase());
 
   async function handleBackupClick() {
-    setBusy(true);
+    setIsBusy(true);
     try {
-      setBackupDone(await onExportBackup());
+      setIsBackupDone(await onExportBackup());
     } finally {
-      setBusy(false);
+      setIsBusy(false);
     }
   }
 
   async function handleConfirmClick() {
     if (!canConfirm || !config) return;
-    setBusy(true);
+    setIsBusy(true);
     try {
       await config.onConfirm();
       onClose();
     } finally {
-      setBusy(false);
+      setIsBusy(false);
     }
   }
 
@@ -66,7 +66,7 @@ export function ConfirmDialog({ config, onClose, onExportBackup }: Props) {
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
       onClick={() => {
-        if (!busy) onClose();
+        if (!isBusy) onClose();
       }}
     >
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -96,10 +96,10 @@ export function ConfirmDialog({ config, onClose, onExportBackup }: Props) {
             <button
               type="button"
               className="btn-primary"
-              disabled={busy}
+              disabled={isBusy}
               onClick={() => void handleBackupClick()}
             >
-              {backupDone ? 'Backup Downloaded ✓' : 'Export Backup First'}
+              {isBackupDone ? 'Backup Downloaded ✓' : 'Export Backup First'}
             </button>
           </div>
         )}
@@ -120,7 +120,7 @@ export function ConfirmDialog({ config, onClose, onExportBackup }: Props) {
         )}
 
         <div className="modal-actions">
-          <button type="button" disabled={busy} onClick={onClose}>
+          <button type="button" disabled={isBusy} onClick={onClose}>
             Cancel
           </button>
           <button
@@ -129,7 +129,7 @@ export function ConfirmDialog({ config, onClose, onExportBackup }: Props) {
             disabled={!canConfirm}
             onClick={() => void handleConfirmClick()}
           >
-            {busy ? 'Working...' : config.confirmLabel}
+            {isBusy ? 'Working...' : config.confirmLabel}
           </button>
         </div>
       </div>
