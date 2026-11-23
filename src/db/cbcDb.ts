@@ -6,6 +6,7 @@ import { DatabaseNotOpenError } from './errors.ts';
 import { migrate, type Migration } from './migrations.ts';
 import * as readModels from './readModels.ts';
 import * as roster from './roster.ts';
+import * as seasons from './seasons.ts';
 import type {
   AreaBoundaryRow,
   AreaOption,
@@ -19,6 +20,7 @@ import type {
   PersonHistory,
   PossibleOutreachRow,
   ReminderRow,
+  RolloverOptions,
   SavedCircle,
 } from './types.ts';
 
@@ -141,6 +143,10 @@ export class CbcDb {
     options: ImportOptions
   ): Promise<{ imported: number }> {
     return roster.importParticipants(this.db, circleCode, rows, options);
+  }
+
+  rolloverSeason(circleCode: string, newYear: number, options: RolloverOptions): Promise<void> {
+    return seasons.rolloverSeason(this.db, circleCode, newYear, options);
   }
 
   exportJsonBackup(): Promise<string> {

@@ -15,6 +15,8 @@ import { DISCUSSIONS_URL, HelpPage } from './components/HelpPage';
 import { OpenAreasTab } from './components/OpenAreasTab';
 import { OutreachTab } from './components/OutreachTab';
 import { PersonHistoryDialog } from './components/PersonHistoryDialog';
+import { SeasonRolloverBanner } from './components/SeasonRolloverBanner';
+import { SeasonRolloverDialog } from './components/SeasonRolloverDialog';
 import { SpreadsheetImporter } from './components/SpreadsheetImporter';
 import { TabNav } from './components/TabNav';
 import { useAreaActions } from './hooks/useAreaActions';
@@ -24,7 +26,9 @@ import { useCircleData } from './hooks/useCircleData';
 import { useEbirdKey } from './hooks/useEbirdKey';
 import { useNotices } from './hooks/useNotices';
 import { useRosterActions } from './hooks/useRosterActions';
+import { useSeasonActions } from './hooks/useSeasonActions';
 import { areResultsDue } from './services/countDay';
+import { seasonToRollOverTo } from './services/season';
 import { countCountersByArea } from './services/rosterSummary';
 import { shareApp } from './services/shareApp';
 import { AREA_RETURN_LABELS, type AreaReturnTab, type SelectedArea, type Tab } from './tabs';
@@ -35,6 +39,8 @@ export function App() {
   const [showAddCircle, setShowAddCircle] = useState(false);
   const [historyPersonId, setHistoryPersonId] = useState<number | null>(null);
   const [selectedArea, setSelectedArea] = useState<SelectedArea | null>(null);
+  const [isRolloverOpen, setIsRolloverOpen] = useState(false);
+  const [dismissedRolloverCircle, setDismissedRolloverCircle] = useState<string | null>(null);
   const [confirmConfig, setConfirmConfig] = useState<ConfirmDialogConfig | null>(null);
 
   const { toast, error, setError, flash } = useNotices();
@@ -57,10 +63,13 @@ export function App() {
   );
   const areaActions = useAreaActions(actionContext, areaBoundaries.length);
   const rosterActions = useRosterActions(actionContext);
+  const seasonActions = useSeasonActions(actionContext);
 
   const countedAreas = useMemo(() => areas.filter((a) => a.is_counted), [areas]);
   const notCountedAreas = useMemo(() => areas.filter((a) => !a.is_counted), [areas]);
-  const resultsDue = areResultsDue(activeCircle?.count_date);
+  const currentSeason = activeCircle?.current_year ?? null;
+  const rolloverSeason = seasonToRollOverTo(currentSeason, new Date());
+  const resultsDue = areResultsDue(activeCircle?.count_date, new Date(), currentSeason ?? undefined);
   const awaitingResultsCount = resultsDue ? countedAreas.filter((a) => !a.results_received).length : 0;
   const areaParticipantCounts = useMemo(() => countCountersByArea(assignments), [assignments]);
   const selectedAreaInfo =
@@ -109,6 +118,15 @@ export function App() {
             onRefreshFromAudubon={() => void circleActions.refreshFromAudubon()}
             onSave={circleActions.saveCircleInfo}
           />
+          {rolloverSeason !== null && currentSeason !== null && dismissedRolloverCircle !== activeCircle.code && (
+            <SeasonRolloverBanner
+              circleCode={activeCircle.code}
+              currentSeason={currentSeason}
+              nextSeason={rolloverSeason}
+              onStart={() => setIsRolloverOpen(true)}
+              onDismiss={() => setDismissedRolloverCircle(activeCircle.code)}
+            />
+          )}
           <CircleStats
             countedAreaCount={countedAreas.length}
             activeCounterCount={assignments.length}
@@ -252,6 +270,16 @@ export function App() {
         </a>
         .
       </footer>
+
+      {isRolloverOpen && activeCircle && currentSeason !== null && rolloverSeason !== null && (
+        <SeasonRolloverDialog
+          circleCode={activeCircle.code}
+          currentSeason={currentSeason}
+          nextSeason={rolloverSeason}
+          onClose={() => setIsRolloverOpen(false)}
+          onConfirm={(carryAssignments) => seasonActions.rollOver(rolloverSeason, carryAssignments)}
+        />
+      )}
 
       <PersonHistoryDialog db={db} personId={historyPersonId} onClose={() => setHistoryPersonId(null)} />
 

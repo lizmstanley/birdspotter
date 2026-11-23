@@ -27,7 +27,7 @@ export function AwaitingResultsPage({
       <div className="card">
         <h2>{circleCode} &mdash; Results</h2>
         <p className="muted">
-          Results tracking starts on count day, {countDate}. Until then no area is waiting on
+          Results tracking starts on {countDate ? `count day, ${countDate}` : 'Dec 14, when the count window opens'}. Until then no area is waiting on
           results. {countedAreas.length} counted areas will be tracked.
         </p>
       </div>
