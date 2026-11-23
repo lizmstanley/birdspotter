@@ -1,3 +1,4 @@
+import { EBIRD_SITE_URL } from '../../services/ebird.ts';
 import { BINOCULARS_SVG, BIRD_SVG } from './mapIcons.ts';
 
 interface LayerToggle {
@@ -74,6 +75,12 @@ export function LayerLegend({
         <span className="legend-icon marker-sighting" dangerouslySetInnerHTML={{ __html: BIRD_SVG }} />
         Recent Sighting ({sightingCount})
       </button>
+      <span className="legend-item">
+        Bird data:
+        <a href={EBIRD_SITE_URL} target="_blank" rel="noreferrer">
+          eBird.org
+        </a>
+      </span>
     </div>
   );
 }

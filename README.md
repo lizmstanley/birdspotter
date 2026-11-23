@@ -38,7 +38,7 @@ Hover over a recent sighting to see the species, count, place, and date, with a 
 - **Roster and assignments:** reassign counters between areas, see open areas (areas with no confirmed field counter), and track which areas have sent in results.
 - **Reminders and outreach:** a list of people on your current list who haven't answered yet this season, with a Copy BCC button. Until you mark a current list, it shows every active person who hasn't answered. Possible Outreach lists people on the Audubon list who aren't on your current list, and people on your current list who also have another email that may be old. Tick **This file is my current list** when you import your mailing list. Outreach shows only active and inactive people.
 - **Map:** a draggable 15-mile-diameter circle with OpenStreetMap street tiles or Esri satellite tiles. Imported area outlines highlight when you hover over them, and clicking one opens that area.
-- **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key. Each hotspot and sighting is listed with the count area it falls in.
+- **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key. Each hotspot and sighting is listed with the count area it falls in. Results are saved in your browser and fetched from eBird at most once a day for the same circle and day range.
 - **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) and match its columns, or import the participant list you export from your Audubon circle page, which needs no setup. You can also export the roster to Excel or CSV, and export or restore a full JSON backup.
 
 ## Set up your eBird key
@@ -51,6 +51,8 @@ You set the key once, on the **Help & API Keys** tab. It isn't on the map page, 
 4. Go to **Map & eBird Scout**, pick how many days back you want, and click **Load Hotspots & Sightings**.
 
 Until a key is saved, **Load Hotspots & Sightings** and the days dropdown are grayed out. Hover over them and they tell you where to add the key. The key is saved only in this browser's `localStorage` and is sent only to eBird. To forget it, click **Remove Key** on the same tab. The hosted copy and a copy you run yourself each need the key saved once, because each address has its own browser storage.
+
+The app saves each eBird result in this browser for the rest of the day. Asking again for the same circle center and day range shows the saved copy instead of calling eBird. A new day, a moved pin, or a different day range fetches fresh data.
 
 ## Import your roster
 
@@ -118,6 +120,12 @@ In Chrome and Edge, **Auto-Save** keeps a backup file up to date on disk. Click 
 
 If something's confusing, broken, or missing, or you have an idea that would help your count, tell me on [GitHub Discussions](https://github.com/lizmstanley/cbc-circle-manager/discussions). It's public, so please don't post volunteer names, emails, or backup files.
 
+## License
+
+The app is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). You can use, change, and share it for any noncommercial purpose. Anyone you share it with must also get the license terms and the `Required Notice:` line from [LICENSE.md](LICENSE.md).
+
+Bird data comes from [eBird.org](https://ebird.org) and is subject to the [eBird API Terms of Use](https://www.birds.cornell.edu/home/ebird-api-terms-of-use/). The app credits eBird.org, with a link, wherever it shows that data.
+
 ## Project structure
 
 ```text
@@ -142,6 +150,7 @@ cbc-circle-manager/
 │   ├── App.tsx
 │   └── main.tsx
 ├── DESIGN.md
+├── LICENSE.md
 ├── index.html
 ├── package.json
 ├── tsconfig.json

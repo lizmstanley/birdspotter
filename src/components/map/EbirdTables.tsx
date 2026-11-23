@@ -1,4 +1,5 @@
 import type { EbirdHotspot, EbirdObservation } from '../../services/ebird.ts';
+import { EbirdCredit } from './EbirdCredit.tsx';
 import { areaLabel } from './mapText.ts';
 
 export type WithArea<T> = T & { area: string | null };
@@ -37,6 +38,7 @@ export function SightingsTable({ circleCode, rows, hasAreas }: TableProps<EbirdO
           ))}
         </tbody>
       </table>
+      <EbirdCredit />
     </details>
   );
 }
@@ -71,6 +73,7 @@ export function HotspotsTable({ circleCode, rows, hasAreas }: TableProps<EbirdHo
           ))}
         </tbody>
       </table>
+      <EbirdCredit />
     </details>
   );
 }

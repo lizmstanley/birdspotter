@@ -26,8 +26,14 @@ test('hotspot names are escaped in both popups', () => {
 });
 
 test('only the click popup links to eBird', () => {
-  assert.doesNotMatch(hotspotHoverHtml(hotspot), /ebird\.org/);
+  assert.doesNotMatch(hotspotHoverHtml(hotspot), /href=/);
   assert.match(hotspotClickHtml(hotspot), /ebird\.org\/hotspot\/L123/);
+});
+
+test('every popup credits eBird.org and the clickable ones link to it', () => {
+  assert.match(hotspotHoverHtml(hotspot), /Data: eBird\.org/);
+  assert.match(hotspotClickHtml(hotspot), /href="https:\/\/ebird\.org"[^>]*>eBird\.org</);
+  assert.match(sightingHtml(sighting), /href="https:\/\/ebird\.org"[^>]*>eBird\.org</);
 });
 
 test('a hotspot without a latest observation omits that line', () => {

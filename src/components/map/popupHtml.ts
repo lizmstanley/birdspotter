@@ -1,5 +1,8 @@
-import type { EbirdHotspot, EbirdObservation } from '../../services/ebird.ts';
+import { EBIRD_SITE_URL, type EbirdHotspot, type EbirdObservation } from '../../services/ebird.ts';
 import { escapeHtml } from './mapText.ts';
+
+const EBIRD_SOURCE_TEXT_HTML = '<div class="tooltip-source">Data: eBird.org</div>';
+const EBIRD_SOURCE_LINK_HTML = `<div class="tooltip-source">Data: <a href="${EBIRD_SITE_URL}" target="_blank" rel="noreferrer">eBird.org</a></div>`;
 
 function hotspotSummaryHtml(h: EbirdHotspot): string {
   return `<div class="tooltip-tag tag-hotspot">Hotspot</div>
@@ -9,12 +12,13 @@ function hotspotSummaryHtml(h: EbirdHotspot): string {
 }
 
 export function hotspotHoverHtml(h: EbirdHotspot): string {
-  return `<div class="map-tooltip">${hotspotSummaryHtml(h)}</div>`;
+  return `<div class="map-tooltip">${hotspotSummaryHtml(h)}${EBIRD_SOURCE_TEXT_HTML}</div>`;
 }
 
 export function hotspotClickHtml(h: EbirdHotspot): string {
   return `<div class="map-tooltip">${hotspotSummaryHtml(h)}
           <div><a href="https://ebird.org/hotspot/${encodeURIComponent(h.locId)}" target="_blank" rel="noreferrer">Open in eBird &rarr;</a></div>
+          ${EBIRD_SOURCE_LINK_HTML}
         </div>`;
 }
 
@@ -27,5 +31,6 @@ export function sightingHtml(s: EbirdObservation): string {
         <div>Location: ${escapeHtml(s.locName)}</div>
         <div>Date: ${escapeHtml(s.obsDt)}</div>
         <div><a href="https://ebird.org/checklist/${encodeURIComponent(s.subId)}" target="_blank" rel="noreferrer">View Checklist &rarr;</a></div>
+        ${EBIRD_SOURCE_LINK_HTML}
       </div>`;
 }

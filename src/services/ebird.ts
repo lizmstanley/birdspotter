@@ -1,8 +1,11 @@
 import { circle } from '@turf/circle';
 import { CBC_CIRCLE_RADIUS_MILES } from './cbcCircle.ts';
+import { readTodaysCopy, saveTodaysCopy } from './ebirdCache.ts';
 import { isLatitude, isLongitude } from './coordinates.ts';
 import { EbirdKeyRejectedError, EbirdRequestError, UnexpectedResponseError } from './errors.ts';
 import { FETCH_TIMEOUT_MS, isRecord } from './http.ts';
+
+export const EBIRD_SITE_URL = 'https://ebird.org';
 
 const EBIRD_KEY_REJECTED_STATUS = 403;
 
@@ -72,6 +75,8 @@ async function fetchEbirdList<T>(
   apiKey: string,
   isItem: (value: unknown) => value is T
 ): Promise<T[]> {
+  const saved = readTodaysCopy(url, isItem);
+  if (saved) return saved;
   const res = await fetch(url, {
     headers: { 'X-eBirdApiToken': apiKey.trim() },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -80,6 +85,7 @@ async function fetchEbirdList<T>(
   if (!res.ok) throw new EbirdRequestError(endpoint, res.status, await res.text());
   const body: unknown = await res.json();
   if (!Array.isArray(body) || !body.every(isItem)) throw new UnexpectedResponseError('ebird', endpoint);
+  saveTodaysCopy(url, body);
   return body;
 }
 
