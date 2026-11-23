@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
 import * as XLSX from 'xlsx';
+import { isAudubonExport, mapAudubonRows } from '../services/audubonImport';
 import type { AssignmentRow, ImportedParticipantRow } from '../db/pgliteDb';
 
 interface Props {
@@ -38,6 +39,7 @@ export function SpreadsheetImporter({ circleCode, assignments, onImport, onClear
     typeCol: '',
     noteCol: '',
   });
+  const [isAudubon, setIsAudubon] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -54,6 +56,7 @@ export function SpreadsheetImporter({ circleCode, assignments, onImport, onClear
 
     const cols = parsed.length > 0 ? Object.keys(parsed[0]) : [];
     setHeaders(cols);
+    setIsAudubon(isAudubonExport(cols));
     setRawRows(parsed);
     setMapping({
       nameCol: guessColumn(cols, [/name/i, /participant/i, /birder/i, /nickname/i]),
@@ -66,21 +69,23 @@ export function SpreadsheetImporter({ circleCode, assignments, onImport, onClear
   }
 
   async function runImport() {
-    if (!mapping.emailCol) {
+    if (!isAudubon && !mapping.emailCol) {
       setStatus('Please select an Email column first.');
       return;
     }
     setBusy(true);
     setStatus(null);
     try {
-      const mapped: ImportedParticipantRow[] = rawRows.map((row) => ({
-        full_name: mapping.nameCol ? String(row[mapping.nameCol] ?? '') : '',
-        email: String(row[mapping.emailCol] ?? ''),
-        area_code: mapping.areaCol ? String(row[mapping.areaCol] ?? '') : null,
-        rsvp_status: mapping.rsvpCol ? String(row[mapping.rsvpCol] ?? '') : 'confirmed',
-        counter_type: mapping.typeCol ? String(row[mapping.typeCol] ?? '') : 'field',
-        note: mapping.noteCol ? String(row[mapping.noteCol] ?? '') : '',
-      }));
+      const mapped: ImportedParticipantRow[] = isAudubon
+        ? mapAudubonRows(rawRows)
+        : rawRows.map((row) => ({
+          full_name: mapping.nameCol ? String(row[mapping.nameCol] ?? '') : '',
+          email: String(row[mapping.emailCol] ?? ''),
+          area_code: mapping.areaCol ? String(row[mapping.areaCol] ?? '') : null,
+          rsvp_status: mapping.rsvpCol ? String(row[mapping.rsvpCol] ?? '') : 'confirmed',
+          counter_type: mapping.typeCol ? String(row[mapping.typeCol] ?? '') : 'field',
+          note: mapping.noteCol ? String(row[mapping.noteCol] ?? '') : '',
+          }));
       const res = await onImport(mapped);
       setStatus(`Imported ${res.imported} participant rows into your local browser database.`);
     } catch (err) {
@@ -167,10 +172,12 @@ export function SpreadsheetImporter({ circleCode, assignments, onImport, onClear
         {headers.length > 0 && (
           <div className="mapper">
             <p>
-              Loaded <strong>{rawRows.length}</strong> rows from <code>{fileName}</code>. Map your
-              columns below:
+              Loaded <strong>{rawRows.length}</strong> rows from <code>{fileName}</code>.{' '}
+              {isAudubon
+                ? 'This is an Audubon participant list. Names, emails, sectors, and notes are read automatically. People marked Registered are confirmed; everyone else has no response yet.'
+                : 'Map your columns below:'}
             </p>
-            <div className="mapper-grid">
+            <div className="mapper-grid" hidden={isAudubon}>
               {(
                 [
                   ['emailCol', 'Email (required)'],

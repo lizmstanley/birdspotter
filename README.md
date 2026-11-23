@@ -14,7 +14,7 @@ The roster lives in a PostgreSQL database that runs inside the browser ([PGlite]
 - **Outreach:** reminder and outreach lists with a Copy BCC button. Outreach skips people marked removed, no-show, moved away, deceased, or external contact. It also skips anyone already in the Google Group and any email marked bouncing.
 - **Map:** a draggable 15-mile-diameter circle on MapLibre GL, with OpenStreetMap street tiles or Esri satellite tiles. Imported area polygons are shown with hover and click-through to each area.
 - **eBird scouting:** hotspots and recent sightings within the circle's radius, using your own eBird API key. The key is stored only in your browser's `localStorage`.
-- **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`), export the roster to Excel or CSV, and export or restore a full JSON backup.
+- **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) with column mapping, or the participant list exported from your Audubon circle page, which is read with no mapping, export the roster to Excel or CSV, and export or restore a full JSON backup.
 
 ## Run it
 

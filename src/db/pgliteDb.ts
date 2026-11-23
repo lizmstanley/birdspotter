@@ -126,6 +126,7 @@ function computeSortOrder(code: string): number {
 
 function normalizeRsvp(raw?: string): string {
   const t = (raw ?? '').trim().toLowerCase();
+  if (t === 'no_response') return 'no_response';
   if (!t || t.includes('yes') || t === 'confirmed') return 'confirmed';
   if (t.includes('undecided') || t.includes('maybe')) return 'undecided';
   if (t.includes('remove')) return 'declined_remove';
@@ -678,6 +679,12 @@ export class LocalCbcDb {
         let personId: number;
         if (existing.rows[0]) {
           personId = existing.rows[0].person_id;
+          if (r.in_audubon_list) {
+            await tx.query(
+              'UPDATE public.person_emails SET in_audubon_list = TRUE WHERE circle_code = $1 AND email = $2',
+              [circleCode, email]
+            );
+          }
         } else {
           const inserted = await tx.query<{ id: number }>(
             `INSERT INTO public.people (circle_code, full_name, roster_status)
