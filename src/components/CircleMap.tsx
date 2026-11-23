@@ -3,7 +3,7 @@
  * with hover highlighting & click-to-open area details, and BYOK eBird scouting map.
  * Zero dependency on CBC roster tables—can be lifted directly into Aviscout.
  */
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -62,12 +62,12 @@ export interface CircleMapProps {
     count_date?: string | null;
     audubon_url?: string | null;
   }) => Promise<void>;
-  onOpenHelp?: () => void;
+  /** The compiler's eBird API key, the same for every circle. Empty when none is saved. */
+  ebirdApiKey: string;
 }
 
 type BasemapKind = 'street' | 'satellite';
 
-const EBIRD_KEY_STORAGE = 'cbc_ebird_api_key';
 
 const BINOCULARS_SVG = `
 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -98,6 +98,21 @@ function escapeHtml(text: string): string {
 
 function isOuterCircleBoundary(code: string, label?: string | null): boolean {
   return isOuterCircleName(`${code} ${label ?? ''}`);
+}
+
+const NEEDS_KEY_TITLE = 'Add your free eBird API key on the Help & API Keys tab to use this.';
+
+/**
+ * Browsers show no tooltip on a disabled control, so without a key the control sits in a span
+ * that carries the tooltip instead.
+ */
+function NeedsEbirdKey({ hasKey, children }: { hasKey: boolean; children: ReactNode }) {
+  if (hasKey) return <>{children}</>;
+  return (
+    <span className="needs-key" title={NEEDS_KEY_TITLE}>
+      {children}
+    </span>
+  );
 }
 
 function areaLabel(code: string | null): string {
@@ -153,7 +168,7 @@ export function CircleMap({
   onImportBoundaries,
   onClearBoundaries,
   onSaveScoutedCircle,
-  onOpenHelp,
+  ebirdApiKey,
 }: CircleMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -205,7 +220,6 @@ export function CircleMap({
   const isScoutingRef = useRef(isScouting);
   isScoutingRef.current = isScouting;
 
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem(EBIRD_KEY_STORAGE) ?? '');
   const [backDays, setBackDays] = useState(7);
   const [hotspots, setHotspots] = useState<EbirdHotspot[]>([]);
   const [sightings, setSightings] = useState<EbirdObservation[]>([]);
@@ -632,22 +646,17 @@ export function CircleMap({
     }
   }
 
-  function handleSaveKey(val: string) {
-    setApiKey(val);
-    localStorage.setItem(EBIRD_KEY_STORAGE, val.trim());
-  }
-
   async function handleFetchEbird() {
-    if (!apiKey.trim()) {
-      setStatus('Enter your personal eBird API key first (see Help & API Keys tab).');
+    if (!ebirdApiKey) {
+      setStatus('Add your free eBird API key on the Help & API Keys tab first.');
       return;
     }
     setBusy(true);
     setStatus(null);
     try {
       const [hs, obs] = await Promise.all([
-        fetchHotspotsInCircle(apiKey, effectiveLat, effectiveLng, radiusMiles),
-        fetchRecentSightingsInCircle(apiKey, effectiveLat, effectiveLng, radiusMiles, backDays),
+        fetchHotspotsInCircle(ebirdApiKey, effectiveLat, effectiveLng, radiusMiles),
+        fetchRecentSightingsInCircle(ebirdApiKey, effectiveLat, effectiveLng, radiusMiles, backDays),
       ]);
       setHotspots(hs);
       setSightings(obs);
@@ -796,7 +805,7 @@ export function CircleMap({
             type="button"
             className="btn-primary"
             disabled={scoutSearching}
-            title="Look at any circle or town on the map without adding it to My Circles"
+            title="Look at any circle or town on the map without adding it to My Circles. Loading its hotspots and sightings needs an eBird key."
             onClick={() => void handleScoutSearch()}
           >
             {scoutSearching ? 'Searching...' : 'Scout Location'}
@@ -886,32 +895,29 @@ export function CircleMap({
         </div>
 
         <div className="ebird-bar">
-          <input
-            type="password"
-            placeholder="Your eBird API Key (stored locally)"
-            title="Your free eBird API key. It's saved only in this browser and sent only to eBird."
-            value={apiKey}
-            onChange={(e) => handleSaveKey(e.target.value)}
-          />
-          <select value={backDays} onChange={(e) => setBackDays(Number(e.target.value))}>
+          <NeedsEbirdKey hasKey={Boolean(ebirdApiKey)}>
+          <select
+            value={backDays}
+            disabled={!ebirdApiKey}
+            title="How far back to look for recent sightings"
+            onChange={(e) => setBackDays(Number(e.target.value))}
+          >
             <option value={3}>Last 3 days</option>
             <option value={7}>Last 7 days</option>
             <option value={14}>Last 14 days</option>
             <option value={30}>Last 30 days</option>
           </select>
-          <button
-            className="btn-primary"
-            disabled={busy}
-            title="Ask eBird for hotspots and recent sightings inside the circle. Needs your eBird API key."
-            onClick={() => void handleFetchEbird()}
-          >
-            {busy ? 'Fetching eBird...' : 'Load Hotspots & Sightings'}
-          </button>
-          {onOpenHelp && (
-            <button type="button" onClick={onOpenHelp}>
-              Need an API Key?
+          </NeedsEbirdKey>
+          <NeedsEbirdKey hasKey={Boolean(ebirdApiKey)}>
+            <button
+              className="btn-primary"
+              disabled={busy || !ebirdApiKey}
+              title="Ask eBird for hotspots and recent sightings inside the circle"
+              onClick={() => void handleFetchEbird()}
+            >
+              {busy ? 'Fetching eBird...' : 'Load Hotspots & Sightings'}
             </button>
-          )}
+          </NeedsEbirdKey>
         </div>
 
         {!isScouting && (

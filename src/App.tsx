@@ -39,6 +39,17 @@ import {
 // Shared links always point at the hosted copy, even from a copy running on someone's own computer.
 const HOSTED_APP_URL = 'https://lizmstanley.github.io/cbc-circle-manager/';
 
+const EBIRD_KEY_STORAGE = 'cbc_ebird_api_key';
+
+function loadEbirdKey(): string {
+  try {
+    return localStorage.getItem(EBIRD_KEY_STORAGE)?.trim() ?? '';
+  } catch {
+    // Storage can be blocked (private windows, strict settings); the app then works without a saved key.
+    return '';
+  }
+}
+
 type Tab ='assignments' | 'open' | 'results' | 'outreach' | 'map' | 'areas' | 'area' | 'import' | 'help';
 type AreaReturnTab = 'map' | 'areas' | 'results';
 
@@ -58,6 +69,7 @@ export function App() {
   const [editCountDate, setEditCountDate] = useState('');
   const [refreshingAudubon, setRefreshingAudubon] = useState(false);
   const [historyPersonId, setHistoryPersonId] = useState<number | null>(null);
+  const [ebirdApiKey, setEbirdApiKey] = useState(loadEbirdKey);
   const backupInputRef = useRef<HTMLInputElement | null>(null);
   const autoSaveHandleRef = useRef<FileHandleLike | null>(null);
   const autoSaveTimerRef = useRef<number | null>(null);
@@ -518,6 +530,17 @@ export function App() {
     });
   }
 
+  function saveEbirdKey(key: string) {
+    const trimmed = key.trim();
+    setEbirdApiKey(trimmed);
+    try {
+      if (trimmed) localStorage.setItem(EBIRD_KEY_STORAGE, trimmed);
+      else localStorage.removeItem(EBIRD_KEY_STORAGE);
+    } catch {
+      setError('Your browser blocked saving the eBird key. It works until you close this tab.');
+    }
+  }
+
   async function handleShareApp() {
     const shareData = {
       title: 'CBC Circle Manager',
@@ -615,6 +638,7 @@ export function App() {
               onChange={(e) => void handleSelectCircle(e.target.value)}
               disabled={savedCircles.length === 0}
             >
+              {savedCircles.length === 0 && <option value="">Add a circle</option>}
               {savedCircles.map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.code} — {c.name}
@@ -894,7 +918,24 @@ export function App() {
         <div className="card">Booting local PostgreSQL (PGlite)...</div>
       ) : (
         <main>
-          {tab === 'assignments' && (
+          {!activeCircle && tab !== 'help' && !showAddCircle && (
+            <div className="card first-circle-card">
+              <h2>Add your first circle to get started</h2>
+              <p>
+                A circle is one Christmas Bird Count. Add yours by its Audubon code (like <code>MNBL</code>) or a town
+                name, from a KML file of your count areas, or by entering the center coordinates.
+              </p>
+              <p className="muted">
+                Then import your participant list on the <strong>Import / Export Participants</strong> tab. Already used
+                the app somewhere else? Use <strong>Restore Backup</strong> at the top instead.
+              </p>
+              <button type="button" className="btn-primary" onClick={() => setShowAddCircle(true)}>
+                + Add Circle
+              </button>
+            </div>
+          )}
+
+          {tab === 'assignments' && activeCircle && (
             <div className="card">
               <h2>
                 {activeCircle ? `${activeCircle.code} — ` : ''}Current Season Assignments
@@ -966,7 +1007,7 @@ export function App() {
             </div>
           )}
 
-          {tab === 'open' && (
+          {tab === 'open' && activeCircle && (
             <div className="stack">
               <div className="card">
                 <h2>
@@ -1075,7 +1116,7 @@ export function App() {
             </div>
           )}
 
-          {tab === 'outreach' && (
+          {tab === 'outreach' && activeCircle && (
             <div className="stack">
               <div className="card">
                 <div className="card-header">
@@ -1183,7 +1224,7 @@ export function App() {
               onImportBoundaries={handleImportBoundaries}
               onClearBoundaries={handleClearBoundaries}
               onSaveScoutedCircle={handleCreateCircle}
-              onOpenHelp={() => setTab('help')}
+              ebirdApiKey={ebirdApiKey}
             />
           )}
 
@@ -1230,8 +1271,8 @@ export function App() {
             />
           )}
 
-          {tab === 'import' && <SpreadsheetImporter circleCode={activeCircle?.code} assignments={assignments} areas={areas} onImport={handleImport} onClearRoster={handleClearRoster} />}
-          {tab === 'help' && <HelpPage />}
+          {tab === 'import' && activeCircle && <SpreadsheetImporter circleCode={activeCircle?.code} assignments={assignments} areas={areas} onImport={handleImport} onClearRoster={handleClearRoster} />}
+          {tab === 'help' && <HelpPage ebirdApiKey={ebirdApiKey} onSaveEbirdKey={saveEbirdKey} />}
         </main>
       )}
 

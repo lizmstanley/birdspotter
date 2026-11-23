@@ -507,6 +507,16 @@ tbody tr:hover {
   min-width: 210px;
 }
 
+/* Wraps a control that needs an eBird key, so its tooltip shows while the control is disabled. */
+.needs-key {
+  display: inline-flex;
+  cursor: not-allowed;
+}
+
+.needs-key > :disabled {
+  pointer-events: none;
+}
+
 .map-container {
   width: 100%;
   /* Tall enough to show the whole circle at a useful size; the map zooms to fit the circle. */
@@ -562,6 +572,12 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.first-circle-card {
+  max-width: 720px;
+  margin: 24px auto;
+  text-align: center;
 }
 
 .collapsible-card > summary {

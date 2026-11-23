@@ -1,6 +1,18 @@
+import { useState } from 'react';
+
 export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/cbc-circle-manager/discussions';
 
-export function HelpPage() {
+interface Props {
+  /** The saved eBird API key, or empty. */
+  ebirdApiKey: string;
+  /** Saves the key for every circle; an empty string removes it. */
+  onSaveEbirdKey: (key: string) => void;
+}
+
+export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
+  const [draftKey, setDraftKey] = useState(ebirdApiKey);
+  const isChanged = draftKey.trim() !== ebirdApiKey;
+
   return (
     <div className="stack">
       <div className="card">
@@ -25,15 +37,46 @@ export function HelpPage() {
             <code>Personal Christmas Bird Count circle scouting and hotspot mapping</code>).
           </li>
           <li>
-            Cornell Lab issues your personal key immediately. Copy the key, open the{' '}
-            <strong>Map &amp; eBird Scout</strong> tab, and paste it into the{' '}
-            <strong>Your eBird API Key</strong> box.
+            Cornell Lab issues your personal key immediately. Copy it, paste it into the box below, and
+            click <strong>Save Key</strong>. One key works for every circle and for scouting.
           </li>
           <li>
             Your key is saved only in your browser&apos;s <code>localStorage</code> and sent
             directly from your browser to <code>api.ebird.org</code>.
           </li>
         </ol>
+
+        <div className="ebird-bar">
+          <input
+            type="password"
+            aria-label="Your eBird API key"
+            placeholder="Paste your eBird API key"
+            autoComplete="off"
+            value={draftKey}
+            onChange={(e) => setDraftKey(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!isChanged || !draftKey.trim()}
+            onClick={() => onSaveEbirdKey(draftKey)}
+          >
+            Save Key
+          </button>
+          {ebirdApiKey && (
+            <button
+              type="button"
+              title="Forget the key in this browser"
+              onClick={() => {
+                setDraftKey('');
+                onSaveEbirdKey('');
+              }}
+            >
+              Remove Key
+            </button>
+          )}
+          <span className="muted">{ebirdApiKey ? 'A key is saved.' : 'No key saved yet.'}</span>
+        </div>
       </div>
 
       <div className="card">

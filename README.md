@@ -28,7 +28,7 @@ Hover over a recent sighting to see the species, count, place, and date, with a 
 
 ## Before you start
 
-- **It's bring your own key (BYOK).** The map's eBird hotspots and recent sightings need your own eBird API key. The key is free: request one at [ebird.org/api/keygen](https://ebird.org/api/keygen) and paste it into the map page. It's stored only in your browser's `localStorage`. Everything else works without a key.
+- **It's bring your own key (BYOK).** The map's eBird hotspots and recent sightings need your own eBird API key. The key is free: request one at [ebird.org/api/keygen](https://ebird.org/api/keygen) and save it on the **Help & API Keys** tab. One key works for every circle and for scouting. It's stored only in your browser's `localStorage`. Everything else works without a key.
 - **It doesn't draw areas.** The app shows the 15-mile circle, but it can't draw your count areas (sectors) on it. If you want area outlines on the map, make them somewhere else and import them as a KML, KMZ, or GeoJSON file. As far as I know, the Audubon site doesn't export area boundaries. Google My Maps does: draw each area as a shape, name it with its area code (for example `12 - Richfield`), and export the map to KML.
 
 ## Features
