@@ -1,0 +1,23 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for a semantic prefix
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|docs|chore|refactor|test|ci|perf|build|style|revert)(\([a-z0-9-]+\))?!?: [^ ].*'
+          if [[ "$TITLE" =~ $pattern ]]; then
+            echo "PR title is semantic: $TITLE"
+            exit 0
+          fi
+          echo "::error::PR title must start with a type such as 'feat: ', 'fix: ', 'docs: ', 'chore: ', 'refactor: ', 'test: ', or 'ci: '. Got: $TITLE"
+          exit 1
