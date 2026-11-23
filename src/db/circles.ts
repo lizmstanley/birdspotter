@@ -1,21 +1,35 @@
 import type { PGlite } from '@electric-sql/pglite';
+import { countDateInSeason } from '../services/countDay.ts';
+import { seasonInPreparation } from '../services/season.ts';
+import { CountDateOutsideSeasonError } from './errors.ts';
+import type { Queryable } from './queryable.ts';
 import type { CircleInfoInput, CircleInput, SavedCircle } from './types.ts';
+
+async function currentSeasonOf(db: Queryable, code: string): Promise<number> {
+  const res = await db.query<{ year: number }>(
+    'SELECT year FROM public.count_years WHERE circle_code = $1 AND is_current',
+    [code]
+  );
+  return res.rows[0]?.year ?? seasonInPreparation(new Date());
+}
 
 export async function getSavedCircles(db: PGlite): Promise<SavedCircle[]> {
   const res = await db.query<SavedCircle>(
-    `SELECT code, name, state_province, center_lat, center_lng, radius_miles, is_favorite, is_active,
-            compiler_name, compiler_email, count_date, audubon_url
-     FROM public.saved_circles
-     ORDER BY is_active DESC, name ASC`
+    `SELECT sc.code, sc.name, sc.state_province, sc.center_lat, sc.center_lng, sc.radius_miles,
+            sc.is_favorite, sc.is_active, sc.compiler_name, sc.compiler_email, sc.count_date,
+            sc.audubon_url, cy.year AS current_year
+     FROM public.saved_circles sc
+     LEFT JOIN public.count_years cy ON cy.circle_code = sc.code AND cy.is_current
+     ORDER BY sc.is_active DESC, sc.name ASC`
   );
   return res.rows;
 }
 
 export async function upsertFavoriteCircle(db: PGlite, circle: CircleInput): Promise<void> {
   const code = circle.code.trim().toUpperCase();
-  const currentYear = new Date().getFullYear();
 
   await db.transaction(async (tx) => {
+    const season = await currentSeasonOf(tx, code);
     if (circle.setActive) {
       await tx.query('UPDATE public.saved_circles SET is_active = FALSE WHERE is_active = TRUE');
     }
@@ -46,7 +60,8 @@ export async function upsertFavoriteCircle(db: PGlite, circle: CircleInput): Pro
         Boolean(circle.setActive),
         circle.compiler_name ?? null,
         circle.compiler_email ?? null,
-        circle.count_date ?? null,
+        // A date from a past season on the Audubon page or ArcGIS is not this season's count day.
+        countDateInSeason(circle.count_date, season),
         circle.audubon_url ?? null,
       ]
     );
@@ -59,7 +74,7 @@ export async function upsertFavoriteCircle(db: PGlite, circle: CircleInput): Pro
          SELECT 1 FROM public.count_years WHERE circle_code = $1 AND is_current = TRUE
        )
        ON CONFLICT (circle_code, year) DO NOTHING`,
-      [code, currentYear]
+      [code, season]
     );
   });
 }
@@ -103,11 +118,17 @@ export async function renameCircle(db: PGlite, code: string, newName: string): P
   );
 }
 
+/** @throws CountDateOutsideSeasonError when the count date is not a real day in the season's window */
 export async function updateCircleInfo(
   db: PGlite,
   code: string,
   info: CircleInfoInput
 ): Promise<void> {
+  const season = await currentSeasonOf(db, code);
+  const typedDate = info.count_date?.trim() || null;
+  const countDate = countDateInSeason(typedDate, season);
+  if (typedDate && !countDate) throw new CountDateOutsideSeasonError(code, typedDate, season);
+
   await db.query(
     `UPDATE public.saved_circles
      SET compiler_name = $1,
@@ -118,7 +139,7 @@ export async function updateCircleInfo(
     [
       info.compiler_name?.trim() || null,
       info.compiler_email?.trim() || null,
-      info.count_date?.trim() || null,
+      countDate,
       info.audubon_url?.trim() || null,
       code,
     ]

@@ -89,7 +89,7 @@ export function CircleStats({
         ) : (
           <>
             <div className="stat-value">&mdash;</div>
-            <div className="stat-sub">Starts on count day, {countDate}</div>
+            <div className="stat-sub">Starts on {countDate ? `count day, ${countDate}` : 'Dec 14, when the count window opens'}</div>
           </>
         )}
       </ClickableCard>

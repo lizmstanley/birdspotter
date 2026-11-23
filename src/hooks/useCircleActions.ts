@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { NewCirclePayload } from '../components/AddCirclePanel';
 import type { CircleInfoInput } from '../components/CircleInfoBar';
 import { fetchAudubonCircleDetails } from '../services/audubonCirclePage';
+import { countDateInSeason } from '../services/countDay';
 import { describeError } from '../services/describeError';
 import { failuresToError, type ActionContext } from './actionContext';
 
@@ -118,14 +119,21 @@ export function useCircleActions(
         setError(`No Audubon circle page found for ${circle.code}.`);
         return;
       }
+      const season = circle.current_year;
+      const audubonDate = season === null ? null : countDateInSeason(details.countDate, season);
+      const savedDate = season === null ? null : countDateInSeason(circle.count_date, season);
       await db.updateCircleInfo(circle.code, {
         compiler_name: details.compilerName ?? circle.compiler_name,
         compiler_email: details.compilerEmail ?? circle.compiler_email,
-        count_date: details.countDate ?? circle.count_date,
+        count_date: audubonDate ?? savedDate,
         audubon_url: details.pageUrl,
       });
       await reload();
-      flash(`Updated ${circle.code} count date and compiler from Audubon.`);
+      flash(
+        audubonDate || !details.countDate
+          ? `Updated ${circle.code} count date and compiler from Audubon.`
+          : `Updated ${circle.code} compiler from Audubon. Its count date, ${details.countDate}, is not in the ${season} season, so it was not used.`
+      );
     } catch (err) {
       setError(`Audubon refresh failed: ${describeError(err)}`);
     } finally {

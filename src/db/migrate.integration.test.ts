@@ -65,6 +65,25 @@ test('a database from before versioning is upgraded and keeps its roster', async
   assert.equal(await scalar(client, `SELECT COUNT(*)::INT FROM public.participations`), 1);
 });
 
+test('results already marked received move to the current season', async () => {
+  const client = await openMemoryClient();
+  await client.exec(migrations[0].sql);
+  await client.exec(`
+    INSERT INTO public.saved_circles (code, name, center_lat, center_lng) VALUES ('INBL', 'Bloomington', 39.1, -86.5);
+    INSERT INTO public.count_years (circle_code, year, is_current) VALUES ('INBL', 2025, FALSE), ('INBL', 2026, TRUE);
+    INSERT INTO public.areas (circle_code, code, sort_order, results_received) VALUES
+      ('INBL', '1A', 10, TRUE), ('INBL', '2B', 20, FALSE);
+  `);
+
+  await dbOver(client).init();
+
+  const moved = await client.query<{ count_year: number; area_code: string }>(
+    'SELECT count_year, area_code FROM public.area_results'
+  );
+  assert.deepEqual(moved.rows, [{ count_year: 2026, area_code: '1A' }]);
+  assert.equal(await scalar(client, `SELECT COUNT(*)::INT FROM information_schema.columns WHERE table_name = 'areas' AND column_name = 'results_received'`), 0);
+});
+
 test('after the upgrade, deleting an area clears only the assignment', async () => {
   const client = await openUnversionedClient();
   const db = dbOver(client);

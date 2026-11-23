@@ -11,6 +11,7 @@ export interface SavedCircle {
   compiler_email: string | null;
   count_date: string | null;
   audubon_url: string | null;
+  current_year: number | null;
 }
 
 export interface AssignmentRow {
@@ -123,6 +124,11 @@ export interface ImportOptions {
   readonly updateExisting: boolean;
   /** True: the file's emails become the circle's current list, and every other email leaves it. */
   readonly isCurrentList: boolean;
+}
+
+export interface RolloverOptions {
+  /** True: people who had an area last season keep it, with their RSVP reset to no response. */
+  readonly carryAssignments: boolean;
 }
 
 export interface CircleInput {

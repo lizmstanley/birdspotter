@@ -1,5 +1,6 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { normalizeCounterType, normalizeRsvp } from '../services/importPreview.ts';
+import { seasonInPreparation } from '../services/season.ts';
 import { ensureArea } from './areas.ts';
 import { MissingDefaultRsvpError } from './errors.ts';
 import type { ImportedParticipantRow, ImportOptions } from './types.ts';
@@ -34,7 +35,7 @@ export async function importParticipants(
       'SELECT year FROM public.count_years WHERE circle_code = $1 AND is_current = TRUE LIMIT 1',
       [circleCode]
     );
-    const currentYear = yearRes.rows[0]?.year ?? new Date().getFullYear();
+    const currentYear = yearRes.rows[0]?.year ?? seasonInPreparation(new Date());
     await tx.query(
       `INSERT INTO public.count_years (circle_code, year, is_current)
        VALUES ($1, $2, TRUE)
