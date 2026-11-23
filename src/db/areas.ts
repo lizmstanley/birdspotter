@@ -116,6 +116,7 @@ export async function clearCircleBoundaries(db: PGlite, circleCode: string): Pro
   await db.query('DELETE FROM public.circle_boundaries WHERE circle_code = $1', [circleCode]);
 }
 
+/** @returns the circle's existing code that matches `code` ignoring case, or `code` after adding it */
 export async function ensureArea(
   tx: Transaction,
   circleCode: string,

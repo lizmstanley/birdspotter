@@ -5,6 +5,7 @@
  * Intentionally decoupled from PGlite so it can be reused directly in Aviscout.
  */
 import { strFromU8, unzipSync } from 'fflate';
+import { InvalidGeoJsonError, InvalidKmlError, KmzMissingKmlError } from './errors.ts';
 
 export interface GeoJsonGeometry {
   type: 'Polygon' | 'MultiPolygon' | 'LineString' | 'Point';
@@ -150,7 +151,7 @@ export function parseKmlText(kmlText: string): ParsedAreaBoundary[] {
   const doc = parser.parseFromString(kmlText, 'application/xml');
   const parseError = doc.querySelector('parsererror');
   if (parseError) {
-    throw new Error('Invalid KML XML file.');
+    throw new InvalidKmlError();
   }
 
   const styleMap = buildKmlStyleLookup(doc);
@@ -230,7 +231,7 @@ export function parseKmzBuffer(buffer: ArrayBuffer): ParsedAreaBoundary[] {
   const kmlNames = Object.keys(entries).filter((name) => name.toLowerCase().endsWith('.kml'));
 
   if (kmlNames.length === 0) {
-    throw new Error('No .kml file found inside the .kmz archive.');
+    throw new KmzMissingKmlError();
   }
 
   const primary =
@@ -252,7 +253,7 @@ export function parseGeoJsonText(jsonText: string): ParsedAreaBoundary[] {
   };
 
   if (parsed.type !== 'FeatureCollection' || !Array.isArray(parsed.features)) {
-    throw new Error('GeoJSON must be a FeatureCollection.');
+    throw new InvalidGeoJsonError();
   }
 
   const results: ParsedAreaBoundary[] = [];

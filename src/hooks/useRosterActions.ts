@@ -6,9 +6,8 @@ import { failuresToError, type ActionContext } from './actionContext';
 export function useRosterActions({ db, activeCircle, reload, flash, setError, confirm }: ActionContext) {
   const backupInputRef = useRef<HTMLInputElement | null>(null);
 
-  async function importRows(rows: ImportedParticipantRow[], options: ImportOptions) {
-    if (!activeCircle) throw new Error('Select or add a circle first.');
-    const res = await db.importParticipants(activeCircle.code, rows, options);
+  async function importRows(circleCode: string, rows: ImportedParticipantRow[], options: ImportOptions) {
+    const res = await db.importParticipants(circleCode, rows, options);
     await reload();
     return res;
   }

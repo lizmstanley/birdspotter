@@ -1,6 +1,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import * as XLSX from 'xlsx';
 import { isAudubonExport, mapAudubonRows } from '../services/audubonImport';
+import { describeError } from '../services/describeError';
 import {
   COUNTER_OPTIONS,
   RSVP_OPTIONS,
@@ -17,10 +18,14 @@ import {
 import type { AreaOption, AssignmentRow, ImportedParticipantRow, ImportOptions } from '../db/pgliteDb';
 
 interface Props {
-  circleCode?: string;
+  circleCode: string;
   assignments: AssignmentRow[];
   areas: AreaOption[];
-  onImport: (rows: ImportedParticipantRow[], options: ImportOptions) => Promise<{ imported: number }>;
+  onImport: (
+    circleCode: string,
+    rows: ImportedParticipantRow[],
+    options: ImportOptions
+  ) => Promise<{ imported: number }>;
   onClearRoster?: () => Promise<void>;
 }
 
@@ -62,10 +67,19 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
     setStatus(null);
     setFileName(file.name);
 
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: 'array' });
-    const firstSheet = wb.Sheets[wb.SheetNames[0]];
-    const parsed = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: '' });
+    let parsed: Record<string, unknown>[];
+    try {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      const firstSheetName = wb.SheetNames.at(0);
+      if (firstSheetName === undefined) {
+        setStatus(`${file.name} has no sheets.`);
+        return;
+      }
+      parsed = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[firstSheetName], { defval: '' });
+    } catch (err) {
+      setStatus(`Could not read ${file.name}: ${describeError(err)}`);
+      return;
+    }
 
     const cols = parsed.length > 0 ? Object.keys(parsed[0]) : [];
     setHeaders(cols);
@@ -130,10 +144,10 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
       const options: ImportOptions = isAudubon
         ? { defaultRsvp: 'no_response', updateExisting: false, isCurrentList: false }
         : { defaultRsvp: defaultRsvp || undefined, updateExisting: true, isCurrentList };
-      const res = await onImport(mappedRows, options);
+      const res = await onImport(circleCode, mappedRows, options);
       setStatus(`Imported ${res.imported} participant rows into your local browser database.`);
     } catch (err) {
-      setStatus(`Import error: ${err instanceof Error ? err.message : String(err)}`);
+      setStatus(`Import error: ${describeError(err)}`);
     } finally {
       setBusy(false);
     }
@@ -201,7 +215,7 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
 
   function exportRoster(format: 'xlsx' | 'csv') {
     const exportRows = assignments.map((row) => ({
-      Circle: circleCode ?? '',
+      Circle: circleCode,
       Area: row.area ?? 'Unassigned',
       Cities: row.cities ?? '',
       Full_Name: row.full_name,
@@ -217,7 +231,7 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Participants');
     const dateStamp = new Date().toISOString().slice(0, 10);
-    const baseName = `${(circleCode || 'cbc').toLowerCase()}-participants-${dateStamp}`;
+    const baseName = `${circleCode.toLowerCase()}-participants-${dateStamp}`;
 
     if (format === 'xlsx') {
       XLSX.writeFile(wb, `${baseName}.xlsx`);
@@ -232,7 +246,7 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
       <div className="card">
         <div className="card-header">
           <div>
-            <h2>Export Participant Roster{circleCode ? ` — ${circleCode}` : ''}</h2>
+            <h2>Export Participant Roster — {circleCode}</h2>
             <p className="muted">
               Download your current circle&apos;s participant list, area assignments, emails, and notes as Excel (.xlsx) or CSV (.csv).
             </p>
@@ -261,7 +275,7 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
 
       <div className="card">
         <div className="card-header">
-          <h2>Import Participant Roster (.xlsx or .csv){circleCode ? ` — ${circleCode}` : ''}</h2>
+          <h2>Import Participant Roster (.xlsx or .csv) — {circleCode}</h2>
           {onClearRoster && (
             <button
               type="button"

@@ -31,7 +31,7 @@ export interface CircleMapProps {
   onSelectArea?: (areaCode: string, label?: string | null) => void;
   onImportBoundaries?: (boundaries: ParsedAreaBoundary[]) => Promise<{ saved: number }>;
   onClearBoundaries?: () => Promise<void>;
-  onSaveScoutedCircle?: (circle: ScoutedCircleDraft) => Promise<void>;
+  onSaveScoutedCircle?: (circle: ScoutedCircleDraft) => Promise<boolean>;
   /** The compiler's eBird API key, the same for every circle. Empty when none is saved. */
   ebirdApiKey: string;
 }

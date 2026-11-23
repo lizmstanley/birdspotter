@@ -30,17 +30,19 @@ export function useCircleActions(
     });
   }
 
-  async function createCircle(payload: NewCirclePayload) {
+  /** @returns true when the circle was added */
+  async function createCircle(payload: NewCirclePayload): Promise<boolean> {
     const code = payload.code.trim().toUpperCase();
     if (savedCircleCodes.includes(code)) {
       setError(
         `Circle ${code} is already in My Circles. Select it from the list, or add the new circle with a different code.`
       );
-      return;
+      return false;
     }
+    let isAdded = false;
     await attempt(async () => {
       await db.upsertFavoriteCircle({
-        code: payload.code,
+        code,
         name: payload.name,
         state_province: payload.state_province ?? null,
         center_lat: payload.center_lat,
@@ -55,10 +57,12 @@ export function useCircleActions(
       if (payload.initialBoundaries && payload.initialBoundaries.length > 0) {
         await db.upsertCircleBoundaries(code, payload.initialBoundaries);
       }
+      isAdded = true;
       await reload();
       navigation.afterCreate();
       flash(`Added ${code} (${payload.name}) to My Circles.`);
     });
+    return isAdded;
   }
 
   async function renameActiveCircle() {

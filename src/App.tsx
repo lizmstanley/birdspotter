@@ -30,6 +30,7 @@ import { useSeasonActions } from './hooks/useSeasonActions';
 import { areResultsDue } from './services/countDay';
 import { seasonToRollOverTo } from './services/season';
 import { countCountersByArea } from './services/rosterSummary';
+import { describeError } from './services/describeError';
 import { shareApp } from './services/shareApp';
 import { AREA_RETURN_LABELS, type AreaReturnTab, type SelectedArea, type Tab } from './tabs';
 
@@ -78,8 +79,10 @@ export function App() {
   const activeNavTab: Tab = tab === 'area' ? (selectedArea?.from ?? 'map') : tab;
 
   function copyBcc(emails: string[], label: string) {
-    void navigator.clipboard.writeText(emails.filter(Boolean).join(', '));
-    flash(`Copied ${emails.length} ${label} emails to clipboard.`);
+    navigator.clipboard.writeText(emails.filter(Boolean).join(', ')).then(
+      () => flash(`Copied ${emails.length} ${label} emails to clipboard.`),
+      (err: unknown) => setError(`Copy failed: ${describeError(err)}`)
+    );
   }
 
   function openArea(code: string, label: string | null | undefined, from: AreaReturnTab) {

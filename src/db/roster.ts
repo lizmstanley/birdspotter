@@ -21,7 +21,6 @@ export async function reassignArea(db: PGlite, participationId: number, newAreaC
   );
 }
 
-/** @returns the circle's existing code that matches `code` ignoring case, or `code` after adding it */
 export async function importParticipants(
   db: PGlite,
   circleCode: string,
@@ -89,7 +88,12 @@ export async function importParticipants(
 
       const fileRsvp = r.rsvp_status ? normalizeRsvp(r.rsvp_status) : null;
       const fileCounterType = r.counter_type ? normalizeCounterType(r.counter_type) : null;
-      const newRsvp = fileRsvp ?? options.defaultRsvp;
+      const stored = await tx.query<{ rsvp_status: string }>(
+        `SELECT rsvp_status FROM public.participations
+         WHERE circle_code = $1 AND count_year = $2 AND person_id = $3`,
+        [circleCode, currentYear, personId]
+      );
+      const newRsvp = fileRsvp ?? stored.rows[0]?.rsvp_status ?? options.defaultRsvp;
       if (!newRsvp) throw new MissingDefaultRsvpError(email);
 
       // A value the file does not give keeps the one already stored.

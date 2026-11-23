@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CbcDb } from './cbcDb.ts';
 import { seasonInPreparation } from '../services/season.ts';
-import { CountDateOutsideSeasonError, DatabaseNotOpenError } from './errors.ts';
+import { CircleNotFoundError, CountDateOutsideSeasonError, DatabaseNotOpenError } from './errors.ts';
 import { migrations, openMemoryClient, openTestDb, scalar, viewsSql } from './testing/testDb.ts';
 
 const circle = (code: string, name: string, extra = {}) => ({
@@ -81,6 +81,19 @@ test('only one circle is active at a time', async () => {
 
   const active = (await db.getSavedCircles()).filter((c) => c.is_active).map((c) => c.code);
   assert.deepEqual(active, ['BBBB']);
+});
+
+test('activating an unknown circle is refused and the active circle stays', async () => {
+  const { db } = await openTestDb();
+  await db.upsertFavoriteCircle(circle('AAAA', 'Alpha', { setActive: true }));
+
+  await assert.rejects(
+    db.setActiveCircle('ZZZZ'),
+    (err) => err instanceof CircleNotFoundError && err.circleCode === 'ZZZZ'
+  );
+
+  const active = (await db.getSavedCircles()).filter((c) => c.is_active).map((c) => c.code);
+  assert.deepEqual(active, ['AAAA']);
 });
 
 test('saving a circle again keeps compiler details the new data does not carry', async () => {

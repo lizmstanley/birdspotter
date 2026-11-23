@@ -3,6 +3,7 @@
  * Zero dependency on PGlite or CBC roster state—reusable directly in Aviscout.
  */
 import { circle } from '@turf/circle';
+import { EbirdRequestError } from './errors.ts';
 
 export interface EbirdHotspot {
   locId: string;
@@ -48,7 +49,7 @@ export async function fetchHotspotsInCircle(
     headers: { 'X-eBirdApiToken': apiKey.trim() },
   });
   if (!res.ok) {
-    throw new Error(`eBird hotspots request failed (${res.status}): ${await res.text()}`);
+    throw new EbirdRequestError('hotspots', res.status, await res.text());
   }
   return (await res.json()) as EbirdHotspot[];
 }
@@ -70,7 +71,7 @@ export async function fetchRecentSightingsInCircle(
     headers: { 'X-eBirdApiToken': apiKey.trim() },
   });
   if (!res.ok) {
-    throw new Error(`eBird sightings request failed (${res.status}): ${await res.text()}`);
+    throw new EbirdRequestError('sightings', res.status, await res.text());
   }
   return (await res.json()) as EbirdObservation[];
 }
