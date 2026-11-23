@@ -144,6 +144,21 @@ a:hover {
   background: rgba(255, 255, 255, 0.24);
 }
 
+/* A link that looks like the header buttons around it. */
+.topbar .topbar-link {
+  font-size: 0.875rem;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  text-decoration: none;
+}
+
+.topbar .topbar-link:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
 .topbar button.btn-primary {
   background: var(--amber-500);
   border-color: var(--amber-500);

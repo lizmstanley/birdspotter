@@ -634,6 +634,15 @@ export function App() {
                   : 'Auto-Save: Off'}
             </button>
           )}
+          <a
+            className="topbar-link"
+            href={DISCUSSIONS_URL}
+            target="_blank"
+            rel="noreferrer"
+            title="Questions, ideas, or something not working? Tell me on GitHub Discussions. Opens in a new tab."
+          >
+            Feedback
+          </a>
         </div>
       </header>
 
