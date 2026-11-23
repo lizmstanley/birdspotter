@@ -102,7 +102,9 @@ The Audubon circle page sends no CORS headers (the browser refuses to read it fr
 
 Each address (`localhost:5173` for dev, `localhost:4173` for preview) has its own browser database.
 
-Run the unit tests with `npm test`.
+Run the tests with `npm test`. They include integration tests that run the real schema, migrations, import, and backup code in an in-memory PGlite. `npm run lint` and `npm run typecheck` run in CI on every pull request.
+
+Why the app is built this way: [DESIGN.md](DESIGN.md).
 
 ## Back up your data
 
@@ -121,19 +123,24 @@ If something's confusing, broken, or missing, or you have an idea that would hel
 ```text
 cbc-circle-manager/
 ├── db/
-│   └── migrations/
-│       ├── 001_initial_schema.sql   # Tables, enums, and indexes, all scoped by circle_code
-│       └── 002_views.sql            # Assignments, open areas, reminders, outreach
+│   ├── migrations/                  # Versioned, applied once each, recorded in schema_version
+│   │   ├── 001_initial_schema.sql   # Tables, enums, and indexes, all scoped by circle_code
+│   │   └── 002_catch_up_unversioned_databases.sql
+│   └── views.sql                    # Assignments, open areas, reminders, outreach (re-applied on every start)
 ├── src/
-│   ├── db/pgliteDb.ts               # Browser database: setup, upgrades, queries, backup and restore
-│   ├── services/
-│   │   ├── ebird.ts                 # eBird API v2 client
-│   │   ├── audubonCircles.ts        # Circle search (ArcGIS, then OpenStreetMap Nominatim)
-│   │   ├── audubonCirclePage.ts     # Count date and compiler from the Audubon circle page
-│   │   └── kmlParser.ts             # KML, KMZ, and GeoJSON boundary parser
-│   ├── components/                  # Map, area detail, results, importer, dialogs, help
+│   ├── db/
+│   │   ├── migrations.ts            # Migration runner and file parsing
+│   │   ├── cbcDb.ts                 # Database class the app uses
+│   │   ├── circles.ts, areas.ts, roster.ts, readModels.ts, backup.ts   # Queries by concern
+│   │   ├── legacySingleCircle.ts    # One-time move from the first single-circle format
+│   │   ├── pgliteDb.ts              # Browser setup: IndexedDB storage and bundled migrations
+│   │   └── *.integration.test.ts    # Real PGlite, in memory
+│   ├── services/                    # eBird, Audubon, KML parsing, import checks
+│   ├── hooks/                       # App state and actions
+│   ├── components/                  # Tabs, dialogs, and the map (components/map/)
 │   ├── App.tsx
 │   └── main.tsx
+├── DESIGN.md
 ├── index.html
 ├── package.json
 ├── tsconfig.json
