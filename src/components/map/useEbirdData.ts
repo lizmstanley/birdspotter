@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { describeError } from '../../services/describeError.ts';
 import {
   fetchHotspotsInCircle,
   fetchRecentSightingsInCircle,
@@ -41,7 +42,7 @@ export function useEbirdData({ ebirdApiKey, radiusMiles, setStatus }: EbirdDataO
         `Found ${hs.length} hotspots and ${obs.length} recent species inside ${circleCode}. Hover any icon for details or click to open in eBird.`
       );
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : String(err));
+      setStatus(describeError(err));
     } finally {
       setBusy(false);
     }

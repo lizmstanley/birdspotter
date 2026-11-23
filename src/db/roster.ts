@@ -1,4 +1,4 @@
-import type { PGlite } from '@electric-sql/pglite';
+import type { PGlite, Transaction } from '@electric-sql/pglite';
 import { normalizeCounterType, normalizeRsvp } from '../services/importPreview.ts';
 import { seasonInPreparation } from '../services/season.ts';
 import { ensureArea } from './areas.ts';
@@ -19,6 +19,20 @@ export async function reassignArea(db: PGlite, participationId: number, newAreaC
     'UPDATE public.participations SET assigned_area_code = $1 WHERE id = $2',
     [newAreaCode || null, participationId]
   );
+}
+
+async function storedRsvp(
+  tx: Transaction,
+  circleCode: string,
+  countYear: number,
+  personId: number
+): Promise<string | undefined> {
+  const res = await tx.query<{ rsvp_status: string }>(
+    `SELECT rsvp_status FROM public.participations
+     WHERE circle_code = $1 AND count_year = $2 AND person_id = $3`,
+    [circleCode, countYear, personId]
+  );
+  return res.rows[0]?.rsvp_status;
 }
 
 export async function importParticipants(
@@ -88,12 +102,8 @@ export async function importParticipants(
 
       const fileRsvp = r.rsvp_status ? normalizeRsvp(r.rsvp_status) : null;
       const fileCounterType = r.counter_type ? normalizeCounterType(r.counter_type) : null;
-      const stored = await tx.query<{ rsvp_status: string }>(
-        `SELECT rsvp_status FROM public.participations
-         WHERE circle_code = $1 AND count_year = $2 AND person_id = $3`,
-        [circleCode, currentYear, personId]
-      );
-      const newRsvp = fileRsvp ?? stored.rows[0]?.rsvp_status ?? options.defaultRsvp;
+      const newRsvp =
+        fileRsvp ?? (await storedRsvp(tx, circleCode, currentYear, personId)) ?? options.defaultRsvp;
       if (!newRsvp) throw new MissingDefaultRsvpError(email);
 
       // A value the file does not give keeps the one already stored.

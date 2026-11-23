@@ -66,6 +66,8 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
     if (!file) return;
     setStatus(null);
     setFileName(file.name);
+    setHeaders([]);
+    setRawRows([]);
 
     let parsed: Record<string, unknown>[];
     try {
