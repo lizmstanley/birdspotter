@@ -1,0 +1,30 @@
+# Real volunteer data & PII (NEVER commit)
+*.csv
+*.xlsx
+*.xls
+*-backup*.json
+*-match-review.txt
+etl/aliases.json
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Node / Web
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+
+# Python
+.venv/
+__pycache__/
+
+# OS / Editor
+.DS_Store
+.vscode/
+
+# ETL & backups (real data)
+etl/
+*backup*.json
+*restore*.json
