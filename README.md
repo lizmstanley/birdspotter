@@ -10,7 +10,7 @@ The roster lives in a PostgreSQL database that runs inside your browser ([PGlite
 
 This is the Bloomington, MN circle. I drew the 26 count areas in Google My Maps and imported them as a KML file. The hotspots and recent sightings came from eBird with my own API key.
 
-The top of the page shows the circle's count date and compiler, how many areas are counted, how many people are counting, which areas still need a field counter, and, from count day on, which areas haven't sent in results:
+The top of the page shows the circle's count date and compiler, how many areas are counted, how many people are counting, which areas still need a field counter, and, from count day on, which areas haven't sent in results. **Feedback** and **Share** are in the top right:
 
 ![The top of the page for the Bloomington, MN circle: count date, compiler, and cards for 24 counted areas, 38 active counters, 4 open areas, and awaiting results.](docs/screenshots/overview.jpg)
 
@@ -28,7 +28,7 @@ Hover over a recent sighting to see the species, count, place, and date, with a 
 
 ## Before you start
 
-- **It's bring your own key (BYOK).** The map's eBird hotspots and recent sightings need your own eBird API key. The key is free: request one at [ebird.org/api/keygen](https://ebird.org/api/keygen) and save it on the **Help & API Keys** tab. One key works for every circle and for scouting. It's stored only in your browser's `localStorage`. Everything else works without a key.
+- **It's bring your own key (BYOK).** The map's eBird hotspots and recent sightings need your own eBird API key. Everything else works without one, including scouting a new location. See [Set up your eBird key](#set-up-your-ebird-key).
 - **It doesn't draw areas.** The app shows the 15-mile circle, but it can't draw your count areas (sectors) on it. If you want area outlines on the map, make them somewhere else and import them as a KML, KMZ, or GeoJSON file. As far as I know, the Audubon site doesn't export area boundaries. Google My Maps does: draw each area as a shape, name it with its area code (for example `12 - Richfield`), and export the map to KML.
 
 ## Features
@@ -38,8 +38,19 @@ Hover over a recent sighting to see the species, count, place, and date, with a 
 - **Roster and assignments:** reassign counters between areas, see open areas (areas with no confirmed field counter), and track which areas have sent in results.
 - **Reminders and outreach:** a list of people on your current list who haven't answered yet this season, with a Copy BCC button. Until you mark a current list, it shows every active person who hasn't answered. Possible Outreach lists people on the Audubon list who aren't on your current list, and people on your current list who also have another email that may be old. Tick **This file is my current list** when you import your mailing list. Outreach shows only active and inactive people.
 - **Map:** a draggable 15-mile-diameter circle with OpenStreetMap street tiles or Esri satellite tiles. Imported area outlines highlight when you hover over them, and clicking one opens that area.
-- **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key.
+- **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key. Each hotspot and sighting is listed with the count area it falls in.
 - **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) and match its columns, or import the participant list you export from your Audubon circle page, which needs no setup. You can also export the roster to Excel or CSV, and export or restore a full JSON backup.
+
+## Set up your eBird key
+
+You set the key once, on the **Help & API Keys** tab. It isn't on the map page, and it isn't per circle: one key works for every circle and for scouting.
+
+1. Sign in to eBird and request a free key at [ebird.org/api/keygen](https://ebird.org/api/keygen). For the intended use, something like "Christmas Bird Count circle scouting" is fine. The key shows up right away.
+2. In the app, open the **Help & API Keys** tab.
+3. Paste the key into the box under the steps and click **Save Key**.
+4. Go to **Map & eBird Scout**, pick how many days back you want, and click **Load Hotspots & Sightings**.
+
+Until a key is saved, **Load Hotspots & Sightings** and the days dropdown are grayed out. Hover over them and they tell you where to add the key. The key is saved only in this browser's `localStorage` and is sent only to eBird. To forget it, click **Remove Key** on the same tab. The hosted copy and a copy you run yourself each need the key saved once, because each address has its own browser storage.
 
 ## Import your roster
 
