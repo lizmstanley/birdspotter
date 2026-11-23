@@ -21,6 +21,27 @@ The roster lives in a PostgreSQL database that runs inside your browser ([PGlite
 - **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key.
 - **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) and match its columns, or import the participant list you export from your Audubon circle page, which needs no setup. You can also export the roster to Excel or CSV, and export or restore a full JSON backup.
 
+## Import your roster
+
+You import people on the **Import / Export Participants** tab.
+
+1. Pick the circle in **My Circles**. The import always goes into the circle that's selected.
+2. Under **Import Participant Roster**, choose a `.csv`, `.xlsx`, or `.xls` file. Only the first sheet is read.
+3. Match the columns. The app guesses each one from the header names, and you can change any guess.
+   - **Email** is the only required column. Rows without a valid email are skipped. If the same email shows up again, the later row updates the same person.
+   - **Name**, **Area**, **RSVP**, **Counter Type**, and **Notes** are optional.
+4. Check the value tables. For RSVP and counter type, the app lists each value it found in your file, like "Yes" or "Maybe", and what it'll be saved as. You can change any of them.
+5. If your file has no RSVP column, choose the RSVP for people who are new this season. People already on this season's list keep theirs.
+6. If the file is your mailing list, tick **This file is my current list**. Possible Outreach compares the Audubon list against it.
+7. Read the preview. It shows the first 10 rows, and it warns you about rows that'll be skipped, emails that appear more than once, and area codes the circle doesn't have yet.
+8. Click **Import**.
+
+A column you skip, or a blank Area, keeps what's already saved for this season.
+
+If you import the participant list you export from your Audubon circle page, the app recognizes it and skips the column matching. It adds new people and marks who's on the Audubon list. It never changes the RSVP, counter type, or area you already have for someone.
+
+Not sure how to lay out your file? Under **What columns can I use?** there's a sample `.csv` and `.xlsx` with made-up people you can start from.
+
 ## Use it online
 
 The app is hosted at https://lizmstanley.github.io/cbc-circle-manager/. Your data stays in your browser. It isn't sent to GitHub or any server. Each address has its own browser database, so the hosted copy and a copy you run yourself don't share data. Use **Export Backup** to move data between them.
