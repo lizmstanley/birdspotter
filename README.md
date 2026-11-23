@@ -2,6 +2,8 @@
 
 A browser-only tool for Christmas Bird Count (CBC) compilers. It tracks volunteers, area assignments, and results for one or more count circles.
 
+I have been the compiler for the Bloomington, MN count since 2020 and wrote this app to run it.
+
 The roster lives in a PostgreSQL database that runs inside the browser ([PGlite](https://pglite.dev)) and is saved to IndexedDB. There is no server. Roster data never leaves the compiler's browser unless the compiler exports it.
 
 ## Features
