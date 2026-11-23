@@ -83,13 +83,8 @@ a:hover {
 .brand-mark {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fde68a;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.24);
   flex-shrink: 0;
 }
 
