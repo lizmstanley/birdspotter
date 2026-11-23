@@ -60,7 +60,10 @@ export function AreaDetailPage({
           </div>
           <div className="row-actions">
             {isCounted && (
-              <label className="results-checkbox-pill">
+              <label
+                className="results-checkbox-pill"
+                title="Check this when the area's count results come in. Checked areas leave Awaiting Results."
+              >
                 <input
                   type="checkbox"
                   checked={resultsReceived}
@@ -72,6 +75,11 @@ export function AreaDetailPage({
             <button
               type="button"
               className="btn-subtle"
+              title={
+                isCounted
+                  ? "Skip this area this season. It stays on the map in gray but leaves Open Areas and assignments."
+                  : 'Count this area again. It shows up in Open Areas and assignments.'
+              }
               onClick={() => void onToggleCounted(areaCode, !isCounted)}
             >
               {isCounted ? 'Mark as Not Counted' : 'Restore to Counted'}
@@ -80,6 +88,7 @@ export function AreaDetailPage({
               type="button"
               className="btn-primary"
               disabled={emails.length === 0}
+              title="Copy the emails of everyone assigned to this area, for the BCC line of one email"
               onClick={() => onCopyBcc(emails, `${title}`)}
             >
               Copy Area BCC ({emails.length})

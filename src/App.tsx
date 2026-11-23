@@ -558,6 +558,7 @@ export function App() {
             <span>My Circles:</span>
             <select
               aria-label="My Circles"
+              title="The circle you're working on. Every tab shows data for this circle only."
               value={activeCircle?.code ?? ''}
               onChange={(e) => void handleSelectCircle(e.target.value)}
               disabled={savedCircles.length === 0}
@@ -572,17 +573,26 @@ export function App() {
           <button
             className="btn-primary"
             type="button"
+            title="Add another count circle by Audubon code, place search, KML file, or coordinates"
             onClick={() => setShowAddCircle((v) => !v)}
           >
             + Add Circle
           </button>
           {activeCircle && (
-            <button type="button" onClick={() => void handleRenameActiveCircle()}>
+            <button
+              type="button"
+              title="Change the circle's display name. The circle code stays the same."
+              onClick={() => void handleRenameActiveCircle()}
+            >
               Rename
             </button>
           )}
           {activeCircle && savedCircles.length > 1 && (
-            <button type="button" onClick={() => void handleRemoveActiveCircle()}>
+            <button
+              type="button"
+              title="Permanently delete this circle and all its people, areas, notes, and map outlines from this browser"
+              onClick={() => void handleRemoveActiveCircle()}
+            >
               Delete Circle
             </button>
           )}
@@ -593,13 +603,29 @@ export function App() {
             style={{ display: 'none' }}
             onChange={(e) => void handleRestoreBackup(e)}
           />
-          <button onClick={() => void handleBackup()}>Export Backup</button>
-          <button onClick={() => backupInputRef.current?.click()}>Restore Backup</button>
+          <button
+            title="Download a .json file with every circle, person, season, note, and map outline. Your data lives only in this browser, so keep a copy."
+            onClick={() => void handleBackup()}
+          >
+            Export Backup
+          </button>
+          <button
+            title="Load a .json backup. It replaces the roster of each circle in the file. You confirm first."
+            onClick={() => backupInputRef.current?.click()}
+          >
+            Restore Backup
+          </button>
           {autoSaveStatus !== 'unsupported' && (
             <button
               type="button"
               onClick={() => void handleAutoSaveClick()}
-              title="Keep a backup file up to date on disk after every change (Chrome and Edge)"
+              title={
+                autoSaveStatus === 'on'
+                  ? 'Auto-Save is on: the backup file on your computer is rewritten after every change. Click to turn it off.'
+                  : autoSaveStatus === 'needs-permission'
+                    ? 'The browser needs your OK again to write the backup file. Click to allow it.'
+                    : 'Pick a file on your computer, and the app keeps a backup in it up to date after every change. Chrome and Edge only.'
+              }
             >
               {autoSaveStatus === 'on'
                 ? 'Auto-Save: On'
@@ -683,12 +709,17 @@ export function App() {
                     type="button"
                     className="btn-subtle"
                     disabled={refreshingAudubon}
-                    title="Pull count date and compiler from the circle's Audubon page"
+                    title="Pull the count date and compiler from the circle's Audubon page. Works only when you run the app on your own computer."
                     onClick={() => void handleRefreshFromAudubon()}
                   >
                     {refreshingAudubon ? 'Refreshing...' : 'Refresh from Audubon'}
                   </button>
-                  <button type="button" className="btn-subtle" onClick={startEditCircleInfo}>
+                  <button
+                    type="button"
+                    className="btn-subtle"
+                    title="Set the count date and compiler by hand. Awaiting Results starts on the count date."
+                    onClick={startEditCircleInfo}
+                  >
                     Edit Circle Info
                   </button>
                 </div>
@@ -701,6 +732,7 @@ export function App() {
               className="stat-card stat-violet stat-clickable"
               role="button"
               tabIndex={0}
+              title="Areas marked as counted this season. Click to see every area."
               onClick={() => setTab('areas')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') setTab('areas');
@@ -710,7 +742,7 @@ export function App() {
               <div className="stat-value">{countedAreas.length}</div>
               <div className="stat-sub">Click to view all</div>
             </div>
-            <div className="stat-card">
+            <div className="stat-card" title="People who are confirmed or undecided for this season">
               <div className="stat-label">Active Counters</div>
               <div className="stat-value">{assignments.length}</div>
               <div className="stat-sub">Confirmed or undecided</div>
@@ -719,6 +751,7 @@ export function App() {
               className="stat-card stat-amber stat-clickable"
               role="button"
               tabIndex={0}
+              title="Counted areas with no confirmed field counter yet. Feeder watchers don't count as coverage. Click to see them."
               onClick={() => setTab('open')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') setTab('open');
@@ -732,6 +765,7 @@ export function App() {
               className="stat-card stat-amber stat-clickable"
               role="button"
               tabIndex={0}
+              title="From count day on, counted areas whose results you haven't checked off yet. Click to follow up."
               onClick={() => setTab('results')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') setTab('results');
@@ -757,28 +791,46 @@ export function App() {
       )}
 
       <nav className="tabs">
-        <button className={activeNavTab === 'map' ? 'active' : ''} onClick={() => setTab('map')}>
+        <button
+          className={activeNavTab === 'map' ? 'active' : ''}
+          title="The circle on a map with your area outlines, plus eBird hotspots and recent sightings"
+          onClick={() => setTab('map')}
+        >
           Map &amp; eBird Scout
         </button>
-        <button className={activeNavTab === 'areas' ? 'active' : ''} onClick={() => setTab('areas')}>
+        <button
+          className={activeNavTab === 'areas' ? 'active' : ''}
+          title="Every area in this circle, with its counters and results status"
+          onClick={() => setTab('areas')}
+        >
           All Areas ({areas.length})
         </button>
-        <button className={tab === 'assignments' ? 'active' : ''} onClick={() => setTab('assignments')}>
+        <button
+          className={tab === 'assignments' ? 'active' : ''}
+          title="Who is counting where this season. Change a person's area here."
+          onClick={() => setTab('assignments')}
+        >
           Assignments ({assignments.length})
         </button>
-        <button className={tab === 'open' ? 'active' : ''} onClick={() => setTab('open')}>
-          Open Areas ({openAreas.length})
-        </button>
-        <button className={activeNavTab === 'results' ? 'active' : ''} onClick={() => setTab('results')}>
-          {resultsDue ? `Awaiting Results (${awaitingResultsAreas.length})` : 'Results'}
-        </button>
-        <button className={tab === 'outreach' ? 'active' : ''} onClick={() => setTab('outreach')}>
+        <button
+          className={tab === 'outreach' ? 'active' : ''}
+          title="Who still needs a reminder, and who you may have missed"
+          onClick={() => setTab('outreach')}
+        >
           Reminders &amp; Outreach ({reminders.length + outreach.length})
         </button>
-        <button className={tab === 'import' ? 'active' : ''} onClick={() => setTab('import')}>
+        <button
+          className={tab === 'import' ? 'active' : ''}
+          title="Import people from a spreadsheet or Audubon list, or export the roster to Excel or CSV"
+          onClick={() => setTab('import')}
+        >
           Import / Export Participants
         </button>
-        <button className={tab === 'help' ? 'active' : ''} onClick={() => setTab('help')}>
+        <button
+          className={tab === 'help' ? 'active' : ''}
+          title="How to get a free eBird API key, and what each map source is"
+          onClick={() => setTab('help')}
+        >
           Help &amp; API Keys
         </button>
       </nav>
@@ -899,7 +951,7 @@ export function App() {
                               <button
                                 type="button"
                                 className="btn-subtle"
-                                title="Keep on map in gray, but exclude from Open Areas and assignments"
+                                title="Skip this area this season. It stays on the map in gray but leaves Open Areas and assignments."
                                 onClick={() => void handleToggleAreaCounted(a.area, false)}
                               >
                                 Not Counted
@@ -907,6 +959,7 @@ export function App() {
                               <button
                                 type="button"
                                 className="btn-danger-ghost"
+                                title="Delete this area from the circle and unassign its counters. A map outline stays on the map."
                                 onClick={() => void handleDeleteArea(a.area)}
                               >
                                 Remove
@@ -946,6 +999,7 @@ export function App() {
                               <button
                                 type="button"
                                 className="btn-subtle"
+                                title="Count this area again. It shows up in Open Areas and assignments."
                                 onClick={() => void handleToggleAreaCounted(a.code, true)}
                               >
                                 Restore to Counted
@@ -953,6 +1007,7 @@ export function App() {
                               <button
                                 type="button"
                                 className="btn-danger-ghost"
+                                title="Delete this area from the circle and unassign its counters. A map outline stays on the map."
                                 onClick={() => void handleDeleteArea(a.code)}
                               >
                                 Remove
@@ -976,6 +1031,7 @@ export function App() {
                   <button
                     className="btn-primary"
                     disabled={reminders.length === 0}
+                    title="Copy these emails, separated by commas, to paste into the BCC line of one email"
                     onClick={() =>
                       copyBcc(reminders.map((r) => r.email).filter((e): e is string => Boolean(e)), 'reminder')
                     }
@@ -1013,6 +1069,7 @@ export function App() {
                   <button
                     className="btn-primary"
                     disabled={notOnListEmails.length === 0}
+                    title="Copy the emails of people on the Audubon list who aren't on your current list, for the BCC line. Old-email rows are left out."
                     onClick={() => copyBcc(notOnListEmails, 'not-on-list')}
                   >
                     Copy BCC: Not on Your List ({notOnListEmails.length})

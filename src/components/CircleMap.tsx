@@ -713,6 +713,7 @@ export function CircleMap({
                 <button
                   type="button"
                   className="btn-primary"
+                  title="Add this circle, at the pin's current spot, to My Circles"
                   onClick={() => {
                     void onSaveScoutedCircle({
                       code: scoutTarget.code,
@@ -752,11 +753,16 @@ export function CircleMap({
             type="button"
             className="btn-primary"
             disabled={scoutSearching}
+            title="Look at any circle or town on the map without adding it to My Circles"
             onClick={() => void handleScoutSearch()}
           >
             {scoutSearching ? 'Searching...' : 'Scout Location'}
           </button>
-          <button type="button" onClick={handleScoutMyLocation}>
+          <button
+            type="button"
+            title="Center a scouting circle on where you are now. Your browser asks for permission first."
+            onClick={handleScoutMyLocation}
+          >
             Use My Location
           </button>
         </div>
@@ -820,7 +826,11 @@ export function CircleMap({
           </div>
           <div className="controls">
             {!isScouting && (
-              <button type="button" onClick={() => setShowCircleOverlay((v) => !v)}>
+              <button
+                type="button"
+                title="Show or hide the 15-mile circle and its center pin. Drag the pin to move the circle's center."
+                onClick={() => setShowCircleOverlay((v) => !v)}
+              >
                 {showCircleOverlay ? 'Hide 15-Mile Circle' : 'Show 15-Mile Circle'}
               </button>
             )}
@@ -845,6 +855,7 @@ export function CircleMap({
           <input
             type="password"
             placeholder="Your eBird API Key (stored locally)"
+            title="Your free eBird API key. It's saved only in this browser and sent only to eBird."
             value={apiKey}
             onChange={(e) => handleSaveKey(e.target.value)}
           />
@@ -854,7 +865,12 @@ export function CircleMap({
             <option value={14}>Last 14 days</option>
             <option value={30}>Last 30 days</option>
           </select>
-          <button className="btn-primary" disabled={busy} onClick={() => void handleFetchEbird()}>
+          <button
+            className="btn-primary"
+            disabled={busy}
+            title="Ask eBird for hotspots and recent sightings inside the circle. Needs your eBird API key."
+            onClick={() => void handleFetchEbird()}
+          >
             {busy ? 'Fetching eBird...' : 'Load Hotspots & Sightings'}
           </button>
           {onOpenHelp && (
@@ -873,11 +889,19 @@ export function CircleMap({
             style={{ display: 'none' }}
             onChange={(e) => void handleKmlFileChange(e)}
           />
-          <button type="button" onClick={() => kmlInputRef.current?.click()}>
+          <button
+            type="button"
+            title="Add area outlines from a KML, KMZ, or GeoJSON file, for example one exported from Google My Maps. The app can't draw areas itself."
+            onClick={() => kmlInputRef.current?.click()}
+          >
             Import KML / KMZ / GeoJSON Areas
           </button>
           {areaBoundaries.length > 0 && onClearBoundaries && (
-            <button type="button" onClick={() => void onClearBoundaries()}>
+            <button
+              type="button"
+              title="Remove all imported area outlines from the map. Your areas and people stay."
+              onClick={() => void onClearBoundaries()}
+            >
               Clear Areas ({areaBoundaries.length})
             </button>
           )}

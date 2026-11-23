@@ -66,6 +66,7 @@ export function AwaitingResultsPage({
             type="button"
             className="btn-primary"
             disabled={allFollowUpEmails.length === 0}
+            title="Copy the emails of everyone assigned to an area that hasn't sent results, for the BCC line of one email"
             onClick={() => onCopyBcc(allFollowUpEmails, 'awaiting-results follow-up')}
           >
             Copy All Follow-Up BCC ({allFollowUpEmails.length})

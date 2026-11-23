@@ -242,6 +242,7 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
               type="button"
               className="btn-primary"
               disabled={assignments.length === 0}
+              title="Download this season's confirmed and undecided counters as a spreadsheet. This isn't a backup: use Export Backup to save everything."
               onClick={() => exportRoster('xlsx')}
             >
               Export Excel (.xlsx)
@@ -249,6 +250,7 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
             <button
               type="button"
               disabled={assignments.length === 0}
+              title="Download this season's confirmed and undecided counters as a CSV file. This isn't a backup: use Export Backup to save everything."
               onClick={() => exportRoster('csv')}
             >
               Export CSV (.csv)
@@ -261,7 +263,11 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
         <div className="card-header">
           <h2>Import Participant Roster (.xlsx or .csv){circleCode ? ` — ${circleCode}` : ''}</h2>
           {onClearRoster && (
-            <button type="button" onClick={() => void onClearRoster()}>
+            <button
+              type="button"
+              title="Permanently delete every person, email, season record, and note in this circle. Areas and map outlines stay. You confirm first."
+              onClick={() => void onClearRoster()}
+            >
               Clear Current Roster (Start Fresh)
             </button>
           )}
@@ -295,7 +301,12 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
           </div>
         </details>
 
-        <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} />
+        <input
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          title="Choose a spreadsheet. Nothing is saved until you click Import."
+          onChange={handleFileChange}
+        />
 
         {headers.length > 0 && (
           <div className="mapper">
