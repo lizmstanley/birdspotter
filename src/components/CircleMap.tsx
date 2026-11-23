@@ -169,6 +169,9 @@ export function CircleMap({
   const [mapReady, setMapReady] = useState(false);
   const [basemap, setBasemap] = useState<BasemapKind>('street');
   const [showCircleOverlay, setShowCircleOverlay] = useState(true);
+  const [showAreas, setShowAreas] = useState(true);
+  const [showHotspots, setShowHotspots] = useState(true);
+  const [showSightings, setShowSightings] = useState(true);
   const [hoveredArea, setHoveredArea] = useState<string | null>(null);
 
   // Ephemeral "Scout Any Circle / Location" state (does not modify My Circles)
@@ -411,25 +414,39 @@ export function CircleMap({
     if (!map || !marker || !mapReady) return;
 
     const showCircle = isScouting || showCircleOverlay;
+    const circlePolygon = buildCirclePolygon(effectiveLng, effectiveLat, radiusMiles);
     marker.setLngLat([effectiveLng, effectiveLat]);
     marker.getElement().style.display = showCircle ? '' : 'none';
-    map.flyTo({ center: [effectiveLng, effectiveLat], zoom: 10.5, essential: true });
 
     const src = map.getSource('cbc-circle') as maplibregl.GeoJSONSource | undefined;
     if (src) {
-      const data = showCircle
-        ? buildCirclePolygon(effectiveLng, effectiveLat, radiusMiles)
-        : { type: 'FeatureCollection' as const, features: [] };
+      const data = showCircle ? circlePolygon : { type: 'FeatureCollection' as const, features: [] };
       src.setData(data as never);
     }
   }, [mapReady, effectiveLat, effectiveLng, radiusMiles, showCircleOverlay, isScouting]);
+
+  // Zoom so the whole circle fits the map, only when the circle itself moves or changes size.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const ring = buildCirclePolygon(effectiveLng, effectiveLat, radiusMiles).geometry.coordinates[0];
+    const lngs = ring.map(([lng]) => lng);
+    const lats = ring.map(([, lat]) => lat);
+    map.fitBounds(
+      [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ],
+      { padding: 24, essential: true }
+    );
+  }, [mapReady, effectiveLat, effectiveLng, radiusMiles]);
 
   // 3. Sync imported KML/KMZ/GeoJSON area polygons & clickable labels (hidden while scouting elsewhere)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
-    const visibleBoundaries = isScouting ? [] : areaBoundaries;
+    const visibleBoundaries = isScouting || !showAreas ? [] : areaBoundaries;
     const src = map.getSource('cbc-areas') as maplibregl.GeoJSONSource | undefined;
     if (src) {
       const notCountedSet = new Set(notCountedAreaCodes.map((c) => c.toUpperCase()));
@@ -473,7 +490,7 @@ export function CircleMap({
       const marker = new maplibregl.Marker({ element: el }).setLngLat(center).addTo(map);
       areaLabelMarkersRef.current.push(marker);
     }
-  }, [mapReady, areaBoundaries, areaParticipantCounts, notCountedAreaCodes, isScouting]);
+  }, [mapReady, areaBoundaries, areaParticipantCounts, notCountedAreaCodes, isScouting, showAreas]);
 
   // 4. Render Hotspot (Binoculars) markers
   useEffect(() => {
@@ -481,7 +498,7 @@ export function CircleMap({
     if (!map || !mapReady) return;
 
     hotspotMarkersRef.current.forEach((m) => m.remove());
-    hotspotMarkersRef.current = hotspots.map((h) => {
+    hotspotMarkersRef.current = (showHotspots ? hotspots : []).map((h) => {
       const el = createIconMarkerElement('hotspot', `Hotspot: ${h.locName}`);
       const hoverPopup = new maplibregl.Popup({
         offset: 16,
@@ -516,7 +533,7 @@ export function CircleMap({
         .setPopup(clickPopup)
         .addTo(map);
     });
-  }, [mapReady, hotspots]);
+  }, [mapReady, hotspots, showHotspots]);
 
   // 5. Render Recent Sighting (Bird) markers
   useEffect(() => {
@@ -524,7 +541,7 @@ export function CircleMap({
     if (!map || !mapReady) return;
 
     sightingMarkersRef.current.forEach((m) => m.remove());
-    sightingMarkersRef.current = sightings.map((s) => {
+    sightingMarkersRef.current = (showSightings ? sightings : []).map((s) => {
       const el = createIconMarkerElement('sighting', `Sighting: ${s.comName}`);
       const countText = s.howMany !== undefined ? String(s.howMany) : 'X (present)';
       const html = `<div class="map-tooltip">
@@ -554,7 +571,7 @@ export function CircleMap({
         .setPopup(clickPopup)
         .addTo(map);
     });
-  }, [mapReady, sightings]);
+  }, [mapReady, sightings, showSightings]);
 
   async function handleKmlFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -825,15 +842,6 @@ export function CircleMap({
             </p>
           </div>
           <div className="controls">
-            {!isScouting && (
-              <button
-                type="button"
-                title="Show or hide the 15-mile circle and its center pin. Drag the pin to move the circle's center."
-                onClick={() => setShowCircleOverlay((v) => !v)}
-              >
-                {showCircleOverlay ? 'Hide 15-Mile Circle' : 'Show 15-Mile Circle'}
-              </button>
-            )}
             <div className="segmented">
               <button
                 className={basemap === 'street' ? 'active' : ''}
@@ -911,23 +919,49 @@ export function CircleMap({
         </div>
         )}
 
-        <div className="map-legend">
-          {showCircleOverlay && (
-            <span className="legend-item">
-              <span className="legend-dot dot-center" /> Circle Center (draggable)
-            </span>
+        <div className="map-legend" role="group" aria-label="Show or hide map layers">
+          {!isScouting && (
+            <button
+              type="button"
+              className={`legend-item legend-toggle${showCircleOverlay ? '' : ' is-off'}`}
+              aria-pressed={showCircleOverlay}
+              title="Show or hide the 15-mile circle and its center pin. Drag the pin to move the circle's center."
+              onClick={() => setShowCircleOverlay((v) => !v)}
+            >
+              <span className="legend-dot dot-center" /> Circle &amp; Center (draggable)
+            </button>
           )}
-          <span className="legend-item">
-            <span className="legend-dot dot-area" /> Imported Areas ({areaBoundaries.length})
-          </span>
-          <span className="legend-item">
+          {!isScouting && (
+            <button
+              type="button"
+              className={`legend-item legend-toggle${showAreas ? '' : ' is-off'}`}
+              aria-pressed={showAreas}
+              title="Show or hide your imported area outlines"
+              onClick={() => setShowAreas((v) => !v)}
+            >
+              <span className="legend-dot dot-area" /> Imported Areas ({areaBoundaries.length})
+            </button>
+          )}
+          <button
+            type="button"
+            className={`legend-item legend-toggle${showHotspots ? '' : ' is-off'}`}
+            aria-pressed={showHotspots}
+            title="Show or hide eBird hotspots"
+            onClick={() => setShowHotspots((v) => !v)}
+          >
             <span className="legend-icon marker-hotspot" dangerouslySetInnerHTML={{ __html: BINOCULARS_SVG }} />
             eBird Hotspot ({hotspots.length})
-          </span>
-          <span className="legend-item">
+          </button>
+          <button
+            type="button"
+            className={`legend-item legend-toggle${showSightings ? '' : ' is-off'}`}
+            aria-pressed={showSightings}
+            title="Show or hide recent eBird sightings"
+            onClick={() => setShowSightings((v) => !v)}
+          >
             <span className="legend-icon marker-sighting" dangerouslySetInnerHTML={{ __html: BIRD_SVG }} />
             Recent Sighting ({sightings.length})
-          </span>
+          </button>
         </div>
 
         {status && <p className="status-banner">{status}</p>}
