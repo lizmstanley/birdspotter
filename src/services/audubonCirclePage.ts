@@ -30,6 +30,12 @@ export function audubonCirclePageUrl(code: string): string {
 export async function fetchAudubonCircleDetails(code: string): Promise<AudubonCircleDetails | null> {
   const normalized = code.trim().toUpperCase();
   if (!CIRCLE_CODE.test(normalized)) return null;
+  // cbc.audubon.org sends no CORS headers. Only the local dev and preview servers proxy it.
+  if (typeof location !== 'undefined' && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+    throw new Error(
+      'This only works when the app runs on your computer (npm run dev), because the Audubon site blocks requests from other sites.'
+    );
+  }
   const res = await fetch(`/audubon-cbc/en/join/circles/${normalized}`, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });

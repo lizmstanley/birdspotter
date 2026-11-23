@@ -16,6 +16,14 @@ The roster lives in a PostgreSQL database that runs inside the browser ([PGlite]
 - **eBird scouting:** hotspots and recent sightings within the circle's radius, using your own eBird API key. The key is stored only in your browser's `localStorage`.
 - **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) with column mapping, or the participant list exported from your Audubon circle page, which is read with no mapping, export the roster to Excel or CSV, and export or restore a full JSON backup.
 
+## Use it online
+
+The app is hosted at https://lizmstanley.github.io/cbc-circle-manager/. Your data stays in your browser. It is not sent to GitHub or any server. Each address has its own browser database, so the hosted copy and a local copy do not share data. Use **Export Backup** to move data between them.
+
+**Refresh from Audubon** works only when you run the app on your computer, because the Audubon site blocks requests from other sites. Everything else works in the hosted copy.
+
+Every push to `main` runs the tests and redeploys through `.github/workflows/pages.yml`.
+
 ## Run it
 
 ```bash

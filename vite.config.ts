@@ -12,6 +12,8 @@ const audubonProxy: Record<string, ProxyOptions> = {
 };
 
 export default defineConfig({
+  // GitHub Pages serves this repo under /cbc-circle-manager/. Local dev and preview stay at /.
+  base: process.env.GITHUB_PAGES ? '/cbc-circle-manager/' : '/',
   plugins: [react()],
   optimizeDeps: {
     // Required so Vite does not pre-bundle PGlite's WASM or MapLibre's Web Worker
