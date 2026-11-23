@@ -10,6 +10,10 @@ The roster lives in a PostgreSQL database that runs inside your browser ([PGlite
 
 This is the Bloomington, MN circle. I drew the 26 count areas in Google My Maps and imported them as a KML file. The hotspots and recent sightings came from eBird with my own API key.
 
+The top of the page shows the circle's count date and compiler, how many areas are counted, how many people are counting, which areas still need a field counter, and, from count day on, which areas haven't sent in results:
+
+![The top of the page for the Bloomington, MN circle: count date, compiler, and cards for 24 counted areas, 38 active counters, 4 open areas, and awaiting results.](docs/screenshots/overview.jpg)
+
 Hover over an area to see how many people are assigned to it, and click it to open that area:
 
 ![The Bloomington, MN circle with 26 imported count areas, eBird hotspots, and recent sightings. Hovering over Area 12 shows 3 participants assigned.](docs/screenshots/map-area-hover.jpg)
