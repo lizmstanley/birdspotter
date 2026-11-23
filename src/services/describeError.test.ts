@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describeError } from './describeError.ts';
-import { AudubonRequestError, EbirdRequestError } from './errors.ts';
+import { AudubonRequestError, EbirdRequestError, InvalidCoordinatesError } from './errors.ts';
 
 test('a failed eBird or Audubon request shows its HTTP status', () => {
   assert.equal(
@@ -11,6 +11,17 @@ test('a failed eBird or Audubon request shows its HTTP status', () => {
   assert.equal(
     describeError(new AudubonRequestError('MNBL', 500)),
     'audubonCirclePage: the circle page request failed. (HTTP 500)'
+  );
+});
+
+test('a bad coordinate names the boundary it is in, when the boundary has a name', () => {
+  assert.equal(
+    describeError(new InvalidCoordinatesError('Area 7')),
+    'kmlParser: a boundary has a coordinate that is not a valid longitude and latitude. (Area 7)'
+  );
+  assert.equal(
+    describeError(new InvalidCoordinatesError('')),
+    'kmlParser: a boundary has a coordinate that is not a valid longitude and latitude.'
   );
 });
 

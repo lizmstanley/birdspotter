@@ -1,6 +1,8 @@
 import type { PGlite, Transaction } from '@electric-sql/pglite';
+import { CBC_CIRCLE_RADIUS_MILES } from '../services/cbcCircle.ts';
 import { computeSortOrder } from './areas.ts';
 import { BackupFormatError } from './errors.ts';
+import { deleteRosterRows } from './roster.ts';
 
 type BackupRow = Record<string, unknown>;
 
@@ -144,7 +146,7 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
           c.state_province ? String(c.state_province) : null,
           Number(c.center_lat ?? 44.83),
           Number(c.center_lng ?? -93.298),
-          Number(c.radius_miles ?? 7.5),
+          Number(c.radius_miles ?? CBC_CIRCLE_RADIUS_MILES),
           Boolean(c.is_active),
           c.compiler_name ? String(c.compiler_name) : null,
           c.compiler_email ? String(c.compiler_email) : null,
@@ -152,11 +154,7 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
           c.audubon_url ? String(c.audubon_url) : null,
         ]
       );
-      // Clear old roster rows for this circle before restoring
-      await tx.query('DELETE FROM public.notes WHERE circle_code = $1', [code]);
-      await tx.query('DELETE FROM public.participations WHERE circle_code = $1', [code]);
-      await tx.query('DELETE FROM public.person_emails WHERE circle_code = $1', [code]);
-      await tx.query('DELETE FROM public.people WHERE circle_code = $1', [code]);
+      await deleteRosterRows(tx, code);
       await tx.query('DELETE FROM public.area_results WHERE circle_code = $1', [code]);
       await tx.query('DELETE FROM public.count_years WHERE circle_code = $1', [code]);
     }

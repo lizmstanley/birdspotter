@@ -284,7 +284,14 @@ export function App() {
         />
       )}
 
-      <PersonHistoryDialog db={db} personId={historyPersonId} onClose={() => setHistoryPersonId(null)} />
+      {historyPersonId !== null && (
+        <PersonHistoryDialog
+          key={historyPersonId}
+          db={db}
+          personId={historyPersonId}
+          onClose={() => setHistoryPersonId(null)}
+        />
+      )}
 
       <ConfirmDialog
         config={confirmConfig}

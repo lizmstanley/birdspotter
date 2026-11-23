@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { NewCirclePayload } from '../components/AddCirclePanel';
 import type { CircleInfoInput } from '../components/CircleInfoBar';
 import { fetchAudubonCircleDetails } from '../services/audubonCirclePage';
+import { CBC_CIRCLE_RADIUS_MILES } from '../services/cbcCircle';
 import { countDateInSeason } from '../services/countDay';
 import { describeError } from '../services/describeError';
 import { failuresToError, type ActionContext } from './actionContext';
@@ -10,8 +11,6 @@ interface CircleNavigation {
   afterSwitch: () => void;
   afterCreate: () => void;
 }
-
-const DEFAULT_RADIUS_MILES = 7.5;
 
 export function useCircleActions(
   { db, activeCircle, reload, flash, setError, confirm }: ActionContext,
@@ -47,7 +46,7 @@ export function useCircleActions(
         state_province: payload.state_province ?? null,
         center_lat: payload.center_lat,
         center_lng: payload.center_lng,
-        radius_miles: payload.radius_miles ?? DEFAULT_RADIUS_MILES,
+        radius_miles: payload.radius_miles ?? CBC_CIRCLE_RADIUS_MILES,
         compiler_name: payload.compiler_name ?? null,
         compiler_email: payload.compiler_email ?? null,
         count_date: payload.count_date ?? null,

@@ -1,17 +1,9 @@
 import type { PGlite } from '@electric-sql/pglite';
+import { CBC_CIRCLE_RADIUS_MILES } from '../services/cbcCircle.ts';
 import { countDateInSeason } from '../services/countDay.ts';
-import { seasonInPreparation } from '../services/season.ts';
 import { CircleNotFoundError, CountDateOutsideSeasonError } from './errors.ts';
-import type { Queryable } from './queryable.ts';
+import { currentSeasonOf } from './seasons.ts';
 import type { CircleInfoInput, CircleInput, SavedCircle } from './types.ts';
-
-async function currentSeasonOf(db: Queryable, code: string): Promise<number> {
-  const res = await db.query<{ year: number }>(
-    'SELECT year FROM public.count_years WHERE circle_code = $1 AND is_current',
-    [code]
-  );
-  return res.rows[0]?.year ?? seasonInPreparation(new Date());
-}
 
 export async function getSavedCircles(db: PGlite): Promise<SavedCircle[]> {
   const res = await db.query<SavedCircle>(
@@ -56,7 +48,7 @@ export async function upsertFavoriteCircle(db: PGlite, circle: CircleInput): Pro
         circle.state_province ?? null,
         circle.center_lat,
         circle.center_lng,
-        circle.radius_miles ?? 7.5,
+        circle.radius_miles ?? CBC_CIRCLE_RADIUS_MILES,
         Boolean(circle.setActive),
         circle.compiler_name ?? null,
         circle.compiler_email ?? null,
@@ -125,24 +117,26 @@ export async function updateCircleInfo(
   code: string,
   info: CircleInfoInput
 ): Promise<void> {
-  const season = await currentSeasonOf(db, code);
-  const typedDate = info.count_date?.trim() || null;
-  const countDate = countDateInSeason(typedDate, season);
-  if (typedDate && !countDate) throw new CountDateOutsideSeasonError(code, typedDate, season);
+  await db.transaction(async (tx) => {
+    const season = await currentSeasonOf(tx, code);
+    const typedDate = info.count_date?.trim() || null;
+    const countDate = countDateInSeason(typedDate, season);
+    if (typedDate && !countDate) throw new CountDateOutsideSeasonError(code, typedDate, season);
 
-  await db.query(
-    `UPDATE public.saved_circles
-     SET compiler_name = $1,
-         compiler_email = $2,
-         count_date = $3,
-         audubon_url = $4
-     WHERE code = $5`,
-    [
-      info.compiler_name?.trim() || null,
-      info.compiler_email?.trim() || null,
-      countDate,
-      info.audubon_url?.trim() || null,
-      code,
-    ]
-  );
+    await tx.query(
+      `UPDATE public.saved_circles
+       SET compiler_name = $1,
+           compiler_email = $2,
+           count_date = $3,
+           audubon_url = $4
+       WHERE code = $5`,
+      [
+        info.compiler_name?.trim() || null,
+        info.compiler_email?.trim() || null,
+        countDate,
+        info.audubon_url?.trim() || null,
+        code,
+      ]
+    );
+  });
 }

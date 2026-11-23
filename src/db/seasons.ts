@@ -1,7 +1,18 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { countDateInSeason } from '../services/countDay.ts';
+import { seasonInPreparation } from '../services/season.ts';
 import { SeasonRolloverError } from './errors.ts';
+import type { Queryable } from './queryable.ts';
 import type { RolloverOptions } from './types.ts';
+
+/** @returns the circle's current season, or the season in preparation when it has none yet */
+export async function currentSeasonOf(db: Queryable, circleCode: string): Promise<number> {
+  const res = await db.query<{ year: number }>(
+    'SELECT year FROM public.count_years WHERE circle_code = $1 AND is_current',
+    [circleCode]
+  );
+  return res.rows[0]?.year ?? seasonInPreparation(new Date());
+}
 
 /**
  * Makes `newYear` the circle's current season. People, areas, and pinned notes stay.

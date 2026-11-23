@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import { getBasemapStyle } from './basemap.ts';
 import { addAreaLayers, addCircleLayers } from './mapLayers.ts';
-import { useLatest } from './useLatest.ts';
+import { useLatest } from '../../hooks/useLatest.ts';
 import type { BasemapKind } from './types.ts';
 
 interface MapInstanceOptions {
@@ -21,22 +21,25 @@ export function useMapInstance({ basemap, centerLat, centerLng, onPinDragged, on
   const [mapReady, setMapReady] = useState(false);
   const onPinDraggedRef = useLatest(onPinDragged);
   const onMapNoticeRef = useLatest(onMapNotice);
+  // Only a new map starts at the saved center; useCircleLayer moves the pin on an existing one.
+  const centerRef = useLatest({ lat: centerLat, lng: centerLng });
 
   useEffect(() => {
     if (!containerRef.current) return;
     setMapReady(false);
+    const center = centerRef.current;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: getBasemapStyle(basemap),
-      center: [centerLng, centerLat],
+      center: [center.lng, center.lat],
       zoom: 10.5,
     });
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
     mapRef.current = map;
 
     const centerMarker = new maplibregl.Marker({ draggable: true, color: '#dc2626' })
-      .setLngLat([centerLng, centerLat])
+      .setLngLat([center.lng, center.lat])
       .addTo(map);
     markerRef.current = centerMarker;
 
@@ -62,7 +65,7 @@ export function useMapInstance({ basemap, centerLat, centerLng, onPinDragged, on
       map.remove();
       mapRef.current = null;
     };
-  }, [basemap]);
+  }, [basemap, centerRef, onPinDraggedRef, onMapNoticeRef]);
 
   return { containerRef, mapRef, markerRef, mapReady };
 }

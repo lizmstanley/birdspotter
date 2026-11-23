@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export interface ConfirmDialogConfig {
   title: string;
@@ -23,12 +23,14 @@ export function ConfirmDialog({ config, onClose, onExportBackup }: Props) {
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
   const [backupDone, setBackupDone] = useState(false);
+  const [shownConfig, setShownConfig] = useState(config);
 
-  useEffect(() => {
+  if (config !== shownConfig) {
+    setShownConfig(config);
     setTyped('');
     setBusy(false);
     setBackupDone(false);
-  }, [config]);
+  }
 
   if (!config) return null;
 

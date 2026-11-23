@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type {
   AreaBoundaryRow,
   AreaOption,
@@ -10,6 +10,7 @@ import type {
   SavedCircle,
 } from '../db/pgliteDb';
 import { describeError } from '../services/describeError';
+import { useLatest } from './useLatest';
 import type { SetError } from './useNotices';
 
 interface ActiveCircleData {
@@ -51,12 +52,9 @@ export function useCircleData(db: LocalCbcDb, setError: SetError, onSettled: () 
   const [savedCircles, setSavedCircles] = useState<SavedCircle[]>([]);
   const [data, setData] = useState<ActiveCircleData>(NO_CIRCLE_DATA);
   const [loading, setLoading] = useState(true);
-  const onSettledRef = useRef(onSettled);
-  onSettledRef.current = onSettled;
+  const onSettledRef = useLatest(onSettled);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async () => {
     try {
       await db.init();
       const circles = await db.getSavedCircles();
@@ -69,11 +67,19 @@ export function useCircleData(db: LocalCbcDb, setError: SetError, onSettled: () 
       setLoading(false);
       onSettledRef.current();
     }
-  }, [db, setError]);
+  }, [db, setError, onSettledRef]);
 
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    await load();
+  }, [load, setError]);
+
+  // State starts as loading with no error, so the first load skips reload's resets.
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load sets state only after awaiting the database.
+    void load();
+  }, [load]);
 
   return { ...data, savedCircles, activeCircle: pickActiveCircle(savedCircles), loading, reload };
 }

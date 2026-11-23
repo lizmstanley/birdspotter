@@ -4,13 +4,8 @@ import {
   withAudubonPageDetails,
   type AudubonCircleResult,
 } from '../services/audubonCircles';
-import {
-  computeCollectionCenter,
-  parseGeoJsonText,
-  parseKmlText,
-  parseKmzBuffer,
-  type ParsedAreaBoundary,
-} from '../services/kmlParser';
+import { parseCircleCenter } from '../services/coordinates';
+import { computeCollectionCenter, parseBoundaryFile, type ParsedAreaBoundary } from '../services/kmlParser';
 
 export interface NewCirclePayload {
   code: string;
@@ -75,16 +70,7 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
     setKmlBusy(true);
     setStatus(null);
     try {
-      const lower = file.name.toLowerCase();
-      let parsed: ParsedAreaBoundary[];
-      if (lower.endsWith('.kmz')) {
-        parsed = parseKmzBuffer(await file.arrayBuffer());
-      } else if (lower.endsWith('.kml')) {
-        parsed = parseKmlText(await file.text());
-      } else {
-        parsed = parseGeoJsonText(await file.text());
-      }
-
+      const parsed = await parseBoundaryFile(file);
       if (parsed.length === 0) {
         setStatus('No polygons or lines found in that KML/KMZ/GeoJSON file.');
         return;
@@ -108,7 +94,6 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
         name: derivedName,
         center_lat: center[1],
         center_lng: center[0],
-        radius_miles: 7.5,
         initialBoundaries: parsed,
       });
       if (isAdded) onClose();
@@ -131,7 +116,6 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
         state_province: c.state || null,
         center_lat: c.lat,
         center_lng: c.lng,
-        radius_miles: 7.5,
         compiler_name: c.compilerName ?? null,
         compiler_email: c.compilerEmail ?? null,
         count_date: c.countDate ?? null,
@@ -144,18 +128,16 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
   }
 
   async function handleManualCreate() {
-    const lat = Number(manualLat);
-    const lng = Number(manualLng);
-    if (!manualCode.trim() || !manualName.trim() || !Number.isFinite(lat) || !Number.isFinite(lng)) {
-      setStatus('Enter a Circle Code, Name, and valid Latitude / Longitude.');
+    const center = parseCircleCenter(manualLat, manualLng);
+    if (!manualCode.trim() || !manualName.trim() || !center) {
+      setStatus('Enter a Circle Code, Name, Latitude (-90 to 90), and Longitude (-180 to 180).');
       return;
     }
     const isAdded = await onCreateCircle({
       code: manualCode.trim().toUpperCase(),
       name: manualName.trim(),
-      center_lat: lat,
-      center_lng: lng,
-      radius_miles: 7.5,
+      center_lat: center.lat,
+      center_lng: center.lng,
     });
     if (isAdded) onClose();
   }

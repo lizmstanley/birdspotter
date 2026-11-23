@@ -1,3 +1,4 @@
+import { OUTER_CIRCLE_COLORS } from '../../services/cbcCircle.ts';
 import { getPaletteColorForCode } from '../../services/kmlParser.ts';
 import { areaDisplayName, isOuterCircleBoundary } from './mapText.ts';
 import type { AreaBoundaryItem } from './types.ts';
@@ -30,8 +31,8 @@ export function buildAreaFeatures(
         code: item.code,
         label: item.label ?? '',
         isOuter,
-        fillColor: isOuter ? '#000000' : isExcluded ? '#64748b' : palette.fill,
-        strokeColor: isOuter ? '#1e293b' : isExcluded ? '#475569' : palette.stroke,
+        fillColor: isOuter ? OUTER_CIRCLE_COLORS.fill : isExcluded ? '#64748b' : palette.fill,
+        strokeColor: isOuter ? OUTER_CIRCLE_COLORS.stroke : isExcluded ? '#475569' : palette.stroke,
         fillOpacity: isOuter ? 0 : isExcluded ? 0.32 : 0.28,
         hoverOpacity: isOuter ? 0 : isExcluded ? 0.45 : 0.52,
         lineWidth: isOuter ? 3.5 : 2.5,

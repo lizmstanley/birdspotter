@@ -3,7 +3,7 @@ import type { LocalCbcDb, PersonHistory } from '../db/pgliteDb';
 
 interface Props {
   db: LocalCbcDb;
-  personId: number | null;
+  personId: number;
   onClose: () => void;
 }
 
@@ -28,9 +28,6 @@ export function PersonHistoryDialog({ db, personId, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setHistory(null);
-    setError(null);
-    if (personId === null) return;
     let cancelled = false;
     db.getPersonHistory(personId)
       .then((h) => {
@@ -43,8 +40,6 @@ export function PersonHistoryDialog({ db, personId, onClose }: Props) {
       cancelled = true;
     };
   }, [db, personId]);
-
-  if (personId === null) return null;
 
   // Same rule as seasons_counted in v_current_assignments: confirmed with an area, before this season.
   const currentYear = history?.person.current_year ?? Infinity;
