@@ -148,3 +148,54 @@ test('restoring keeps outlines of areas that the backup does not mention', async
 
   assert.equal((await db.getCircleBoundaries(CIRCLE)).length, 1);
 });
+
+test('results received in an earlier season survive a backup round trip', async () => {
+  const source = await seededDb();
+  const { db } = source;
+  const season = (await db.getSavedCircles())[0].current_year as number;
+  await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
+  await db.setAreaResultsReceived(CIRCLE, '2B', true);
+  const target = await openTestDb();
+
+  await target.db.importJsonBackup(await db.exportJsonBackup());
+
+  const rows = await target.client.query<{ count_year: number; area_code: string }>(
+    'SELECT count_year, area_code FROM public.area_results ORDER BY count_year, area_code'
+  );
+  assert.deepEqual(rows.rows, [
+    { count_year: season, area_code: '1A' },
+    { count_year: season + 1, area_code: '2B' },
+  ]);
+});
+
+test('a backup from before results were tracked by season marks them for the current season', async () => {
+  const source = await seededDb();
+  const backup = JSON.parse(await source.db.exportJsonBackup());
+  delete backup.area_results;
+  for (const area of backup.areas) area.results_received = area.code === '2B';
+  const target = await openTestDb();
+
+  await target.db.importJsonBackup(JSON.stringify(backup));
+
+  assert.deepEqual(
+    (await target.db.getAreas(CIRCLE)).map((a) => [a.code, a.results_received]),
+    [['1A', false], ['2B', true]]
+  );
+  assert.equal(await scalar(target.client, 'SELECT COUNT(*)::INT FROM public.area_results'), 1);
+});
+
+test('restoring a backup from before seasons clears results the app had marked', async () => {
+  const source = await seededDb();
+  const backup = JSON.parse(await source.db.exportJsonBackup());
+  delete backup.area_results;
+  for (const area of backup.areas) area.results_received = false;
+  const target = await seededDb();
+  await target.db.setAreaResultsReceived(CIRCLE, '2B', true);
+
+  await target.db.importJsonBackup(JSON.stringify(backup));
+
+  assert.deepEqual(
+    (await target.db.getAreas(CIRCLE)).map((a) => a.results_received),
+    [false, false]
+  );
+});

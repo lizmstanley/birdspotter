@@ -9,7 +9,16 @@ export function computeSortOrder(code: string): number {
 export async function getAreas(db: PGlite, circleCode: string): Promise<AreaOption[]> {
   return (
     await db.query<AreaOption>(
-      'SELECT code, cities, notable_spots, active_restrictions, is_counted, results_received FROM public.areas WHERE circle_code = $1 ORDER BY sort_order, code',
+      `SELECT a.code, a.cities, a.notable_spots, a.active_restrictions, a.is_counted,
+              EXISTS (
+                SELECT 1 FROM public.area_results r
+                JOIN public.count_years cy
+                  ON cy.circle_code = r.circle_code AND cy.year = r.count_year AND cy.is_current
+                WHERE r.circle_code = a.circle_code AND r.area_code = a.code
+              ) AS results_received
+       FROM public.areas a
+       WHERE a.circle_code = $1
+       ORDER BY a.sort_order, a.code`,
       [circleCode]
     )
   ).rows;
@@ -64,13 +73,36 @@ export async function setAreaCounted(db: PGlite, circleCode: string, areaCode: s
   );
 }
 
-export async function setAreaResultsReceived(db: PGlite, circleCode: string, areaCode: string, received: boolean): Promise<void> {
-  await db.query(
-    `INSERT INTO public.areas (circle_code, code, sort_order, results_received)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (circle_code, code) DO UPDATE SET results_received = EXCLUDED.results_received`,
-    [circleCode, areaCode, computeSortOrder(areaCode), received]
-  );
+export async function setAreaResultsReceived(
+  db: PGlite,
+  circleCode: string,
+  areaCode: string,
+  received: boolean
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.query(
+      `INSERT INTO public.areas (circle_code, code, sort_order)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (circle_code, code) DO NOTHING`,
+      [circleCode, areaCode, computeSortOrder(areaCode)]
+    );
+    if (received) {
+      await tx.query(
+        `INSERT INTO public.area_results (circle_code, count_year, area_code)
+         SELECT circle_code, year, $2 FROM public.count_years WHERE circle_code = $1 AND is_current
+         ON CONFLICT DO NOTHING`,
+        [circleCode, areaCode]
+      );
+      return;
+    }
+    await tx.query(
+      `DELETE FROM public.area_results r
+       USING public.count_years cy
+       WHERE r.circle_code = $1 AND r.area_code = $2
+         AND cy.circle_code = r.circle_code AND cy.year = r.count_year AND cy.is_current`,
+      [circleCode, areaCode]
+    );
+  });
 }
 
 export async function deleteArea(db: PGlite, circleCode: string, areaCode: string): Promise<void> {

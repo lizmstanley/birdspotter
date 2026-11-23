@@ -58,3 +58,31 @@ export class DatabaseNotOpenError extends Error {
     this.name = 'DatabaseNotOpenError';
   }
 }
+
+export class CountDateOutsideSeasonError extends Error {
+  readonly circleCode: string;
+  readonly countDate: string;
+  readonly season: number;
+
+  constructor(circleCode: string, countDate: string, season: number) {
+    super(`circles: the count date must be a real day from Dec 14, ${season} to Jan 5, ${season + 1}.`);
+    this.circleCode = circleCode;
+    this.countDate = countDate;
+    this.season = season;
+    this.name = 'CountDateOutsideSeasonError';
+  }
+}
+
+export class SeasonRolloverError extends Error {
+  readonly circleCode: string;
+  readonly currentYear: number | null;
+  readonly requestedYear: number;
+
+  constructor(circleCode: string, currentYear: number | null, requestedYear: number) {
+    super('seasons: a rollover needs a current season and a later year to move to.');
+    this.circleCode = circleCode;
+    this.currentYear = currentYear;
+    this.requestedYear = requestedYear;
+    this.name = 'SeasonRolloverError';
+  }
+}

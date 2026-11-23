@@ -125,13 +125,14 @@ cbc-circle-manager/
 ├── db/
 │   ├── migrations/                  # Versioned, applied once each, recorded in schema_version
 │   │   ├── 001_initial_schema.sql   # Tables, enums, and indexes, all scoped by circle_code
-│   │   └── 002_catch_up_unversioned_databases.sql
+│   │   ├── 002_catch_up_unversioned_databases.sql
+│   │   └── 003_area_results_by_season.sql
 │   └── views.sql                    # Assignments, open areas, reminders, outreach (re-applied on every start)
 ├── src/
 │   ├── db/
 │   │   ├── migrations.ts            # Migration runner and file parsing
 │   │   ├── cbcDb.ts                 # Database class the app uses
-│   │   ├── circles.ts, areas.ts, roster.ts, readModels.ts, backup.ts   # Queries by concern
+│   │   ├── circles.ts, areas.ts, roster.ts, seasons.ts, readModels.ts, backup.ts   # Queries by concern
 │   │   ├── legacySingleCircle.ts    # One-time move from the first single-circle format
 │   │   ├── pgliteDb.ts              # Browser setup: IndexedDB storage and bundled migrations
 │   │   └── *.integration.test.ts    # Real PGlite, in memory

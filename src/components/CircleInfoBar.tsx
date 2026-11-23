@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { SavedCircle } from '../db/pgliteDb';
+import { countDateInSeason, isoDay } from '../services/countDay';
+import { countWindowEnd, countWindowStart } from '../services/season';
 
 export interface CircleInfoInput {
   compiler_name: string;
@@ -21,10 +23,12 @@ export function CircleInfoBar({ circle, isRefreshing, onRefreshFromAudubon, onSa
   const [compilerEmail, setCompilerEmail] = useState('');
   const [countDate, setCountDate] = useState('');
 
+  const season = circle.current_year;
+
   function startEditing() {
     setCompilerName(circle.compiler_name ?? '');
     setCompilerEmail(circle.compiler_email ?? '');
-    setCountDate(circle.count_date ?? '');
+    setCountDate(season === null ? '' : (countDateInSeason(circle.count_date, season) ?? ''));
     setIsEditing(true);
   }
 
@@ -40,8 +44,9 @@ export function CircleInfoBar({ circle, isRefreshing, onRefreshFromAudubon, onSa
           <label>
             <span>Count Date</span>
             <input
-              type="text"
-              placeholder="e.g. 2026-12-19"
+              type="date"
+              min={season === null ? undefined : isoDay(countWindowStart(season))}
+              max={season === null ? undefined : isoDay(countWindowEnd(season))}
               value={countDate}
               onChange={(e) => setCountDate(e.target.value)}
             />
@@ -76,6 +81,11 @@ export function CircleInfoBar({ circle, isRefreshing, onRefreshFromAudubon, onSa
       ) : (
         <>
           <div className="circle-info-items">
+            {circle.current_year !== null && (
+              <span>
+                <strong>Season:</strong> {circle.current_year}
+              </span>
+            )}
             <span>
               <strong>Count Date:</strong> {circle.count_date || 'Not set'}
             </span>

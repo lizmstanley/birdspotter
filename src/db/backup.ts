@@ -1,12 +1,39 @@
-import type { PGlite } from '@electric-sql/pglite';
+import type { PGlite, Transaction } from '@electric-sql/pglite';
 import { computeSortOrder } from './areas.ts';
+
+async function restoreAreaResults(
+  tx: Transaction,
+  areaResults: Array<Record<string, unknown>> | undefined,
+  areas: Array<Record<string, unknown>>
+): Promise<void> {
+  if (areaResults) {
+    for (const r of areaResults) {
+      await tx.query(
+        `INSERT INTO public.area_results (circle_code, count_year, area_code)
+         VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING`,
+        [String(r.circle_code), Number(r.count_year), String(r.area_code)]
+      );
+    }
+    return;
+  }
+  // Backups made before results were tracked by season carry one flag per area.
+  for (const a of areas.filter((area) => area.results_received === true)) {
+    await tx.query(
+      `INSERT INTO public.area_results (circle_code, count_year, area_code)
+       SELECT circle_code, year, $2 FROM public.count_years WHERE circle_code = $1 AND is_current
+       ON CONFLICT DO NOTHING`,
+      [String(a.circle_code), String(a.code)]
+    );
+  }
+}
 
 function optionalBoolean(value: unknown): boolean | null {
   return typeof value === 'boolean' ? value : null;
 }
 
 export async function exportJsonBackup(db: PGlite): Promise<string> {
-  const [circles, areas, people, emails, years, participations, notes, boundaries] = await Promise.all([
+  const [circles, areas, people, emails, years, participations, notes, boundaries, areaResults] = await Promise.all([
     db.query('SELECT * FROM public.saved_circles ORDER BY name'),
     db.query('SELECT * FROM public.areas ORDER BY circle_code, sort_order, code'),
     db.query('SELECT * FROM public.people ORDER BY circle_code, id'),
@@ -15,6 +42,7 @@ export async function exportJsonBackup(db: PGlite): Promise<string> {
     db.query('SELECT * FROM public.participations ORDER BY circle_code, count_year, id'),
     db.query('SELECT * FROM public.notes ORDER BY circle_code, id'),
     db.query('SELECT * FROM public.circle_boundaries ORDER BY circle_code, sort_order, area_code'),
+    db.query('SELECT * FROM public.area_results ORDER BY circle_code, count_year, area_code'),
   ]);
   return JSON.stringify(
     {
@@ -27,6 +55,7 @@ export async function exportJsonBackup(db: PGlite): Promise<string> {
       participations: participations.rows,
       notes: notes.rows,
       circle_boundaries: boundaries.rows,
+      area_results: areaResults.rows,
     },
     null,
     2
@@ -43,6 +72,7 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
     participations?: Array<Record<string, unknown>>;
     notes?: Array<Record<string, unknown>>;
     circle_boundaries?: Array<Record<string, unknown>>;
+    area_results?: Array<Record<string, unknown>>;
   };
   const circles = data.saved_circles ?? [];
   const years = data.count_years ?? [];
@@ -93,6 +123,7 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
       await tx.query('DELETE FROM public.participations WHERE circle_code = $1', [code]);
       await tx.query('DELETE FROM public.person_emails WHERE circle_code = $1', [code]);
       await tx.query('DELETE FROM public.people WHERE circle_code = $1', [code]);
+      await tx.query('DELETE FROM public.area_results WHERE circle_code = $1', [code]);
       await tx.query('DELETE FROM public.count_years WHERE circle_code = $1', [code]);
     }
 
@@ -100,7 +131,9 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
       await tx.query(
         `INSERT INTO public.count_years (circle_code, year, count_date, is_current, compiler_notes)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (circle_code, year) DO UPDATE SET is_current = EXCLUDED.is_current`,
+         ON CONFLICT (circle_code, year) DO UPDATE SET
+            is_current = EXCLUDED.is_current,
+            count_date = COALESCE(EXCLUDED.count_date, public.count_years.count_date)`,
         [
           String(y.circle_code),
           Number(y.year),
@@ -115,10 +148,10 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
       await tx.query(
         `INSERT INTO public.areas (
             circle_code, code, sort_order, cities, roads, notable_spots, active_restrictions, is_counted,
-            requires_special_access, is_solo_reserved, walking_friendly, results_received
+            requires_special_access, is_solo_reserved, walking_friendly
          ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, COALESCE($8::BOOLEAN, TRUE),
-            COALESCE($9::BOOLEAN, FALSE), COALESCE($10::BOOLEAN, FALSE), $11, COALESCE($12::BOOLEAN, FALSE)
+            COALESCE($9::BOOLEAN, FALSE), COALESCE($10::BOOLEAN, FALSE), $11
          )
          ON CONFLICT (circle_code, code) DO UPDATE SET
             cities = COALESCE(EXCLUDED.cities, public.areas.cities),
@@ -128,8 +161,7 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
             is_counted = COALESCE($8::BOOLEAN, public.areas.is_counted),
             requires_special_access = COALESCE($9::BOOLEAN, public.areas.requires_special_access),
             is_solo_reserved = COALESCE($10::BOOLEAN, public.areas.is_solo_reserved),
-            walking_friendly = COALESCE(EXCLUDED.walking_friendly, public.areas.walking_friendly),
-            results_received = COALESCE($12::BOOLEAN, public.areas.results_received)`,
+            walking_friendly = COALESCE(EXCLUDED.walking_friendly, public.areas.walking_friendly)`,
         // A flag missing from the file (an ETL backup) keeps the value already in the app.
         [
           String(a.circle_code),
@@ -143,7 +175,6 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
           optionalBoolean(a.requires_special_access),
           optionalBoolean(a.is_solo_reserved),
           optionalBoolean(a.walking_friendly),
-          optionalBoolean(a.results_received),
         ]
       );
     }
@@ -156,6 +187,8 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
         [String(a.circle_code), String(a.code), String(a.parent_area_code)]
       );
     }
+
+    await restoreAreaResults(tx, data.area_results, areas);
 
     const idMap = new Map<number, number>();
     for (const p of people) {

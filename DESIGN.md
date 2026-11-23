@@ -58,6 +58,19 @@ The key stays in the browser and goes only to eBird. No key is stored by the app
 
 These are product decisions made by the compiler's needs. The integration tests pin them.
 
+### Seasons
+
+Audubon sets the count window every year (Dec 14 to Jan 5), so the app has no "start season" action. A season is named for the year its window opens. The app treats a season as current from September of that year until the next September, because results arrive for months after the count. From September, a circle still on the previous season is offered a move to the new one. The compiler can decline for now.
+
+Data is organized by season where it differs each year:
+- Participations (RSVP, area, counter type) and notes with a year.
+- Results received: `area_results`, one row per area and season. A new season starts empty and old seasons keep their record.
+- Count date: kept on the circle for the current season, saved onto the season when it ends. It must be a real day in the season's window, Dec 14 to Jan 5. A date from Audubon or ArcGIS outside the window is not used.
+
+Data that carries over: people, areas, pinned notes. At rollover the compiler chooses whether last season's assignments carry over. Confirmed and undecided people who had an area keep it, with RSVP reset to no response. Everyone else has no record yet and shows up for a reminder.
+
+Awaiting Results starts tracking on count day. If no count date is set yet, it starts Dec 14.
+
 ### Static hosting
 
 The app is static files on GitHub Pages. Audubon's circle page sends no CORS headers, so circle details need the dev or preview proxy and fall back to ArcGIS search on a static host.
@@ -77,6 +90,4 @@ The app is static files on GitHub Pages. Audubon's circle page sends no CORS hea
 
 ## Known gaps
 
-- Seasons do not roll over to the next year in the app.
-- `results_received` is stored per area, not per season.
 - Two browser tabs on the same data are not coordinated.
