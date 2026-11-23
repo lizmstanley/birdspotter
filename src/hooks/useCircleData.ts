@@ -13,7 +13,7 @@ import { describeError } from '../services/describeError';
 import { useLatest } from './useLatest';
 import type { SetError } from './useNotices';
 
-interface ActiveCircleData {
+export interface ActiveCircleData {
   assignments: AssignmentRow[];
   openAreas: OpenAreaRow[];
   reminders: ReminderRow[];

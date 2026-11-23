@@ -1,8 +1,3 @@
-/**
- * CBC circle search: Audubon's ArcGIS circle layer, then OpenStreetMap Nominatim places.
- * `withAudubonPageDetails` fills count date and compiler from the Audubon circle page.
- * Decoupled for reuse in Aviscout.
- */
 import { fetchAudubonCircleDetails } from './audubonCirclePage.ts';
 import { isLatitude, isLongitude } from './coordinates.ts';
 import {
@@ -178,81 +173,83 @@ async function searchNominatimPlaces(query: string): Promise<AudubonCircleResult
   });
 }
 
+function textField(attrs: Record<string, unknown>, field: string | null): string {
+  return field ? String(attrs[field] ?? '').trim() : '';
+}
+
+function compilerNameOf(layer: ArcGisLayerMeta, attrs: Record<string, unknown>): string {
+  const name = textField(attrs, layer.compilerNameField);
+  const lastName = attrs['LastName'] ?? attrs['Last_Name'];
+  if (/^first_?name$/i.test(layer.compilerNameField ?? '') && lastName) {
+    return `${name} ${String(lastName).trim()}`.trim();
+  }
+  return name;
+}
+
+function countDateOf(layer: ArcGisLayerMeta, attrs: Record<string, unknown>): string {
+  if (!layer.countDateField || attrs[layer.countDateField] == null) return '';
+  const rawDate = attrs[layer.countDateField];
+  if (typeof rawDate === 'number' && rawDate > 100000000000) {
+    return new Date(rawDate).toISOString().slice(0, 10);
+  }
+  return String(rawDate).trim();
+}
+
+function featureToResult(layer: ArcGisLayerMeta, feature: unknown): AudubonCircleResult | null {
+  if (!isRecord(feature)) return null;
+  const attrs = isRecord(feature.attributes) ? feature.attributes : {};
+  const geometry = isRecord(feature.geometry) ? feature.geometry : {};
+  const code = textField(attrs, layer.codeField).toUpperCase();
+  const lat = Number((layer.latField ? attrs[layer.latField] : undefined) ?? geometry.y);
+  const lng = Number((layer.lngField ? attrs[layer.lngField] : undefined) ?? geometry.x);
+  if (!code || !isLatitude(lat) || !isLongitude(lng)) return null;
+
+  return {
+    code,
+    name: textField(attrs, layer.nameField) || code,
+    state: textField(attrs, layer.stateField),
+    lat: Number(lat.toFixed(5)),
+    lng: Number(lng.toFixed(5)),
+    source: 'audubon',
+    joinUrl: 'https://cbc.audubon.org/en/join',
+    compilerName: compilerNameOf(layer, attrs) || undefined,
+    compilerEmail: textField(attrs, layer.compilerEmailField) || undefined,
+    countDate: countDateOf(layer, attrs) || undefined,
+  };
+}
+
+async function queryAudubonLayer(layer: ArcGisLayerMeta, term: string): Promise<AudubonCircleResult[]> {
+  const pattern = `'%${toLikeLiteral(term)}%' ESCAPE '\\'`;
+  const params = new URLSearchParams({
+    where: `UPPER(${layer.codeField}) LIKE ${pattern} OR UPPER(${layer.nameField}) LIKE ${pattern}`,
+    outFields: '*',
+    outSR: '4326',
+    returnGeometry: 'true',
+    resultRecordCount: '20',
+    f: 'json',
+  });
+  const data = await fetchOptionalJson(`${layer.url}/query?${params.toString()}`);
+  const features: unknown[] = isRecord(data) && Array.isArray(data.features) ? data.features : [];
+  return features.flatMap((f) => featureToResult(layer, f) ?? []);
+}
+
+function exactCodeFirstThenName(term: string) {
+  return (a: AudubonCircleResult, b: AudubonCircleResult): number => {
+    if (a.code === term && b.code !== term) return -1;
+    if (b.code === term && a.code !== term) return 1;
+    return a.name.localeCompare(b.name);
+  };
+}
+
 export async function searchAudubonCircles(query: string): Promise<AudubonCircleResult[]> {
   const term = query.trim().toUpperCase();
   if (term.length < 2) return [];
 
   const layer = await discoverAudubonLayer();
-  if (layer) {
-    const pattern = `'%${toLikeLiteral(term)}%' ESCAPE '\\'`;
-    const where = `UPPER(${layer.codeField}) LIKE ${pattern} OR UPPER(${layer.nameField}) LIKE ${pattern}`;
-    const params = new URLSearchParams({
-      where,
-      outFields: '*',
-      outSR: '4326',
-      returnGeometry: 'true',
-      resultRecordCount: '20',
-      f: 'json',
-    });
+  const results = layer ? await queryAudubonLayer(layer, term) : [];
+  if (results.length > 0) return results.sort(exactCodeFirstThenName(term));
 
-    const data = await fetchOptionalJson(`${layer.url}/query?${params.toString()}`);
-    const features: unknown[] = isRecord(data) && Array.isArray(data.features) ? data.features : [];
-    const results: AudubonCircleResult[] = [];
-    for (const f of features) {
-      if (!isRecord(f)) continue;
-      const attrs = isRecord(f.attributes) ? f.attributes : {};
-      const geometry = isRecord(f.geometry) ? f.geometry : {};
-      const code = String(attrs[layer.codeField] ?? '').trim().toUpperCase();
-      const name = String(attrs[layer.nameField] ?? '').trim();
-      const state = layer.stateField ? String(attrs[layer.stateField] ?? '').trim() : '';
-      const lat = Number((layer.latField ? attrs[layer.latField] : undefined) ?? geometry.y);
-      const lng = Number((layer.lngField ? attrs[layer.lngField] : undefined) ?? geometry.x);
-      if (!code || !isLatitude(lat) || !isLongitude(lng)) continue;
-
-      let compilerName = layer.compilerNameField
-        ? String(attrs[layer.compilerNameField] ?? '').trim()
-        : '';
-      const lastName = attrs['LastName'] ?? attrs['Last_Name'];
-      if (/^first_?name$/i.test(layer.compilerNameField ?? '') && lastName) {
-        compilerName = `${compilerName} ${String(lastName).trim()}`.trim();
-      }
-      const compilerEmail = layer.compilerEmailField
-        ? String(attrs[layer.compilerEmailField] ?? '').trim()
-        : '';
-      let countDate = '';
-      if (layer.countDateField && attrs[layer.countDateField] != null) {
-        const rawDate = attrs[layer.countDateField];
-        if (typeof rawDate === 'number' && rawDate > 100000000000) {
-          countDate = new Date(rawDate).toISOString().slice(0, 10);
-        } else {
-          countDate = String(rawDate).trim();
-        }
-      }
-
-      results.push({
-        code,
-        name: name || code,
-        state,
-        lat: Number(lat.toFixed(5)),
-        lng: Number(lng.toFixed(5)),
-        source: 'audubon',
-        joinUrl: 'https://cbc.audubon.org/en/join',
-        compilerName: compilerName || undefined,
-        compilerEmail: compilerEmail || undefined,
-        countDate: countDate || undefined,
-      });
-    }
-
-    if (results.length > 0) {
-      return results.sort((a, b) => {
-        if (a.code === term && b.code !== term) return -1;
-        if (b.code === term && a.code !== term) return 1;
-        return a.name.localeCompare(b.name);
-      });
-    }
-  }
-
-  // Fallback: OpenStreetMap Nominatim place lookup so users are never blocked
+  // A place result still lets the user start a circle when Audubon has no match.
   return searchNominatimPlaces(query);
 }
 

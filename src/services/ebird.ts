@@ -1,7 +1,3 @@
-/**
- * Client-side eBird API v2 scouting helpers + Turf.js geodesic circle builder.
- * Zero dependency on PGlite or CBC roster state—reusable directly in Aviscout.
- */
 import { circle } from '@turf/circle';
 import { CBC_CIRCLE_RADIUS_MILES } from './cbcCircle.ts';
 import { isLatitude, isLongitude } from './coordinates.ts';

@@ -5,7 +5,7 @@ interface Props {
   circleCode: string;
   countDate: string | null;
   /** False before count day: no area is waiting on results yet */
-  resultsDue: boolean;
+  areResultsDue: boolean;
   countedAreas: AreaOption[];
   assignments: AssignmentRow[];
   onToggleResultsReceived: (areaCode: string, received: boolean) => Promise<void>;
@@ -16,14 +16,14 @@ interface Props {
 export function AwaitingResultsPage({
   circleCode,
   countDate,
-  resultsDue,
+  areResultsDue,
   countedAreas,
   assignments,
   onToggleResultsReceived,
   onSelectArea,
   onCopyBcc,
 }: Props) {
-  if (!resultsDue) {
+  if (!areResultsDue) {
     return (
       <div className="card">
         <h2>{circleCode} &mdash; Results</h2>

@@ -10,15 +10,15 @@ interface Props {
 
 export function SeasonRolloverDialog({ circleCode, currentSeason, nextSeason, onClose, onConfirm }: Props) {
   const [carryAssignments, setCarryAssignments] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
 
   async function confirm() {
-    setBusy(true);
+    setIsBusy(true);
     try {
       await onConfirm(carryAssignments);
       onClose();
     } finally {
-      setBusy(false);
+      setIsBusy(false);
     }
   }
 
@@ -29,7 +29,7 @@ export function SeasonRolloverDialog({ circleCode, currentSeason, nextSeason, on
       aria-modal="true"
       aria-labelledby="season-rollover-title"
       onClick={() => {
-        if (!busy) onClose();
+        if (!isBusy) onClose();
       }}
     >
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -47,7 +47,7 @@ export function SeasonRolloverDialog({ circleCode, currentSeason, nextSeason, on
             <input
               type="checkbox"
               checked={carryAssignments}
-              disabled={busy}
+              disabled={isBusy}
               onChange={(e) => setCarryAssignments(e.target.checked)}
             />{' '}
             Keep last season&apos;s area assignments. Confirmed and undecided people who had an area keep it, with
@@ -55,11 +55,11 @@ export function SeasonRolloverDialog({ circleCode, currentSeason, nextSeason, on
           </span>
         </label>
         <div className="modal-actions">
-          <button type="button" disabled={busy} onClick={onClose}>
+          <button type="button" disabled={isBusy} onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn-primary" disabled={busy} onClick={() => void confirm()}>
-            {busy ? 'Working...' : `Move to ${nextSeason}`}
+          <button type="button" className="btn-primary" disabled={isBusy} onClick={() => void confirm()}>
+            {isBusy ? 'Working...' : `Move to ${nextSeason}`}
           </button>
         </div>
       </div>

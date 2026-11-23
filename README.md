@@ -138,7 +138,7 @@ cbc-circle-manager/
 │   │   └── *.integration.test.ts    # Real PGlite, in memory
 │   ├── services/                    # eBird, Audubon, KML parsing, import checks
 │   ├── hooks/                       # App state and actions
-│   ├── components/                  # Tabs, dialogs, and the map (components/map/)
+│   ├── components/                  # Tabs, dialogs, the map (components/map/), and roster import (components/import/)
 │   ├── App.tsx
 │   └── main.tsx
 ├── DESIGN.md

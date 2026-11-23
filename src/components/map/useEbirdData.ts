@@ -17,7 +17,7 @@ export function useEbirdData({ ebirdApiKey, radiusMiles, setStatus }: EbirdDataO
   const [backDays, setBackDays] = useState(7);
   const [hotspots, setHotspots] = useState<EbirdHotspot[]>([]);
   const [sightings, setSightings] = useState<EbirdObservation[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
 
   function clear() {
     setHotspots([]);
@@ -29,7 +29,7 @@ export function useEbirdData({ ebirdApiKey, radiusMiles, setStatus }: EbirdDataO
       setStatus('Add your free eBird API key on the Help & API Keys tab first.');
       return;
     }
-    setBusy(true);
+    setIsBusy(true);
     setStatus(null);
     try {
       const [hs, obs] = await Promise.all([
@@ -44,9 +44,9 @@ export function useEbirdData({ ebirdApiKey, radiusMiles, setStatus }: EbirdDataO
     } catch (err) {
       setStatus(describeError(err));
     } finally {
-      setBusy(false);
+      setIsBusy(false);
     }
   }
 
-  return { backDays, setBackDays, hotspots, sightings, busy, clear, load };
+  return { backDays, setBackDays, hotspots, sightings, isBusy, clear, load };
 }
