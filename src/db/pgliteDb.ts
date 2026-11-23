@@ -2,6 +2,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { citext } from '@electric-sql/pglite/contrib/citext';
 import schemaSql from '../../db/migrations/001_initial_schema.sql?raw';
 import viewsSql from '../../db/migrations/002_views.sql?raw';
+import { normalizeCounterType, normalizeRsvp } from '../services/importPreview';
 
 export interface SavedCircle {
   code: string;
@@ -122,24 +123,6 @@ function optionalBoolean(value: unknown): boolean | null {
 function computeSortOrder(code: string): number {
   const m = code.match(/^(\d+)/);
   return m ? parseInt(m[1], 10) * 10 : 9999;
-}
-
-function normalizeRsvp(raw?: string): string {
-  const t = (raw ?? '').trim().toLowerCase();
-  if (t === 'no_response') return 'no_response';
-  if (!t || t.includes('yes') || t === 'confirmed') return 'confirmed';
-  if (t.includes('undecided') || t.includes('maybe')) return 'undecided';
-  if (t.includes('remove')) return 'declined_remove';
-  if (t.includes('no')) return 'declined_keep';
-  return 'confirmed';
-}
-
-function normalizeCounterType(raw?: string): string {
-  const t = (raw ?? '').trim().toLowerCase();
-  if (t.includes('feeder')) return 'home_feeders';
-  if (t.includes('both')) return 'both';
-  if (t.includes('coord')) return 'coordinator_only';
-  return 'field';
 }
 
 export class LegacyMigrationError extends Error {

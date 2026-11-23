@@ -1088,7 +1088,7 @@ export function App() {
             />
           )}
 
-          {tab === 'import' && <SpreadsheetImporter circleCode={activeCircle?.code} assignments={assignments} onImport={handleImport} onClearRoster={handleClearRoster} />}
+          {tab === 'import' && <SpreadsheetImporter circleCode={activeCircle?.code} assignments={assignments} areas={areas} onImport={handleImport} onClearRoster={handleClearRoster} />}
           {tab === 'help' && <HelpPage />}
         </main>
       )}
