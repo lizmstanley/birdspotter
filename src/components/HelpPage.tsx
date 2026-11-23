@@ -1,3 +1,5 @@
+export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/cbc-circle-manager/discussions';
+
 export function HelpPage() {
   return (
     <div className="stack">
@@ -73,6 +75,18 @@ export function HelpPage() {
             importing or updating your roster.
           </li>
         </ul>
+      </div>
+
+      <div className="card">
+        <h3>4. Questions, Ideas &amp; Feedback</h3>
+        <p>
+          Something confusing, broken, or missing? Have an idea that would help your count? Tell me on{' '}
+          <a href={DISCUSSIONS_URL} target="_blank" rel="noreferrer">
+            GitHub Discussions
+          </a>
+          . You need a free GitHub account to post. Please don&apos;t post volunteer names, emails, or backup
+          files there: it&apos;s public.
+        </p>
       </div>
     </div>
   );

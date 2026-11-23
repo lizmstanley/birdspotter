@@ -81,6 +81,10 @@ The app asks the browser for persistent storage, so your data isn't evicted when
 
 In Chrome and Edge, **Auto-Save** keeps a backup file up to date on disk. Click it once and pick a file. The app rewrites that file after every change. After a browser restart, the button shows **Reconnect**. Click it once to allow writing again. To restore from that file, use **Restore Backup**.
 
+## Questions and ideas
+
+If something's confusing, broken, or missing, or you have an idea that would help your count, tell me on [GitHub Discussions](https://github.com/lizmstanley/cbc-circle-manager/discussions). It's public, so please don't post volunteer names, emails, or backup files.
+
 ## Project structure
 
 ```text

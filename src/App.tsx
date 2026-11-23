@@ -19,7 +19,7 @@ import { AllAreasPage } from './components/AllAreasPage';
 import { countingSince, PersonHistoryDialog } from './components/PersonHistoryDialog';
 import type { ParsedAreaBoundary } from './services/kmlParser';
 import { SpreadsheetImporter } from './components/SpreadsheetImporter';
-import { HelpPage } from './components/HelpPage';
+import { DISCUSSIONS_URL, HelpPage } from './components/HelpPage';
 import { ConfirmDialog, type ConfirmDialogConfig } from './components/ConfirmDialog';
 import { fetchAudubonCircleDetails } from './services/audubonCirclePage';
 import { areResultsDue } from './services/countDay';
@@ -1182,6 +1182,14 @@ export function App() {
           {tab === 'help' && <HelpPage />}
         </main>
       )}
+
+      <footer className="app-footer">
+        Questions, ideas, or something not working?{' '}
+        <a href={DISCUSSIONS_URL} target="_blank" rel="noreferrer">
+          Let me know on GitHub Discussions
+        </a>
+        .
+      </footer>
 
       <PersonHistoryDialog db={db} personId={historyPersonId} onClose={() => setHistoryPersonId(null)} />
 
