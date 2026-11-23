@@ -41,6 +41,10 @@ Run the unit tests with `npm test`.
 
 Browser storage can be cleared, and it does not move between computers. Use **Export Backup** after each import or major change. **Restore Backup** replaces the roster of every circle in the backup file, after a confirmation.
 
+The app asks the browser for persistent storage, so the data is not evicted when disk space runs low. This does not protect against clearing site data.
+
+In Chrome and Edge, **Auto-Save** keeps a backup file up to date on disk. Click it once and pick a file. The app rewrites that file after every change. After a browser restart the button shows **Reconnect**. Click it once to allow writing again. Restore the file with **Restore Backup**.
+
 Opening the app on a database from the older single-circle version moves that roster into a circle with code `LEGACY`. Its map starts centered on Bloomington, MN; drag the circle to move it. If the move fails, the old data is left unchanged, and the app shows an error.
 
 ## Project structure

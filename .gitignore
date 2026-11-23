@@ -28,3 +28,4 @@ __pycache__/
 etl/
 *backup*.json
 *restore*.json
+*autosave*.json

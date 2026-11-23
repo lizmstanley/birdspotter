@@ -22,6 +22,18 @@ import { HelpPage } from './components/HelpPage';
 import { ConfirmDialog, type ConfirmDialogConfig } from './components/ConfirmDialog';
 import { fetchAudubonCircleDetails } from './services/audubonCirclePage';
 import { areResultsDue } from './services/countDay';
+import {
+  chooseAutoSaveFile,
+  clearHandle,
+  hasPermission,
+  isAutoSaveSupported,
+  loadHandle,
+  requestPermission,
+  requestPersistentStorage,
+  writeBackupFile,
+  type AutoSaveStatus,
+  type FileHandleLike,
+} from './services/autoSave';
 
 type Tab = 'assignments' | 'open' | 'results' | 'outreach' | 'map' | 'areas' | 'area' | 'import' | 'help';
 type AreaReturnTab = 'map' | 'areas' | 'results';
@@ -43,6 +55,11 @@ export function App() {
   const [refreshingAudubon, setRefreshingAudubon] = useState(false);
   const [historyPersonId, setHistoryPersonId] = useState<number | null>(null);
   const backupInputRef = useRef<HTMLInputElement | null>(null);
+  const autoSaveHandleRef = useRef<FileHandleLike | null>(null);
+  const autoSaveTimerRef = useRef<number | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>(
+    isAutoSaveSupported() ? 'off' : 'unsupported'
+  );
   const [selectedArea, setSelectedArea] = useState<{
     code: string;
     label?: string | null;
@@ -99,10 +116,63 @@ export function App() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
+      scheduleAutoSave();
+    }
+  }
+
+  function scheduleAutoSave() {
+    if (!autoSaveHandleRef.current) return;
+    if (autoSaveTimerRef.current !== null) window.clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = window.setTimeout(() => void runAutoSave(), 1000);
+  }
+
+  async function runAutoSave() {
+    const handle = autoSaveHandleRef.current;
+    if (!handle) return;
+    try {
+      if (!(await hasPermission(handle))) {
+        setAutoSaveStatus('needs-permission');
+        return;
+      }
+      await writeBackupFile(handle, await db.exportJsonBackup());
+      setAutoSaveStatus('on');
+    } catch (err) {
+      setError(`Auto-save failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  async function handleAutoSaveClick() {
+    try {
+      const existing = autoSaveHandleRef.current;
+      if (existing && autoSaveStatus === 'needs-permission') {
+        if (await requestPermission(existing)) await runAutoSave();
+        return;
+      }
+      if (existing) {
+        await clearHandle();
+        autoSaveHandleRef.current = null;
+        setAutoSaveStatus('off');
+        flash('Auto-save turned off.');
+        return;
+      }
+      const handle = await chooseAutoSaveFile();
+      if (!handle) return;
+      autoSaveHandleRef.current = handle;
+      await runAutoSave();
+      flash(`Auto-saving to ${handle.name}.`);
+    } catch (err) {
+      setError(`Auto-save setup failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
   useEffect(() => {
+    void requestPersistentStorage();
+    void (async () => {
+      const handle = await loadHandle();
+      if (!handle) return;
+      autoSaveHandleRef.current = handle;
+      setAutoSaveStatus((await hasPermission(handle)) ? 'on' : 'needs-permission');
+    })();
     void loadAll();
   }, [db]);
 
@@ -510,6 +580,19 @@ export function App() {
           />
           <button onClick={() => void handleBackup()}>Export Backup</button>
           <button onClick={() => backupInputRef.current?.click()}>Restore Backup</button>
+          {autoSaveStatus !== 'unsupported' && (
+            <button
+              type="button"
+              onClick={() => void handleAutoSaveClick()}
+              title="Keep a backup file up to date on disk after every change (Chrome and Edge)"
+            >
+              {autoSaveStatus === 'on'
+                ? 'Auto-Save: On'
+                : autoSaveStatus === 'needs-permission'
+                  ? 'Auto-Save: Reconnect'
+                  : 'Auto-Save: Off'}
+            </button>
+          )}
         </div>
       </header>
 
