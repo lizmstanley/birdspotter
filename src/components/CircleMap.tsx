@@ -325,17 +325,27 @@ export function CircleMap({
       });
       areaHoverPopupRef.current = areaHoverPopup;
 
+      function clearAreaHover() {
+        map.getCanvas().style.cursor = '';
+        if (hoveredFeatureIdRef.current !== null) {
+          map.setFeatureState({ source: 'cbc-areas', id: hoveredFeatureIdRef.current }, { hover: false });
+          hoveredFeatureIdRef.current = null;
+        }
+        areaHoverPopup.remove();
+        setHoveredArea(null);
+      }
+
       // Hover highlight interaction + participant count tooltip
       map.on('mousemove', 'cbc-areas-fill', (e) => {
+        // Mouse events on hotspot and sighting icons also reach the map; their own tooltip wins.
+        const target = e.originalEvent.target;
+        if (target instanceof Element && target.closest('.map-icon-marker')) {
+          clearAreaHover();
+          return;
+        }
         const feat = e.features?.find((f) => !f.properties?.isOuter);
         if (!feat || typeof feat.id !== 'number') {
-          map.getCanvas().style.cursor = '';
-          if (hoveredFeatureIdRef.current !== null) {
-            map.setFeatureState({ source: 'cbc-areas', id: hoveredFeatureIdRef.current }, { hover: false });
-            hoveredFeatureIdRef.current = null;
-          }
-          areaHoverPopup.remove();
-          setHoveredArea(null);
+          clearAreaHover();
           return;
         }
 
@@ -369,18 +379,12 @@ export function CircleMap({
           .addTo(map);
       });
 
-      map.on('mouseleave', 'cbc-areas-fill', () => {
-        map.getCanvas().style.cursor = '';
-        if (hoveredFeatureIdRef.current !== null) {
-          map.setFeatureState({ source: 'cbc-areas', id: hoveredFeatureIdRef.current }, { hover: false });
-          hoveredFeatureIdRef.current = null;
-        }
-        areaHoverPopup.remove();
-        setHoveredArea(null);
-      });
+      map.on('mouseleave', 'cbc-areas-fill', clearAreaHover);
 
       // Click area -> navigate to Area Detail Page
       map.on('click', 'cbc-areas-fill', (e) => {
+        const target = e.originalEvent.target;
+        if (target instanceof Element && target.closest('.map-icon-marker')) return;
         const feat = e.features?.find((f) => !f.properties?.isOuter);
         if (!feat) return;
         const code = String(feat.properties?.code ?? '');
