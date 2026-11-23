@@ -60,6 +60,7 @@ a:hover {
 
 /* ---------- Hero Topbar ---------- */
 .topbar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -144,10 +145,30 @@ a:hover {
   background: rgba(255, 255, 255, 0.24);
 }
 
-/* A link that looks like the header buttons around it. */
+.topbar-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .topbar-actions {
+    position: static;
+    order: -1;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Small header actions; the Feedback link looks the same as the Share button. */
 .topbar .topbar-link {
-  font-size: 0.875rem;
-  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;

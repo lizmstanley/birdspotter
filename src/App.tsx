@@ -36,7 +36,10 @@ import {
   type FileHandleLike,
 } from './services/autoSave';
 
-type Tab = 'assignments' | 'open' | 'results' | 'outreach' | 'map' | 'areas' | 'area' | 'import' | 'help';
+// Shared links always point at the hosted copy, even from a copy running on someone's own computer.
+const HOSTED_APP_URL = 'https://lizmstanley.github.io/cbc-circle-manager/';
+
+type Tab ='assignments' | 'open' | 'results' | 'outreach' | 'map' | 'areas' | 'area' | 'import' | 'help';
 type AreaReturnTab = 'map' | 'areas' | 'results';
 
 const AREA_RETURN_LABELS: Record<AreaReturnTab, string> = {
@@ -515,6 +518,26 @@ export function App() {
     });
   }
 
+  async function handleShareApp() {
+    const shareData = {
+      title: 'CBC Circle Manager',
+      text: 'A free, browser-only tool for Christmas Bird Count compilers.',
+      url: HOSTED_APP_URL,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(HOSTED_APP_URL);
+      flash('Link to the app copied. Paste it anywhere to share it.');
+    } catch (err) {
+      // Closing the share sheet is not an error.
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      setError(`Could not share the link: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   function copyBcc(emails: string[], label: string) {
     const bcc = emails.filter(Boolean).join(', ');
     void navigator.clipboard.writeText(bcc);
@@ -534,6 +557,35 @@ export function App() {
   return (
     <div className="shell">
       <header className="topbar">
+        <div className="topbar-actions">
+          <a
+            className="topbar-link"
+            href={DISCUSSIONS_URL}
+            target="_blank"
+            rel="noreferrer"
+            title="Questions, ideas, or something not working? Tell me on GitHub Discussions. Opens in a new tab."
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Feedback
+          </a>
+          <button
+            type="button"
+            className="topbar-link"
+            title="Share a link to this app with another compiler. Your data isn't shared."
+            onClick={() => void handleShareApp()}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <path d="m8.59 13.51 6.83 3.98" />
+              <path d="m15.41 6.51-6.82 3.98" />
+            </svg>
+            Share
+          </button>
+        </div>
         <div className="brand">
           <div className="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -634,15 +686,6 @@ export function App() {
                   : 'Auto-Save: Off'}
             </button>
           )}
-          <a
-            className="topbar-link"
-            href={DISCUSSIONS_URL}
-            target="_blank"
-            rel="noreferrer"
-            title="Questions, ideas, or something not working? Tell me on GitHub Discussions. Opens in a new tab."
-          >
-            Feedback
-          </a>
         </div>
       </header>
 
