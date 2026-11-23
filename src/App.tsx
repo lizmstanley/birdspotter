@@ -6,8 +6,9 @@ import {
   type AssignmentRow,
   type SavedCircle,
   type ImportedParticipantRow,
+  type ImportOptions,
   type OpenAreaRow,
-  type OutreachRow,
+  type PossibleOutreachRow,
   type ReminderRow,
 } from './db/pgliteDb';
 import { AddCirclePanel, type NewCirclePayload } from './components/AddCirclePanel';
@@ -70,7 +71,7 @@ export function App() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [openAreas, setOpenAreas] = useState<OpenAreaRow[]>([]);
   const [reminders, setReminders] = useState<ReminderRow[]>([]);
-  const [outreach, setOutreach] = useState<OutreachRow[]>([]);
+  const [outreach, setOutreach] = useState<PossibleOutreachRow[]>([]);
   const [areas, setAreas] = useState<AreaOption[]>([]);
   const [areaBoundaries, setAreaBoundaries] = useState<AreaBoundaryRow[]>([]);
 
@@ -102,7 +103,7 @@ export function App() {
         db.getAssignments(current.code),
         db.getOpenAreas(current.code),
         db.getNeedsReminder(current.code),
-        db.getOutreachCandidates(current.code),
+        db.getPossibleOutreach(current.code),
         db.getAreas(current.code),
         db.getCircleBoundaries(current.code),
       ]);
@@ -187,6 +188,15 @@ export function App() {
     [countedAreas, resultsDue]
   );
 
+  const notOnListEmails = useMemo(
+    () =>
+      outreach
+        .filter((o) => o.reason === 'not_on_list')
+        .map((o) => o.email)
+        .filter((e): e is string => Boolean(e)),
+    [outreach]
+  );
+
   const areaParticipantCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const row of assignments) {
@@ -231,6 +241,11 @@ export function App() {
   }
 
   async function handleCreateCircle(payload: NewCirclePayload) {
+    const code = payload.code.trim().toUpperCase();
+    if (savedCircles.some((c) => c.code === code)) {
+      setError(`Circle ${code} is already in My Circles. Select it from the list, or add the new circle with a different code.`);
+      return;
+    }
     try {
       await db.upsertFavoriteCircle({
         code: payload.code,
@@ -246,11 +261,11 @@ export function App() {
         setActive: true,
       });
       if (payload.initialBoundaries && payload.initialBoundaries.length > 0) {
-        await db.upsertCircleBoundaries(payload.code.trim().toUpperCase(), payload.initialBoundaries);
+        await db.upsertCircleBoundaries(code, payload.initialBoundaries);
       }
       await loadAll();
       setTab('map');
-      flash(`Added ${payload.code.toUpperCase()} (${payload.name}) to My Circles.`);
+      flash(`Added ${code} (${payload.name}) to My Circles.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -446,9 +461,9 @@ export function App() {
     });
   }
 
-  async function handleImport(rows: ImportedParticipantRow[]) {
+  async function handleImport(rows: ImportedParticipantRow[], options: ImportOptions) {
     if (!activeCircle) throw new Error('Select or add a circle first.');
-    const res = await db.importParticipants(activeCircle.code, rows);
+    const res = await db.importParticipants(activeCircle.code, rows, options);
     await loadAll();
     return res;
   }
@@ -957,15 +972,18 @@ export function App() {
             <div className="stack">
               <div className="card">
                 <div className="card-header">
-                  <h2>Final Questionnaire Reminders ({reminders.length})</h2>
+                  <h2>Needs a Reminder ({reminders.length})</h2>
                   <button
                     className="btn-primary"
                     disabled={reminders.length === 0}
-                    onClick={() => copyBcc(reminders.map((r) => r.email), 'reminder')}
+                    onClick={() =>
+                      copyBcc(reminders.map((r) => r.email).filter((e): e is string => Boolean(e)), 'reminder')
+                    }
                   >
                     Copy BCC List
                   </button>
                 </div>
+                <p className="muted">Active people with no answer yet for this season.</p>
                 <table>
                   <thead>
                     <tr>
@@ -978,7 +996,7 @@ export function App() {
                     {reminders.map((r) => (
                       <tr key={r.person_id}>
                         <td>{r.full_name}</td>
-                        <td>{r.email}</td>
+                        <td>{r.email ?? '—'}</td>
                         <td>{r.last_year_counted ?? 'Never'}</td>
                       </tr>
                     ))}
@@ -988,23 +1006,26 @@ export function App() {
 
               <div className="card">
                 <div className="card-header">
-                  <h2>Safe Outreach Candidates ({outreach.length})</h2>
+                  <h2>Possible Outreach ({outreach.length})</h2>
                   <button
                     className="btn-primary"
-                    disabled={outreach.length === 0}
-                    onClick={() => copyBcc(outreach.map((r) => r.email), 'outreach')}
+                    disabled={notOnListEmails.length === 0}
+                    onClick={() => copyBcc(notOnListEmails, 'not-on-list')}
                   >
-                    Copy BCC List
+                    Copy BCC: Not on Your List ({notOnListEmails.length})
                   </button>
                 </div>
                 <p className="muted">
-                  Automatically excludes deceased, moved-away, removed/no-show, and external agency contacts.
+                  People on the Audubon list who are not on your current list, and people on your current list who also
+                  have an email that is not on it. Mark your current list when you import it. Only active and inactive
+                  people are shown.
                 </p>
                 <table>
                   <thead>
                     <tr>
                       <th>Name</th>
                       <th>Email</th>
+                      <th>Why</th>
                       <th>Status</th>
                       <th>Last Counted</th>
                       <th>Warnings</th>
@@ -1013,8 +1034,17 @@ export function App() {
                   <tbody>
                     {outreach.map((o) => (
                       <tr key={o.person_id}>
-                        <td>{o.full_name}</td>
-                        <td>{o.email}</td>
+                        <td>
+                          <button type="button" className="link-btn" onClick={() => setHistoryPersonId(o.person_id)}>
+                            {o.full_name}
+                          </button>
+                        </td>
+                        <td>{o.email ?? '—'}</td>
+                        <td>
+                          {o.reason === 'not_on_list'
+                            ? 'On Audubon, not on your list'
+                            : `Old email? ${o.old_emails ?? ''}`}
+                        </td>
                         <td>{o.roster_status}</td>
                         <td>{o.last_year_counted ?? '—'}</td>
                         <td>{o.warnings || '—'}</td>
@@ -1052,7 +1082,7 @@ export function App() {
               areaLabel={selectedArea.label}
               isCounted={!notCountedAreas.some((a) => a.code.toUpperCase() === selectedArea.code.toUpperCase())}
               resultsReceived={Boolean(areas.find((a) => a.code.toUpperCase() === selectedArea.code.toUpperCase())?.results_received)}
-              areaInfo={openAreas.find((o) => o.area.toUpperCase() === selectedArea.code.toUpperCase()) ?? null}
+              areaInfo={areas.find((a) => a.code.toUpperCase() === selectedArea.code.toUpperCase()) ?? null}
               allAreas={countedAreas}
               assignments={assignments}
               backLabel={AREA_RETURN_LABELS[selectedArea.from]}

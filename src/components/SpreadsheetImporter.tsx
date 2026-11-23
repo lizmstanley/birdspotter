@@ -14,13 +14,13 @@ import {
   type ColumnMapping,
   type ValueMap,
 } from '../services/importPreview';
-import type { AreaOption, AssignmentRow, ImportedParticipantRow } from '../db/pgliteDb';
+import type { AreaOption, AssignmentRow, ImportedParticipantRow, ImportOptions } from '../db/pgliteDb';
 
 interface Props {
   circleCode?: string;
   assignments: AssignmentRow[];
   areas: AreaOption[];
-  onImport: (rows: ImportedParticipantRow[]) => Promise<{ imported: number }>;
+  onImport: (rows: ImportedParticipantRow[], options: ImportOptions) => Promise<{ imported: number }>;
   onClearRoster?: () => Promise<void>;
 }
 
@@ -51,6 +51,8 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
   const [rsvpValues, setRsvpValues] = useState<ValueMap>({});
   const [typeValues, setTypeValues] = useState<ValueMap>({});
   const [isAudubon, setIsAudubon] = useState(false);
+  const [defaultRsvp, setDefaultRsvp] = useState('');
+  const [isCurrentList, setIsCurrentList] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -71,6 +73,8 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
     setRawRows(parsed);
     setRsvpValues({});
     setTypeValues({});
+    setDefaultRsvp('');
+    setIsCurrentList(false);
     setMapping({
       nameCol: guessColumn(cols, [/name/i, /participant/i, /birder/i, /nickname/i]),
       emailCol: guessColumn(cols, [/email/i, /e-mail/i]),
@@ -102,6 +106,8 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
     [isAudubon, rawRows, mapping.typeCol]
   );
 
+  const needsDefaultRsvp = !isAudubon && !mapping.rsvpCol;
+
   function chooseMapping(key: keyof ColumnMapping, value: string) {
     setMapping((m) => ({ ...m, [key]: value }));
     if (key === 'rsvpCol') setRsvpValues({});
@@ -113,10 +119,18 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
       setStatus('Please select an Email column first.');
       return;
     }
+    if (needsDefaultRsvp && !defaultRsvp) {
+      setStatus('Choose an RSVP for people new to this season first.');
+      return;
+    }
     setBusy(true);
     setStatus(null);
     try {
-      const res = await onImport(mappedRows);
+      // An Audubon list adds people and marks who is on it. It never changes what the compiler recorded.
+      const options: ImportOptions = isAudubon
+        ? { defaultRsvp: 'no_response', updateExisting: false, isCurrentList: false }
+        : { defaultRsvp: defaultRsvp || undefined, updateExisting: true, isCurrentList };
+      const res = await onImport(mappedRows, options);
       setStatus(`Imported ${res.imported} participant rows into your local browser database.`);
     } catch (err) {
       setStatus(`Import error: ${err instanceof Error ? err.message : String(err)}`);
@@ -263,13 +277,17 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
             <li><strong>Email</strong> (required): rows without an email are skipped. The same email in a later row updates the same person.</li>
             <li><strong>Name</strong>: if blank, the part of the email before the @ is used.</li>
             <li><strong>Area</strong>: an area code such as A1. New codes are added to the circle.</li>
-            <li><strong>RSVP</strong>: for example Yes, Maybe, No. You can choose what each value in your file means before you import.</li>
+            <li><strong>RSVP</strong>: for example Yes, Maybe, No. You can choose what each value in your file means before you import. With no RSVP column, you choose the RSVP for people new to this season.</li>
             <li><strong>Counter Type</strong>: Field, Feeder, or Both. Blank means Field.</li>
             <li><strong>Notes</strong>: saved as a note on the person.</li>
           </ul>
           <p>
-            A participant list exported from your circle page on the Audubon site is recognized and needs no setup. The sample
-            file uses made-up names and emails.
+            A column you skip, or a blank Area, keeps what is already saved for this season.
+          </p>
+          <p>
+            A participant list exported from your circle page on the Audubon site is recognized and needs no setup. It adds
+            new people and marks who is on the Audubon list. It never changes the RSVP, type, or area you already have for
+            someone. The sample file uses made-up names and emails.
           </p>
           <div className="row-actions">
             <button type="button" onClick={() => downloadSample('csv')}>Sample (.csv)</button>
@@ -284,7 +302,7 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
             <p>
               Loaded <strong>{rawRows.length}</strong> rows from <code>{fileName}</code>.{' '}
               {isAudubon
-                ? 'This is an Audubon participant list. Names, emails, sectors, and notes are read automatically. People marked Registered are confirmed; everyone else has no response yet.'
+                ? 'This is an Audubon participant list. Names, emails, sectors, and notes are read automatically. New people marked Registered are confirmed; other new people have no response yet. People already on this season’s list keep their RSVP, type, and area.'
                 : 'Map your columns below:'}
             </p>
             <div className="mapper-grid" hidden={isAudubon}>
@@ -311,6 +329,45 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
                 </label>
               ))}
             </div>
+
+            {!isAudubon && (
+              <div className="value-map">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={isCurrentList}
+                    onChange={(e) => setIsCurrentList(e.target.checked)}
+                  />{' '}
+                  This file is my current list
+                </label>
+                <p className="muted">
+                  For example your mailing list or Google Group members. Everyone in this file is marked as on your
+                  current list, and everyone else in this circle is taken off it. Possible Outreach compares the
+                  Audubon list with it.
+                </p>
+              </div>
+            )}
+
+            {needsDefaultRsvp && (
+              <div className="value-map">
+                <h3>No RSVP column</h3>
+                <p className="muted">
+                  Choose the RSVP for people new to this season. People already on this season&apos;s list keep their RSVP.
+                </p>
+                <select
+                  aria-label="RSVP for new people"
+                  value={defaultRsvp}
+                  onChange={(e) => setDefaultRsvp(e.target.value)}
+                >
+                  <option value="">-- Choose --</option>
+                  {RSVP_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {renderValueMap('RSVP values', rsvpDistinct, rsvpValues, setRsvpValues, RSVP_OPTIONS, normalizeRsvp)}
             {renderValueMap(
@@ -366,7 +423,11 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
                         <td>{r.full_name || <em>from email</em>}</td>
                         <td>{r.email || <em>missing</em>}</td>
                         <td>{r.area_code ?? ''}</td>
-                        <td>{labelFor(RSVP_OPTIONS, normalizeRsvp(r.rsvp_status))}</td>
+                        <td>
+                          {r.rsvp_status
+                            ? labelFor(RSVP_OPTIONS, normalizeRsvp(r.rsvp_status))
+                            : labelFor(RSVP_OPTIONS, defaultRsvp) || <em>choose above</em>}
+                        </td>
                         <td>{labelFor(COUNTER_OPTIONS, normalizeCounterType(r.counter_type))}</td>
                         <td>{r.note ?? ''}</td>
                       </tr>
@@ -379,7 +440,11 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
               )}
             </div>
 
-            <button className="btn-primary" onClick={runImport} disabled={busy || check.willImport === 0}>
+            <button
+              className="btn-primary"
+              onClick={runImport}
+              disabled={busy || check.willImport === 0 || (needsDefaultRsvp && !defaultRsvp)}
+            >
               {busy ? 'Importing...' : `Import ${check.willImport} Participants into Local Postgres`}
             </button>
           </div>

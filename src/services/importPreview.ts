@@ -70,7 +70,10 @@ function cell(row: Record<string, unknown>, column: string): string {
   return column ? String(row[column] ?? '').trim() : '';
 }
 
-/** Rows as the app will read them, after any value choices the user made. */
+/**
+ * Rows as the app will read them, after any value choices the user made.
+ * A skipped RSVP or type column leaves that field undefined, so the import keeps the value already stored.
+ */
 export function buildRows(
   rawRows: Record<string, unknown>[],
   mapping: ColumnMapping,
@@ -84,8 +87,8 @@ export function buildRows(
       full_name: cell(row, mapping.nameCol),
       email: cell(row, mapping.emailCol),
       area_code: cell(row, mapping.areaCol) || null,
-      rsvp_status: mapping.rsvpCol ? (rsvpValues[rsvpRaw] ?? normalizeRsvp(rsvpRaw)) : 'confirmed',
-      counter_type: mapping.typeCol ? (typeValues[typeRaw] ?? normalizeCounterType(typeRaw)) : 'field',
+      rsvp_status: mapping.rsvpCol ? (rsvpValues[rsvpRaw] ?? normalizeRsvp(rsvpRaw)) : undefined,
+      counter_type: mapping.typeCol ? (typeValues[typeRaw] ?? normalizeCounterType(typeRaw)) : undefined,
       note: cell(row, mapping.noteCol),
     };
   });

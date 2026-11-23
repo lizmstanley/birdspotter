@@ -1,4 +1,4 @@
-import type { AreaOption, AssignmentRow, OpenAreaRow } from '../db/pgliteDb';
+import type { AreaOption, AssignmentRow } from '../db/pgliteDb';
 import { countingSince } from './PersonHistoryDialog';
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
   areaLabel?: string | null;
   isCounted: boolean;
   resultsReceived: boolean;
-  areaInfo?: OpenAreaRow | null;
+  areaInfo?: AreaOption | null;
   allAreas: AreaOption[];
   assignments: AssignmentRow[];
   backLabel: string;
@@ -98,7 +98,9 @@ export function AreaDetailPage({
           <div className="stat-card stat-amber">
             <div className="stat-label">Coverage Status</div>
             <div className="stat-value">
-              {areaAssignments.some((a) => a.rsvp_status === 'confirmed' && a.counter_type !== 'home_feeders')
+              {areaAssignments.some(
+                (a) => a.rsvp_status === 'confirmed' && (a.counter_type === 'field' || a.counter_type === 'both')
+              )
                 ? 'Covered'
                 : 'Open'}
             </div>

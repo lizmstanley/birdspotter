@@ -48,6 +48,7 @@ export function PersonHistoryDialog({ db, personId, onClose }: Props) {
 
   // Same rule as seasons_counted in v_current_assignments: confirmed with an area, before this season.
   const currentYear = history?.person.current_year ?? Infinity;
+  const hasListEmail = history?.emails.some((e) => e.on_current_list) ?? false;
   const pastCounted =
     history?.seasons.filter(
       (s) => s.rsvp_status === 'confirmed' && s.assigned_area_code && s.count_year < currentYear
@@ -79,7 +80,8 @@ export function PersonHistoryDialog({ db, personId, onClose }: Props) {
                 <span key={e.email}>
                   {e.email}
                   {e.is_primary && <span className="badge">Primary</span>}
-                  {e.in_google_group && <span className="badge">Google Group</span>}
+                  {e.on_current_list && <span className="badge">Current list</span>}
+                  {hasListEmail && !e.on_current_list && <span className="badge">Old email?</span>}
                   {e.in_audubon_list && <span className="badge">Audubon</span>}
                 </span>
               ))}

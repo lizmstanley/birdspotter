@@ -115,7 +115,7 @@ CREATE TABLE public.person_emails (
     person_id               BIGINT NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
     email                   extensions.citext NOT NULL,
     is_primary              BOOLEAN NOT NULL DEFAULT FALSE,
-    in_google_group         BOOLEAN NOT NULL DEFAULT FALSE,
+    on_current_list         BOOLEAN NOT NULL DEFAULT FALSE,
     google_group_joined_at  TIMESTAMPTZ,
     in_audubon_list         BOOLEAN NOT NULL DEFAULT FALSE,
     is_bouncing             BOOLEAN NOT NULL DEFAULT FALSE,

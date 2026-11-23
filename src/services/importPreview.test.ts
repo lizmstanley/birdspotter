@@ -47,15 +47,15 @@ test('a chosen value overrides the loose reading', () => {
   assert.equal(rows[0].rsvp_status, 'undecided');
 });
 
-test('with no rsvp or type column, rows are confirmed field counters', () => {
+test('with no rsvp or type column, rows carry no rsvp or type', () => {
   const rows = buildRows(
     [{ Name: 'A', Email: 'a@example.com' }],
     { ...MAPPING, rsvpCol: '', typeCol: '' },
     {},
     {}
   );
-  assert.equal(rows[0].rsvp_status, 'confirmed');
-  assert.equal(rows[0].counter_type, 'field');
+  assert.equal(rows[0].rsvp_status, undefined);
+  assert.equal(rows[0].counter_type, undefined);
 });
 
 test('checks report skipped rows, duplicates, and new areas', () => {

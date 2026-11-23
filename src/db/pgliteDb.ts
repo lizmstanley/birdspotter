@@ -1,4 +1,4 @@
-import { PGlite } from '@electric-sql/pglite';
+import { PGlite, type Transaction } from '@electric-sql/pglite';
 import { citext } from '@electric-sql/pglite/contrib/citext';
 import schemaSql from '../../db/migrations/001_initial_schema.sql?raw';
 import viewsSql from '../../db/migrations/002_views.sql?raw';
@@ -46,7 +46,7 @@ export interface PersonHistory {
     first_year_participated: number | null;
     current_year: number | null;
   };
-  emails: Array<{ email: string; is_primary: boolean; in_google_group: boolean; in_audubon_list: boolean }>;
+  emails: Array<{ email: string; is_primary: boolean; on_current_list: boolean; in_audubon_list: boolean }>;
   seasons: Array<{
     count_year: number;
     rsvp_status: string;
@@ -73,16 +73,20 @@ export interface ReminderRow {
   circle_code: string;
   person_id: number;
   full_name: string;
-  email: string;
+  email: string | null;
   last_year_counted: number | null;
 }
 
-export interface OutreachRow {
+export interface PossibleOutreachRow {
   circle_code: string;
   person_id: number;
   full_name: string;
-  email: string;
   roster_status: string;
+  /** not_on_list: on the Audubon list, not the current list. old_email: on the current list, with another email too. */
+  reason: 'not_on_list' | 'old_email';
+  email: string | null;
+  /** Emails that are not on the current list, for reason old_email. */
+  old_emails: string | null;
   last_year_counted: number | null;
   warnings: string;
 }
@@ -91,6 +95,7 @@ export interface AreaOption {
   code: string;
   cities: string | null;
   notable_spots?: string | null;
+  active_restrictions: string | null;
   is_counted: boolean;
   results_received: boolean;
 }
@@ -109,11 +114,31 @@ export interface ImportedParticipantRow {
   full_name: string;
   email: string;
   area_code?: string | null;
+  /** Undefined when the file has no RSVP for this row. */
   rsvp_status?: string;
+  /** Undefined when the file has no counter type for this row. */
   counter_type?: string;
   note?: string;
-  in_google_group?: boolean;
   in_audubon_list?: boolean;
+}
+
+export interface ImportOptions {
+  /** RSVP for a person new to this season whose row has none. */
+  readonly defaultRsvp?: string;
+  /** False: the file only adds people and season records, and never changes ones that exist. */
+  readonly updateExisting: boolean;
+  /** True: the file's emails become the circle's current list, and every other email leaves it. */
+  readonly isCurrentList: boolean;
+}
+
+export class MissingDefaultRsvpError extends Error {
+  readonly email: string;
+
+  constructor(email: string) {
+    super('pgliteDb: a row has no RSVP and no default RSVP was chosen for new people.');
+    this.email = email;
+    this.name = 'MissingDefaultRsvpError';
+  }
 }
 
 function optionalBoolean(value: unknown): boolean | null {
@@ -170,6 +195,11 @@ export class LocalCbcDb {
           ALTER TABLE public.saved_circles ADD COLUMN IF NOT EXISTS count_date TEXT;
           ALTER TABLE public.saved_circles ADD COLUMN IF NOT EXISTS audubon_url TEXT;
         `);
+        if (await this.columnExists(this.db, 'person_emails', 'in_google_group')) {
+          await this.db.exec(
+            'ALTER TABLE public.person_emails RENAME COLUMN in_google_group TO on_current_list;'
+          );
+        }
         await this.limitAreaSetNullToAreaColumns(this.db);
         // Views hold no data; CREATE OR REPLACE brings an existing database to the current definitions.
         await this.db.exec(viewsSql);
@@ -230,7 +260,7 @@ export class LocalCbcDb {
           FROM legacy_single_circle.people;
 
           INSERT INTO public.person_emails (
-              id, circle_code, person_id, email, is_primary, in_google_group, google_group_joined_at,
+              id, circle_code, person_id, email, is_primary, on_current_list, google_group_joined_at,
               in_audubon_list, is_bouncing, notes, created_at
           )
           SELECT id, 'LEGACY', person_id, email::text, is_primary, in_google_group,
@@ -465,7 +495,7 @@ export class LocalCbcDb {
     if (!person.rows[0]) return null;
     const [emails, seasons] = await Promise.all([
       db.query<PersonHistory['emails'][number]>(
-        `SELECT email::TEXT AS email, is_primary, in_google_group, in_audubon_list
+        `SELECT email::TEXT AS email, is_primary, on_current_list, in_audubon_list
          FROM public.person_emails WHERE person_id = $1
          ORDER BY is_primary DESC, email`,
         [personId]
@@ -510,10 +540,12 @@ export class LocalCbcDb {
     ).rows;
   }
 
-  async getOutreachCandidates(circleCode: string): Promise<OutreachRow[]> {
+  async getPossibleOutreach(circleCode: string): Promise<PossibleOutreachRow[]> {
     return (
-      await this.getDb().query<OutreachRow>(
-        'SELECT * FROM public.v_outreach_candidates WHERE circle_code = $1',
+      await this.getDb().query<PossibleOutreachRow>(
+        `SELECT circle_code, person_id, full_name, roster_status, reason, email, old_emails,
+                last_year_counted, warnings
+         FROM public.v_possible_outreach WHERE circle_code = $1`,
         [circleCode]
       )
     ).rows;
@@ -522,7 +554,7 @@ export class LocalCbcDb {
   async getAreas(circleCode: string): Promise<AreaOption[]> {
     return (
       await this.getDb().query<AreaOption>(
-        'SELECT code, cities, notable_spots, is_counted, results_received FROM public.areas WHERE circle_code = $1 ORDER BY sort_order, code',
+        'SELECT code, cities, notable_spots, active_restrictions, is_counted, results_received FROM public.areas WHERE circle_code = $1 ORDER BY sort_order, code',
         [circleCode]
       )
     ).rows;
@@ -548,8 +580,12 @@ export class LocalCbcDb {
     let saved = 0;
     await db.transaction(async (tx) => {
       for (const b of boundaries) {
-        const areaCode = b.code.trim();
-        if (!areaCode) continue;
+        const fileAreaCode = b.code.trim();
+        if (!fileAreaCode) continue;
+        // An outline names an existing area in any case; the outer circle is not an area.
+        const areaCode = b.isOuterCircle
+          ? fileAreaCode
+          : await this.ensureArea(tx, circleCode, fileAreaCode, b.name || null);
         await tx.query(
           `INSERT INTO public.circle_boundaries (circle_code, area_code, sort_order, label, geometry_geojson)
            VALUES ($1, $2, $3, $4, $5::jsonb)
@@ -558,15 +594,6 @@ export class LocalCbcDb {
               geometry_geojson = EXCLUDED.geometry_geojson`,
           [circleCode, areaCode, computeSortOrder(areaCode), b.name || null, JSON.stringify(b.geometry)]
         );
-        // Ensure real sectors exist in public.areas, but skip outer-circle outlines
-        if (!b.isOuterCircle) {
-          await tx.query(
-            `INSERT INTO public.areas (circle_code, code, sort_order, notable_spots)
-             VALUES ($1, $2, $3, $4)
-             ON CONFLICT (circle_code, code) DO NOTHING`,
-            [circleCode, areaCode, computeSortOrder(areaCode), b.name || null]
-          );
-        }
         saved += 1;
       }
     });
@@ -621,7 +648,8 @@ export class LocalCbcDb {
 
   async importParticipants(
     circleCode: string,
-    rows: ImportedParticipantRow[]
+    rows: ImportedParticipantRow[],
+    options: ImportOptions
   ): Promise<{ imported: number }> {
     const db = this.getDb();
     let imported = 0;
@@ -638,21 +666,19 @@ export class LocalCbcDb {
          ON CONFLICT (circle_code, year) DO NOTHING`,
         [circleCode, currentYear]
       );
+      if (options.isCurrentList) {
+        await tx.query('UPDATE public.person_emails SET on_current_list = FALSE WHERE circle_code = $1', [
+          circleCode,
+        ]);
+      }
 
       for (const r of rows) {
         const email = r.email.trim().toLowerCase();
         const fullName = r.full_name.trim() || email.split('@')[0];
         if (!email || !email.includes('@')) continue;
 
-        const areaCode = r.area_code?.trim() || null;
-        if (areaCode) {
-          await tx.query(
-            `INSERT INTO public.areas (circle_code, code, sort_order)
-             VALUES ($1, $2, $3)
-             ON CONFLICT (circle_code, code) DO NOTHING`,
-            [circleCode, areaCode, computeSortOrder(areaCode)]
-          );
-        }
+        const fileAreaCode = r.area_code?.trim() || null;
+        const areaCode = fileAreaCode ? await this.ensureArea(tx, circleCode, fileAreaCode) : null;
 
         const existing = await tx.query<{ person_id: number }>(
           'SELECT person_id FROM public.person_emails WHERE circle_code = $1 AND email = $2 LIMIT 1',
@@ -662,12 +688,12 @@ export class LocalCbcDb {
         let personId: number;
         if (existing.rows[0]) {
           personId = existing.rows[0].person_id;
-          if (r.in_audubon_list) {
-            await tx.query(
-              'UPDATE public.person_emails SET in_audubon_list = TRUE WHERE circle_code = $1 AND email = $2',
-              [circleCode, email]
-            );
-          }
+          await tx.query(
+            `UPDATE public.person_emails
+             SET in_audubon_list = in_audubon_list OR $3, on_current_list = on_current_list OR $4
+             WHERE circle_code = $1 AND email = $2`,
+            [circleCode, email, Boolean(r.in_audubon_list), options.isCurrentList]
+          );
         } else {
           const inserted = await tx.query<{ id: number }>(
             `INSERT INTO public.people (circle_code, full_name, roster_status)
@@ -678,36 +704,51 @@ export class LocalCbcDb {
           personId = inserted.rows[0].id;
 
           await tx.query(
-            `INSERT INTO public.person_emails (circle_code, person_id, email, is_primary, in_google_group, in_audubon_list)
+            `INSERT INTO public.person_emails (circle_code, person_id, email, is_primary, in_audubon_list, on_current_list)
              VALUES ($1, $2, $3, TRUE, $4, $5)
              ON CONFLICT (circle_code, email) DO NOTHING`,
-            [circleCode, personId, email, Boolean(r.in_google_group), Boolean(r.in_audubon_list)]
+            [circleCode, personId, email, Boolean(r.in_audubon_list), options.isCurrentList]
           );
         }
 
+        const fileRsvp = r.rsvp_status ? normalizeRsvp(r.rsvp_status) : null;
+        const fileCounterType = r.counter_type ? normalizeCounterType(r.counter_type) : null;
+        const newRsvp = fileRsvp ?? options.defaultRsvp;
+        if (!newRsvp) throw new MissingDefaultRsvpError(email);
+
+        // A value the file does not give keeps the one already stored.
         await tx.query(
           `INSERT INTO public.participations (
               circle_code, count_year, person_id, rsvp_status, counter_type, assigned_area_code
            )
            VALUES ($1, $2, $3, $4::public.rsvp_status, $5::public.counter_type, $6)
            ON CONFLICT (circle_code, count_year, person_id) DO UPDATE SET
-              rsvp_status = EXCLUDED.rsvp_status,
-              counter_type = EXCLUDED.counter_type,
-              assigned_area_code = COALESCE(EXCLUDED.assigned_area_code, public.participations.assigned_area_code)`,
+              rsvp_status = COALESCE($7::public.rsvp_status, public.participations.rsvp_status),
+              counter_type = COALESCE($8::public.counter_type, public.participations.counter_type),
+              assigned_area_code = COALESCE(EXCLUDED.assigned_area_code, public.participations.assigned_area_code)
+           WHERE $9::BOOLEAN`,
           [
             circleCode,
             currentYear,
             personId,
-            normalizeRsvp(r.rsvp_status),
-            normalizeCounterType(r.counter_type),
+            newRsvp,
+            fileCounterType ?? 'field',
             areaCode,
+            fileRsvp,
+            fileCounterType,
+            options.updateExisting,
           ]
         );
 
         if (r.note?.trim()) {
+          // Importing the same file again must not repeat the note.
           await tx.query(
             `INSERT INTO public.notes (circle_code, person_id, area_code, count_year, category, body, is_pinned)
-             VALUES ($1, $2, $3, $4, 'general', $5, FALSE)`,
+             SELECT $1, $2, $3::TEXT, $4::SMALLINT, 'general', $5::TEXT, FALSE
+             WHERE NOT EXISTS (
+               SELECT 1 FROM public.notes
+               WHERE circle_code = $1 AND person_id = $2 AND count_year = $4::SMALLINT AND body = $5::TEXT
+             )`,
             [circleCode, personId, areaCode, currentYear, r.note.trim()]
           );
         }
@@ -717,6 +758,28 @@ export class LocalCbcDb {
     });
 
     return { imported };
+  }
+
+  /** @returns the circle's existing code that matches `code` ignoring case, or `code` after adding it */
+  private async ensureArea(
+    tx: Transaction,
+    circleCode: string,
+    code: string,
+    notableSpots: string | null = null
+  ): Promise<string> {
+    const existing = await tx.query<{ code: string }>(
+      `SELECT code FROM public.areas
+       WHERE circle_code = $1 AND UPPER(code) = UPPER($2)
+       ORDER BY code
+       LIMIT 1`,
+      [circleCode, code]
+    );
+    if (existing.rows[0]) return existing.rows[0].code;
+    await tx.query(
+      'INSERT INTO public.areas (circle_code, code, sort_order, notable_spots) VALUES ($1, $2, $3, $4)',
+      [circleCode, code, computeSortOrder(code), notableSpots]
+    );
+    return code;
   }
 
   async exportJsonBackup(): Promise<string> {
@@ -901,7 +964,7 @@ export class LocalCbcDb {
         if (!newPersonId) continue;
         await tx.query(
           `INSERT INTO public.person_emails (
-              circle_code, person_id, email, is_primary, in_google_group, in_audubon_list, is_bouncing, notes,
+              circle_code, person_id, email, is_primary, on_current_list, in_audubon_list, is_bouncing, notes,
               google_group_joined_at
            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz)
            ON CONFLICT (circle_code, email) DO NOTHING`,
@@ -910,7 +973,8 @@ export class LocalCbcDb {
             newPersonId,
             String(e.email).toLowerCase(),
             Boolean(e.is_primary),
-            Boolean(e.in_google_group),
+            // Older backups and the ETL name the current list after the Google Group it came from.
+            Boolean(e.on_current_list ?? e.in_google_group),
             Boolean(e.in_audubon_list),
             Boolean(e.is_bouncing),
             e.notes ? String(e.notes) : null,
