@@ -3,7 +3,15 @@
  * `withAudubonPageDetails` fills count date and compiler from the Audubon circle page.
  * Decoupled for reuse in Aviscout.
  */
-import { fetchAudubonCircleDetails } from './audubonCirclePage';
+import { fetchAudubonCircleDetails } from './audubonCirclePage.ts';
+import { isLatitude, isLongitude } from './coordinates.ts';
+import {
+  AudubonProxyUnavailableError,
+  AudubonRequestError,
+  AudubonUnreachableError,
+  UnexpectedResponseError,
+} from './errors.ts';
+import { FETCH_TIMEOUT_MS, isRecord, isRequestFailure } from './http.ts';
 
 export interface AudubonCircleResult {
   code: string;
@@ -42,71 +50,97 @@ const AUDUBON_OWNER_SUFFIX = '_audubon';
 
 let cachedLayerMeta: ArcGisLayerMeta | null = null;
 
+/**
+ * @returns the parsed body, or null when the request fails, times out, answers with an error status,
+ *   or is not JSON. Every caller has a fallback source to move on to.
+ */
+async function fetchOptionalJson(url: string): Promise<unknown> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    if (!res.ok) return null;
+    return (await res.json()) as unknown;
+  } catch (err) {
+    if (isRequestFailure(err)) return null;
+    throw err;
+  }
+}
+
 async function inspectFeatureLayer(serviceUrl: string): Promise<ArcGisLayerMeta | null> {
   const cleanUrl = serviceUrl.replace(/\/$/, '');
   const layerUrl = `${cleanUrl}/0`;
-  try {
-    const res = await fetch(`${layerUrl}?f=json`);
-    if (!res.ok) return null;
-    const meta = (await res.json()) as {
-      fields?: Array<{ name: string }>;
-    };
-    const names = (meta.fields ?? []).map((f) => f.name);
-    const findField = (candidates: string[]) =>
-      names.find((n) => candidates.some((c) => n.toLowerCase() === c.toLowerCase())) ?? null;
+  const meta = await fetchOptionalJson(`${layerUrl}?f=json`);
+  if (!isRecord(meta) || !Array.isArray(meta.fields)) return null;
+  const names = meta.fields.flatMap((f: unknown) => (isRecord(f) && typeof f.name === 'string' ? [f.name] : []));
+  const findField = (candidates: string[]) =>
+    names.find((n) => candidates.some((c) => n.toLowerCase() === c.toLowerCase())) ?? null;
 
-    const codeField = findField(['Abbrev', 'Circle_Code', 'CircleCode', 'CODE', 'CBC_Code']);
-    const nameField = findField(['Name', 'Circle_Name', 'CircleName', 'NAME', 'CBC_Name']);
-    if (!codeField || !nameField) return null;
+  const codeField = findField(['Abbrev', 'Circle_Code', 'CircleCode', 'CODE', 'CBC_Code']);
+  const nameField = findField(['Name', 'Circle_Name', 'CircleName', 'NAME', 'CBC_Name']);
+  if (!codeField || !nameField) return null;
 
-    return {
-      url: layerUrl,
-      codeField,
-      nameField,
-      stateField: findField(['Subnational_code', 'State', 'STATE', 'State_Prov']),
-      latField: findField(['Latitude', 'LAT', 'Center_Lat']),
-      lngField: findField(['Longitude', 'LNG', 'LON', 'Center_Lng']),
-      compilerNameField: findField(['Compiler', 'Compiler_Name', 'CompilerName', 'Contact_Name', 'ContactName', 'FirstName', 'First_Name']),
-      compilerEmailField: findField(['Email', 'Compiler_Email', 'CompilerEmail', 'Contact_Email', 'EmailAddress', 'EmailAddre', 'Email_Address']),
-      countDateField: findField(['Cnt_dt', 'Count_Date', 'CountDate', 'Date', 'CBC_Date', 'Cnt_Date', 'Current_Date']),
-    };
-  } catch {
-    return null;
-  }
+  return {
+    url: layerUrl,
+    codeField,
+    nameField,
+    stateField: findField(['Subnational_code', 'State', 'STATE', 'State_Prov']),
+    latField: findField(['Latitude', 'LAT', 'Center_Lat']),
+    lngField: findField(['Longitude', 'LNG', 'LON', 'Center_Lng']),
+    compilerNameField: findField(['Compiler', 'Compiler_Name', 'CompilerName', 'Contact_Name', 'ContactName', 'FirstName', 'First_Name']),
+    compilerEmailField: findField(['Email', 'Compiler_Email', 'CompilerEmail', 'Contact_Email', 'EmailAddress', 'EmailAddre', 'Email_Address']),
+    countDateField: findField(['Cnt_dt', 'Count_Date', 'CountDate', 'Date', 'CBC_Date', 'Cnt_Date', 'Current_Date']),
+  };
 }
 
 async function discoverAudubonLayer(): Promise<ArcGisLayerMeta | null> {
   if (cachedLayerMeta) return cachedLayerMeta;
 
   for (const q of ARCGIS_QUERIES) {
-    try {
-      const searchUrl =
-        'https://www.arcgis.com/sharing/rest/search?q=' +
-        encodeURIComponent(q) +
-        '&sortField=modified&sortOrder=desc&num=25&f=json';
-      const res = await fetch(searchUrl);
-      if (!res.ok) continue;
-      const data = (await res.json()) as {
-        results?: Array<{ url?: string; owner?: string }>;
-      };
-      for (const item of data.results ?? []) {
-        if (!item.url || !/FeatureServer/i.test(item.url)) continue;
-        if (!item.owner?.endsWith(AUDUBON_OWNER_SUFFIX)) continue;
-        const inspected = await inspectFeatureLayer(item.url);
-        if (inspected) {
-          cachedLayerMeta = inspected;
-          return inspected;
-        }
+    const searchUrl =
+      'https://www.arcgis.com/sharing/rest/search?q=' +
+      encodeURIComponent(q) +
+      '&sortField=modified&sortOrder=desc&num=25&f=json';
+    const data = await fetchOptionalJson(searchUrl);
+    const items: unknown[] = isRecord(data) && Array.isArray(data.results) ? data.results : [];
+    for (const item of items) {
+      if (!isRecord(item) || typeof item.url !== 'string' || typeof item.owner !== 'string') continue;
+      if (!/FeatureServer/i.test(item.url) || !item.owner.endsWith(AUDUBON_OWNER_SUFFIX)) continue;
+      const inspected = await inspectFeatureLayer(item.url);
+      if (inspected) {
+        cachedLayerMeta = inspected;
+        return inspected;
       }
-    } catch {
-      // Try next query
     }
   }
   return null;
 }
 
-function escapeSqlLike(input: string): string {
-  return input.replace(/'/g, "''").trim().toUpperCase();
+/** Escapes LIKE wildcards and quotes so the term matches only itself with `ESCAPE '\'`. */
+function toLikeLiteral(term: string): string {
+  return term.replace(/[\\%_]/g, '\\$&').replace(/'/g, "''");
+}
+
+interface NominatimPlace {
+  display_name: string;
+  lat: string;
+  lon: string;
+  address?: Record<string, unknown>;
+}
+
+function isNominatimPlace(value: unknown): value is NominatimPlace {
+  return (
+    isRecord(value) &&
+    typeof value.display_name === 'string' &&
+    typeof value.lat === 'string' &&
+    typeof value.lon === 'string' &&
+    isLatitude(Number(value.lat)) &&
+    isLongitude(Number(value.lon)) &&
+    (value.address === undefined || isRecord(value.address))
+  );
+}
+
+function addressText(place: NominatimPlace, key: string): string | undefined {
+  const value = place.address?.[key];
+  return typeof value === 'string' && value ? value : undefined;
 }
 
 async function searchNominatimPlaces(query: string): Promise<AudubonCircleResult[]> {
@@ -115,22 +149,21 @@ async function searchNominatimPlaces(query: string): Promise<AudubonCircleResult
     encodeURIComponent(query.trim());
   const res = await fetch(url, {
     headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) return [];
-  const data = (await res.json()) as Array<{
-    display_name: string;
-    lat: string;
-    lon: string;
-    address?: { state?: string; town?: string; city?: string; village?: string };
-  }>;
+  const data: unknown = await res.json();
+  if (!Array.isArray(data) || !data.every(isNominatimPlace)) {
+    throw new UnexpectedResponseError('nominatim', 'search');
+  }
 
   return data.map((item, idx) => {
     const shortName =
-      item.address?.city ||
-      item.address?.town ||
-      item.address?.village ||
+      addressText(item, 'city') ??
+      addressText(item, 'town') ??
+      addressText(item, 'village') ??
       item.display_name.split(',')[0];
-    const state = item.address?.state ?? '';
+    const state = addressText(item, 'state') ?? '';
     const codePrefix = (state.slice(0, 2) || 'US').toUpperCase();
     const codeSuffix = shortName.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || `${idx + 1}`;
     return {
@@ -146,12 +179,13 @@ async function searchNominatimPlaces(query: string): Promise<AudubonCircleResult
 }
 
 export async function searchAudubonCircles(query: string): Promise<AudubonCircleResult[]> {
-  const cleaned = escapeSqlLike(query);
-  if (cleaned.length < 2) return [];
+  const term = query.trim().toUpperCase();
+  if (term.length < 2) return [];
 
   const layer = await discoverAudubonLayer();
   if (layer) {
-    const where = `UPPER(${layer.codeField}) LIKE '%${cleaned}%' OR UPPER(${layer.nameField}) LIKE '%${cleaned}%'`;
+    const pattern = `'%${toLikeLiteral(term)}%' ESCAPE '\\'`;
+    const where = `UPPER(${layer.codeField}) LIKE ${pattern} OR UPPER(${layer.nameField}) LIKE ${pattern}`;
     const params = new URLSearchParams({
       where,
       outFields: '*',
@@ -161,70 +195,60 @@ export async function searchAudubonCircles(query: string): Promise<AudubonCircle
       f: 'json',
     });
 
-    try {
-      const res = await fetch(`${layer.url}/query?${params.toString()}`);
-      if (res.ok) {
-        const data = (await res.json()) as {
-          features?: Array<{
-            attributes?: Record<string, unknown>;
-            geometry?: { x?: number; y?: number };
-          }>;
-        };
+    const data = await fetchOptionalJson(`${layer.url}/query?${params.toString()}`);
+    const features: unknown[] = isRecord(data) && Array.isArray(data.features) ? data.features : [];
+    const results: AudubonCircleResult[] = [];
+    for (const f of features) {
+      if (!isRecord(f)) continue;
+      const attrs = isRecord(f.attributes) ? f.attributes : {};
+      const geometry = isRecord(f.geometry) ? f.geometry : {};
+      const code = String(attrs[layer.codeField] ?? '').trim().toUpperCase();
+      const name = String(attrs[layer.nameField] ?? '').trim();
+      const state = layer.stateField ? String(attrs[layer.stateField] ?? '').trim() : '';
+      const lat = Number((layer.latField ? attrs[layer.latField] : undefined) ?? geometry.y);
+      const lng = Number((layer.lngField ? attrs[layer.lngField] : undefined) ?? geometry.x);
+      if (!code || !isLatitude(lat) || !isLongitude(lng)) continue;
 
-        const results: AudubonCircleResult[] = [];
-        for (const f of data.features ?? []) {
-          const attrs = f.attributes ?? {};
-          const code = String(attrs[layer.codeField] ?? '').trim().toUpperCase();
-          const name = String(attrs[layer.nameField] ?? '').trim();
-          const state = layer.stateField ? String(attrs[layer.stateField] ?? '').trim() : '';
-          const lat = Number((layer.latField ? attrs[layer.latField] : undefined) ?? f.geometry?.y);
-          const lng = Number((layer.lngField ? attrs[layer.lngField] : undefined) ?? f.geometry?.x);
-          if (!code || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-
-          let compilerName = layer.compilerNameField
-            ? String(attrs[layer.compilerNameField] ?? '').trim()
-            : '';
-          const lastName = attrs['LastName'] ?? attrs['Last_Name'];
-          if (/^first_?name$/i.test(layer.compilerNameField ?? '') && lastName) {
-            compilerName = `${compilerName} ${String(lastName).trim()}`.trim();
-          }
-          const compilerEmail = layer.compilerEmailField
-            ? String(attrs[layer.compilerEmailField] ?? '').trim()
-            : '';
-          let countDate = '';
-          if (layer.countDateField && attrs[layer.countDateField] != null) {
-            const rawDate = attrs[layer.countDateField];
-            if (typeof rawDate === 'number' && rawDate > 100000000000) {
-              countDate = new Date(rawDate).toISOString().slice(0, 10);
-            } else {
-              countDate = String(rawDate).trim();
-            }
-          }
-
-          results.push({
-            code,
-            name: name || code,
-            state,
-            lat: Number(lat.toFixed(5)),
-            lng: Number(lng.toFixed(5)),
-            source: 'audubon',
-            joinUrl: 'https://cbc.audubon.org/en/join',
-            compilerName: compilerName || undefined,
-            compilerEmail: compilerEmail || undefined,
-            countDate: countDate || undefined,
-          });
-        }
-
-        if (results.length > 0) {
-          return results.sort((a, b) => {
-            if (a.code === cleaned && b.code !== cleaned) return -1;
-            if (b.code === cleaned && a.code !== cleaned) return 1;
-            return a.name.localeCompare(b.name);
-          });
+      let compilerName = layer.compilerNameField
+        ? String(attrs[layer.compilerNameField] ?? '').trim()
+        : '';
+      const lastName = attrs['LastName'] ?? attrs['Last_Name'];
+      if (/^first_?name$/i.test(layer.compilerNameField ?? '') && lastName) {
+        compilerName = `${compilerName} ${String(lastName).trim()}`.trim();
+      }
+      const compilerEmail = layer.compilerEmailField
+        ? String(attrs[layer.compilerEmailField] ?? '').trim()
+        : '';
+      let countDate = '';
+      if (layer.countDateField && attrs[layer.countDateField] != null) {
+        const rawDate = attrs[layer.countDateField];
+        if (typeof rawDate === 'number' && rawDate > 100000000000) {
+          countDate = new Date(rawDate).toISOString().slice(0, 10);
+        } else {
+          countDate = String(rawDate).trim();
         }
       }
-    } catch {
-      // Fall through to Nominatim place search
+
+      results.push({
+        code,
+        name: name || code,
+        state,
+        lat: Number(lat.toFixed(5)),
+        lng: Number(lng.toFixed(5)),
+        source: 'audubon',
+        joinUrl: 'https://cbc.audubon.org/en/join',
+        compilerName: compilerName || undefined,
+        compilerEmail: compilerEmail || undefined,
+        countDate: countDate || undefined,
+      });
+    }
+
+    if (results.length > 0) {
+      return results.sort((a, b) => {
+        if (a.code === term && b.code !== term) return -1;
+        if (b.code === term && a.code !== term) return 1;
+        return a.name.localeCompare(b.name);
+      });
     }
   }
 
@@ -241,9 +265,10 @@ export async function withAudubonPageDetails(result: AudubonCircleResult): Promi
   let details;
   try {
     details = await fetchAudubonCircleDetails(result.code);
-  } catch {
-    // Best effort: the ArcGIS data is still usable when the page cannot be reached.
-    return result;
+  } catch (err) {
+    // The ArcGIS data is still usable when the page cannot be reached.
+    if (isPageUnreachable(err)) return result;
+    throw err;
   }
   if (!details) return result;
   return {
@@ -258,4 +283,12 @@ export async function withAudubonPageDetails(result: AudubonCircleResult): Promi
     countDate: details.countDate ?? result.countDate,
     hasAudubonPageDetails: true,
   };
+}
+
+function isPageUnreachable(err: unknown): boolean {
+  return (
+    err instanceof AudubonProxyUnavailableError ||
+    err instanceof AudubonRequestError ||
+    err instanceof AudubonUnreachableError
+  );
 }

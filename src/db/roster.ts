@@ -1,17 +1,21 @@
 import type { PGlite, Transaction } from '@electric-sql/pglite';
 import { normalizeCounterType, normalizeRsvp } from '../services/importPreview.ts';
-import { seasonInPreparation } from '../services/season.ts';
 import { ensureArea } from './areas.ts';
 import { MissingDefaultRsvpError } from './errors.ts';
+import type { Queryable } from './queryable.ts';
+import { currentSeasonOf } from './seasons.ts';
 import type { ImportedParticipantRow, ImportOptions } from './types.ts';
 
+/** Deletes a circle's people and everything that references them, children first. */
+export async function deleteRosterRows(tx: Queryable, circleCode: string): Promise<void> {
+  await tx.query('DELETE FROM public.notes WHERE circle_code = $1', [circleCode]);
+  await tx.query('DELETE FROM public.participations WHERE circle_code = $1', [circleCode]);
+  await tx.query('DELETE FROM public.person_emails WHERE circle_code = $1', [circleCode]);
+  await tx.query('DELETE FROM public.people WHERE circle_code = $1', [circleCode]);
+}
+
 export async function clearCircleRoster(db: PGlite, circleCode: string): Promise<void> {
-  await db.transaction(async (tx) => {
-    await tx.query('DELETE FROM public.notes WHERE circle_code = $1', [circleCode]);
-    await tx.query('DELETE FROM public.participations WHERE circle_code = $1', [circleCode]);
-    await tx.query('DELETE FROM public.person_emails WHERE circle_code = $1', [circleCode]);
-    await tx.query('DELETE FROM public.people WHERE circle_code = $1', [circleCode]);
-  });
+  await db.transaction((tx) => deleteRosterRows(tx, circleCode));
 }
 
 export async function reassignArea(db: PGlite, participationId: number, newAreaCode: string | null): Promise<void> {
@@ -44,11 +48,7 @@ export async function importParticipants(
   let imported = 0;
 
   await db.transaction(async (tx) => {
-    const yearRes = await tx.query<{ year: number }>(
-      'SELECT year FROM public.count_years WHERE circle_code = $1 AND is_current = TRUE LIMIT 1',
-      [circleCode]
-    );
-    const currentYear = yearRes.rows[0]?.year ?? seasonInPreparation(new Date());
+    const currentYear = await currentSeasonOf(tx, circleCode);
     await tx.query(
       `INSERT INTO public.count_years (circle_code, year, is_current)
        VALUES ($1, $2, TRUE)

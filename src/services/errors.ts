@@ -46,6 +46,16 @@ export class AudubonRequestError extends Error {
   }
 }
 
+export class AudubonUnreachableError extends Error {
+  readonly circleCode: string;
+
+  constructor(circleCode: string, cause: unknown) {
+    super('audubonCirclePage: the circle page could not be reached.', { cause });
+    this.circleCode = circleCode;
+    this.name = 'AudubonUnreachableError';
+  }
+}
+
 export class InvalidKmlError extends Error {
   constructor() {
     super('kmlParser: the file is not valid KML.');
@@ -64,5 +74,41 @@ export class InvalidGeoJsonError extends Error {
   constructor() {
     super('kmlParser: GeoJSON must be a FeatureCollection.');
     this.name = 'InvalidGeoJsonError';
+  }
+}
+
+export class InvalidCoordinatesError extends Error {
+  readonly featureName: string;
+
+  constructor(featureName: string) {
+    super('kmlParser: a boundary has a coordinate that is not a valid longitude and latitude.');
+    this.featureName = featureName;
+    this.name = 'InvalidCoordinatesError';
+  }
+}
+
+export class BoundaryFileTooLargeError extends Error {
+  readonly part: 'archive' | 'unzipped';
+  readonly sizeBytes: number;
+  readonly limitBytes: number;
+
+  constructor(part: 'archive' | 'unzipped', sizeBytes: number, limitBytes: number) {
+    super(`kmlParser: the .kmz file is too large. The limit is ${Math.round(limitBytes / 1_000_000)} MB.`);
+    this.part = part;
+    this.sizeBytes = sizeBytes;
+    this.limitBytes = limitBytes;
+    this.name = 'BoundaryFileTooLargeError';
+  }
+}
+
+export class UnexpectedResponseError extends Error {
+  readonly source: 'ebird' | 'nominatim';
+  readonly endpoint: string;
+
+  constructor(source: 'ebird' | 'nominatim', endpoint: string) {
+    super(`${source}: the ${endpoint} response was not in the expected format.`);
+    this.source = source;
+    this.endpoint = endpoint;
+    this.name = 'UnexpectedResponseError';
   }
 }

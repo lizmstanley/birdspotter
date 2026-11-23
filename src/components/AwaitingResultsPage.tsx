@@ -1,4 +1,5 @@
 import type { AreaOption, AssignmentRow } from '../db/pgliteDb';
+import { areaDisplayName } from './map/mapText';
 
 interface Props {
   circleCode: string;
@@ -92,7 +93,7 @@ export function AwaitingResultsPage({
             ) : (
               awaiting.map((area) => {
                 const { people, emails } = getAreaContacts(area.code);
-                const label = /^\d/.test(area.code) ? `Area ${area.code}` : area.code;
+                const label = areaDisplayName(area.code);
                 return (
                   <tr key={area.code}>
                     <td>
@@ -157,7 +158,7 @@ export function AwaitingResultsPage({
             </thead>
             <tbody>
               {received.map((area) => {
-                const label = /^\d/.test(area.code) ? `Area ${area.code}` : area.code;
+                const label = areaDisplayName(area.code);
                 return (
                   <tr key={area.code}>
                     <td>

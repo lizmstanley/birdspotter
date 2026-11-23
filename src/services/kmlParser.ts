@@ -5,7 +5,19 @@
  * Intentionally decoupled from PGlite so it can be reused directly in Aviscout.
  */
 import { strFromU8, unzipSync } from 'fflate';
-import { InvalidGeoJsonError, InvalidKmlError, KmzMissingKmlError } from './errors.ts';
+import { OUTER_CIRCLE_COLORS } from './cbcCircle.ts';
+import { isLatitude, isLongitude } from './coordinates.ts';
+import {
+  BoundaryFileTooLargeError,
+  InvalidCoordinatesError,
+  InvalidGeoJsonError,
+  InvalidKmlError,
+  KmzMissingKmlError,
+} from './errors.ts';
+import { isRecord } from './http.ts';
+
+export const KMZ_MAX_BYTES = 20_000_000;
+export const KMZ_MAX_UNZIPPED_BYTES = 50_000_000;
 
 export interface GeoJsonGeometry {
   type: 'Polygon' | 'MultiPolygon' | 'LineString' | 'Point';
@@ -80,34 +92,56 @@ function extractAreaCode(rawName: string, fallbackIndex: number): string {
   return trimmed.slice(0, 28);
 }
 
-function parseCoordinateString(coordText: string): [number, number][] {
-  const coords: [number, number][] = [];
-  const tokens = coordText.trim().split(/\s+/);
-  for (const token of tokens) {
-    const parts = token.split(',');
-    if (parts.length < 2) continue;
-    const lng = Number(parts[0]);
-    const lat = Number(parts[1]);
-    if (Number.isFinite(lng) && Number.isFinite(lat)) {
-      coords.push([lng, lat]);
-    }
-  }
-  return coords;
+function isPosition(value: unknown): boolean {
+  return Array.isArray(value) && value.length >= 2 && isLongitude(value[0]) && isLatitude(value[1]);
 }
 
-function parseKmlPolygon(polyEl: Element): [number, number][][] | null {
+function isPositionList(value: unknown): boolean {
+  return Array.isArray(value) && value.every(isPosition);
+}
+
+function isPolygonRings(value: unknown): boolean {
+  return Array.isArray(value) && value.every(isPositionList);
+}
+
+type BoundaryGeometryType = Exclude<GeoJsonGeometry['type'], 'Point'>;
+
+const COORDINATE_CHECKS: Record<BoundaryGeometryType, (coordinates: unknown) => boolean> = {
+  LineString: isPositionList,
+  Polygon: isPolygonRings,
+  MultiPolygon: (coordinates) => Array.isArray(coordinates) && coordinates.every(isPolygonRings),
+};
+
+function isBoundaryGeometryType(value: unknown): value is BoundaryGeometryType {
+  return typeof value === 'string' && Object.hasOwn(COORDINATE_CHECKS, value);
+}
+
+/** @throws InvalidCoordinatesError when a token is not a `lng,lat[,alt]` position on the globe */
+function parseCoordinateString(coordText: string, featureName: string): [number, number][] {
+  const tokens = coordText.trim().split(/\s+/).filter(Boolean);
+  return tokens.map((token) => {
+    const parts = token.split(',');
+    const position = parts.map(Number);
+    if (parts.length > 3 || parts.includes('') || !isPosition(position)) {
+      throw new InvalidCoordinatesError(featureName);
+    }
+    return [position[0], position[1]];
+  });
+}
+
+function parseKmlPolygon(polyEl: Element, featureName: string): [number, number][][] | null {
   const rings: [number, number][][] = [];
 
   const outerCoords = polyEl.querySelector('outerBoundaryIs coordinates');
   if (!outerCoords?.textContent) return null;
-  const outerRing = parseCoordinateString(outerCoords.textContent);
+  const outerRing = parseCoordinateString(outerCoords.textContent, featureName);
   if (outerRing.length < 3) return null;
   rings.push(outerRing);
 
   const innerEls = polyEl.querySelectorAll('innerBoundaryIs coordinates');
   innerEls.forEach((el) => {
     if (el.textContent) {
-      const hole = parseCoordinateString(el.textContent);
+      const hole = parseCoordinateString(el.textContent, featureName);
       if (hole.length >= 3) rings.push(hole);
     }
   });
@@ -168,12 +202,12 @@ export function parseKmlText(kmlText: string): ParsedAreaBoundary[] {
     const kmlStyle = styleMap.get(styleUrl);
     const fallback = getPaletteColorForCode(code, idx);
 
-    const fillColor = outerCircle ? '#000000' : (kmlStyle?.fill ?? fallback.fill);
-    const strokeColor = outerCircle ? '#1e293b' : (kmlStyle?.stroke ?? fallback.stroke);
+    const fillColor = outerCircle ? OUTER_CIRCLE_COLORS.fill : (kmlStyle?.fill ?? fallback.fill);
+    const strokeColor = outerCircle ? OUTER_CIRCLE_COLORS.stroke : (kmlStyle?.stroke ?? fallback.stroke);
 
     const polygons = Array.from(pm.getElementsByTagName('Polygon'));
     if (polygons.length === 1) {
-      const rings = parseKmlPolygon(polygons[0]);
+      const rings = parseKmlPolygon(polygons[0], name);
       if (rings) {
         results.push({
           code,
@@ -190,7 +224,7 @@ export function parseKmlText(kmlText: string): ParsedAreaBoundary[] {
 
     if (polygons.length > 1) {
       const multiCoords = polygons
-        .map(parseKmlPolygon)
+        .map((polygon) => parseKmlPolygon(polygon, name))
         .filter((r): r is [number, number][][] => r !== null);
       if (multiCoords.length > 0) {
         results.push({
@@ -208,7 +242,7 @@ export function parseKmlText(kmlText: string): ParsedAreaBoundary[] {
 
     const lineCoords = pm.querySelector('LineString coordinates')?.textContent;
     if (lineCoords) {
-      const coords = parseCoordinateString(lineCoords);
+      const coords = parseCoordinateString(lineCoords, name);
       if (coords.length >= 2) {
         results.push({
           code,
@@ -226,9 +260,28 @@ export function parseKmlText(kmlText: string): ParsedAreaBoundary[] {
   return results;
 }
 
+function isKmlEntry(name: string): boolean {
+  return name.toLowerCase().endsWith('.kml');
+}
+
+/** @throws BoundaryFileTooLargeError when the archive or the KML inside it is over its size limit */
 export function parseKmzBuffer(buffer: ArrayBuffer): ParsedAreaBoundary[] {
-  const entries = unzipSync(new Uint8Array(buffer));
-  const kmlNames = Object.keys(entries).filter((name) => name.toLowerCase().endsWith('.kml'));
+  if (buffer.byteLength > KMZ_MAX_BYTES) {
+    throw new BoundaryFileTooLargeError('archive', buffer.byteLength, KMZ_MAX_BYTES);
+  }
+  let unzippedBytes = 0;
+  const entries = unzipSync(new Uint8Array(buffer), {
+    filter: (file) => {
+      if (!isKmlEntry(file.name)) return false;
+      // fflate inflates into a buffer of originalSize and copies stored entries at size, so the larger bounds the output.
+      unzippedBytes += Math.max(file.size, file.originalSize);
+      if (unzippedBytes > KMZ_MAX_UNZIPPED_BYTES) {
+        throw new BoundaryFileTooLargeError('unzipped', unzippedBytes, KMZ_MAX_UNZIPPED_BYTES);
+      }
+      return true;
+    },
+  });
+  const kmlNames = Object.keys(entries);
 
   if (kmlNames.length === 0) {
     throw new KmzMissingKmlError();
@@ -243,25 +296,20 @@ export function parseKmzBuffer(buffer: ArrayBuffer): ParsedAreaBoundary[] {
   return parseKmlText(kmlText);
 }
 
+/** @throws InvalidCoordinatesError when a line or polygon has a position that is not on the globe */
 export function parseGeoJsonText(jsonText: string): ParsedAreaBoundary[] {
-  const parsed = JSON.parse(jsonText) as {
-    type?: string;
-    features?: Array<{
-      properties?: Record<string, unknown>;
-      geometry?: GeoJsonGeometry;
-    }>;
-  };
-
-  if (parsed.type !== 'FeatureCollection' || !Array.isArray(parsed.features)) {
+  const parsed: unknown = JSON.parse(jsonText);
+  if (!isRecord(parsed) || parsed.type !== 'FeatureCollection' || !Array.isArray(parsed.features)) {
     throw new InvalidGeoJsonError();
   }
 
   const results: ParsedAreaBoundary[] = [];
-  parsed.features.forEach((f, idx) => {
-    if (!f.geometry) return;
-    if (!['Polygon', 'MultiPolygon', 'LineString'].includes(f.geometry.type)) return;
-    const props = f.properties ?? {};
+  parsed.features.forEach((f: unknown, idx) => {
+    if (!isRecord(f) || !isRecord(f.geometry) || !isBoundaryGeometryType(f.geometry.type)) return;
+    const geometryType = f.geometry.type;
+    const props = isRecord(f.properties) ? f.properties : {};
     const rawName = String(props.name ?? props.Name ?? props.area ?? props.code ?? '').trim();
+    if (!COORDINATE_CHECKS[geometryType](f.geometry.coordinates)) throw new InvalidCoordinatesError(rawName);
     const description = String(props.description ?? props.Description ?? '').trim();
     const code = extractAreaCode(rawName, idx);
     const outerCircle = isOuterCircleName(rawName);
@@ -271,14 +319,22 @@ export function parseGeoJsonText(jsonText: string): ParsedAreaBoundary[] {
       code,
       name: rawName || code,
       description,
-      geometry: f.geometry,
-      fillColor: outerCircle ? '#000000' : fallback.fill,
-      strokeColor: outerCircle ? '#1e293b' : fallback.stroke,
+      geometry: { type: geometryType, coordinates: f.geometry.coordinates },
+      fillColor: outerCircle ? OUTER_CIRCLE_COLORS.fill : fallback.fill,
+      strokeColor: outerCircle ? OUTER_CIRCLE_COLORS.stroke : fallback.stroke,
       isOuterCircle: outerCircle,
     });
   });
 
   return results;
+}
+
+/** Picks the parser from the file name: .kmz, .kml, and otherwise GeoJSON. */
+export async function parseBoundaryFile(file: File): Promise<ParsedAreaBoundary[]> {
+  const lower = file.name.toLowerCase();
+  if (lower.endsWith('.kmz')) return parseKmzBuffer(await file.arrayBuffer());
+  if (lower.endsWith('.kml')) return parseKmlText(await file.text());
+  return parseGeoJsonText(await file.text());
 }
 
 export function computeGeometryCenter(geometry: GeoJsonGeometry): [number, number] | null {

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { findAreaAt } from '../services/areaLookup';
+import { CBC_CIRCLE_RADIUS_MILES } from '../services/cbcCircle';
 import type { ParsedAreaBoundary } from '../services/kmlParser';
 import { AreaImportBar } from './map/AreaImportBar';
 import { excludeNotCounted } from './map/areaFeatures';
@@ -41,7 +42,7 @@ export function CircleMap({
   activeName,
   centerLat,
   centerLng,
-  radiusMiles = 7.5,
+  radiusMiles = CBC_CIRCLE_RADIUS_MILES,
   areaBoundaries = [],
   areaParticipantCounts = {},
   notCountedAreaCodes = [],
@@ -84,8 +85,9 @@ export function CircleMap({
     [ebird.sightings, areaOutlines]
   );
 
+  const exitScouting = useEffectEvent(() => scouting.exit());
   useEffect(() => {
-    scouting.exit();
+    exitScouting();
   }, [activeCode]);
 
   const { containerRef, mapRef, markerRef, mapReady } = useMapInstance({

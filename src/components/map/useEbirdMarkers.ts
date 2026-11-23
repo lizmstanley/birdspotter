@@ -24,7 +24,7 @@ function useMarkers<T>(
     if (!map || !mapReady || !isShown) return;
     const markers = items.map((item) => addMarker(map, item));
     return () => markers.forEach((m) => m.remove());
-  }, [mapReady, items, isShown]);
+  }, [mapRef, mapReady, items, isShown, addMarker]);
 }
 
 export function useEbirdMarkers({

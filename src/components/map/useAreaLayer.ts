@@ -6,7 +6,7 @@ import { buildAreaFeatures, toUpperCaseSet } from './areaFeatures.ts';
 import { AREAS_SOURCE } from './mapLayers.ts';
 import { addAreaLabelMarker } from './markers.ts';
 import { isOuterCircleBoundary } from './mapText.ts';
-import { useLatest } from './useLatest.ts';
+import { useLatest } from '../../hooks/useLatest.ts';
 import type { AreaBoundaryItem } from './types.ts';
 
 interface AreaLayerOptions {
@@ -44,7 +44,7 @@ export function useAreaLayer({
       onHoverChange: setHoveredArea,
       onSelect: (code, label) => onSelectAreaRef.current?.(code, label),
     });
-  }, [mapReady]);
+  }, [mapRef, mapReady, countsRef, notCountedRef, onSelectAreaRef]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -68,7 +68,7 @@ export function useAreaLayer({
       labelMarkersRef.current.forEach((m) => m.remove());
       labelMarkersRef.current = [];
     };
-  }, [mapReady, areaBoundaries, areaParticipantCounts, notCountedAreaCodes, isHidden]);
+  }, [mapRef, mapReady, areaBoundaries, areaParticipantCounts, notCountedAreaCodes, isHidden, onSelectAreaRef]);
 
   return hoveredArea;
 }

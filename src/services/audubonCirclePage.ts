@@ -3,7 +3,8 @@
  * circle page, https://cbc.audubon.org/en/join/circles/<CODE>.
  * The page is a Next.js app; its data sits in `self.__next_f.push([1, "..."])` script chunks.
  */
-import { AudubonProxyUnavailableError, AudubonRequestError } from './errors.ts';
+import { AudubonProxyUnavailableError, AudubonRequestError, AudubonUnreachableError } from './errors.ts';
+import { FETCH_TIMEOUT_MS, isRecord, isRequestFailure } from './http.ts';
 
 export interface AudubonCircleDetails {
   readonly code: string;
@@ -18,7 +19,6 @@ export interface AudubonCircleDetails {
 }
 
 const CIRCLE_CODE = /^[A-Z0-9]{2,8}$/;
-const FETCH_TIMEOUT_MS = 10_000;
 
 export function audubonCirclePageUrl(code: string): string {
   return `https://cbc.audubon.org/en/join/circles/${code}`;
@@ -28,6 +28,7 @@ export function audubonCirclePageUrl(code: string): string {
  * @returns the circle's details, or null when the code is malformed or the page has no such circle
  * @throws AudubonProxyUnavailableError when the app does not run on a local dev or preview server
  * @throws AudubonRequestError when the request fails with a status other than 404
+ * @throws AudubonUnreachableError when the request or its body fails or times out
  */
 export async function fetchAudubonCircleDetails(code: string): Promise<AudubonCircleDetails | null> {
   const normalized = code.trim().toUpperCase();
@@ -36,12 +37,20 @@ export async function fetchAudubonCircleDetails(code: string): Promise<AudubonCi
   if (typeof location !== 'undefined' && !['localhost', '127.0.0.1'].includes(location.hostname)) {
     throw new AudubonProxyUnavailableError(location.hostname);
   }
-  const res = await fetch(`/audubon-cbc/en/join/circles/${normalized}`, {
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
+  let res: Response;
+  let html: string;
+  try {
+    res = await fetch(`/audubon-cbc/en/join/circles/${normalized}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    html = await res.text();
+  } catch (err) {
+    if (isRequestFailure(err)) throw new AudubonUnreachableError(normalized, err);
+    throw err;
+  }
   if (res.status === 404) return null;
   if (!res.ok) throw new AudubonRequestError(normalized, res.status);
-  return parseAudubonCirclePage(await res.text(), normalized);
+  return parseAudubonCirclePage(html, normalized);
 }
 
 export function parseAudubonCirclePage(html: string, code: string): AudubonCircleDetails | null {
@@ -57,7 +66,14 @@ function decodeFlightData(html: string): string {
   const pushes = html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g);
   let flight = '';
   for (const match of pushes) {
-    const decoded: unknown = JSON.parse(match[1]);
+    let decoded: unknown;
+    try {
+      decoded = JSON.parse(match[1]);
+    } catch (err) {
+      // A chunk that is not a valid JSON string holds no circle data the page parser can use.
+      if (err instanceof SyntaxError) continue;
+      throw err;
+    }
     if (typeof decoded === 'string') flight += decoded;
   }
   return flight;
@@ -120,10 +136,6 @@ function readCircle(value: unknown, code: string): AudubonCircleDetails | null {
     compilerEmail: stringOrNull(leader?.email),
     pageUrl: audubonCirclePageUrl(code),
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function stringOrNull(value: unknown): string | null {

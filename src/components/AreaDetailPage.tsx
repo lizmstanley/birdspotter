@@ -1,4 +1,5 @@
 import type { AreaOption, AssignmentRow } from '../db/pgliteDb';
+import { areaDisplayName } from './map/mapText';
 import { countingSince } from './PersonHistoryDialog';
 
 interface Props {
@@ -40,7 +41,7 @@ export function AreaDetailPage({
     (a) => (a.area ?? '').toUpperCase() === areaCode.toUpperCase()
   );
   const emails = areaAssignments.map((a) => a.email).filter((e): e is string => Boolean(e));
-  const title = /^\d/.test(areaCode) ? `Area ${areaCode}` : areaCode;
+  const title = areaDisplayName(areaCode);
 
   return (
     <div className="stack">

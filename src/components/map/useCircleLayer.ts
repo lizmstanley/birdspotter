@@ -36,7 +36,7 @@ export function useCircleLayer({
       ? buildCirclePolygon(lng, lat, radiusMiles)
       : { type: 'FeatureCollection' as const, features: [] };
     src.setData(data as never);
-  }, [mapReady, lat, lng, radiusMiles, isCircleShown]);
+  }, [mapRef, markerRef, mapReady, lat, lng, radiusMiles, isCircleShown]);
 
   // Fit only when the circle itself moves or changes size, not when it is toggled.
   useEffect(() => {
@@ -52,5 +52,5 @@ export function useCircleLayer({
       ],
       { padding: 24, essential: true }
     );
-  }, [mapReady, lat, lng, radiusMiles]);
+  }, [mapRef, mapReady, lat, lng, radiusMiles]);
 }

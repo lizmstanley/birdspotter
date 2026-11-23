@@ -1,10 +1,5 @@
 import { useRef, type ChangeEvent } from 'react';
-import {
-  parseGeoJsonText,
-  parseKmlText,
-  parseKmzBuffer,
-  type ParsedAreaBoundary,
-} from '../../services/kmlParser.ts';
+import { parseBoundaryFile, type ParsedAreaBoundary } from '../../services/kmlParser.ts';
 
 interface AreaImportBarProps {
   readonly activeCode: string;
@@ -12,13 +7,6 @@ interface AreaImportBarProps {
   readonly setStatus: (message: string | null) => void;
   readonly onImportBoundaries?: (boundaries: ParsedAreaBoundary[]) => Promise<{ saved: number }>;
   readonly onClearBoundaries?: () => Promise<void>;
-}
-
-async function parseBoundaryFile(file: File): Promise<ParsedAreaBoundary[]> {
-  const lower = file.name.toLowerCase();
-  if (lower.endsWith('.kmz')) return parseKmzBuffer(await file.arrayBuffer());
-  if (lower.endsWith('.kml')) return parseKmlText(await file.text());
-  return parseGeoJsonText(await file.text());
 }
 
 export function AreaImportBar({

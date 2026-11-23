@@ -1,4 +1,5 @@
 import type { AreaOption, AssignmentRow } from '../db/pgliteDb';
+import { areaDisplayName } from './map/mapText';
 
 interface Props {
   circleCode: string;
@@ -41,7 +42,7 @@ export function AllAreasPage({ circleCode, resultsDue, areas, assignments, onSel
             </tr>
           ) : (
             areas.map((area) => {
-              const label = /^\d/.test(area.code) ? `Area ${area.code}` : area.code;
+              const label = areaDisplayName(area.code);
               const counters = countersIn(area.code);
               const leaders = counters.filter((c) => c.is_area_leader).map((c) => c.full_name);
               return (
