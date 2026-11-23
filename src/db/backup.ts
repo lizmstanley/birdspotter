@@ -1,5 +1,44 @@
 import type { PGlite, Transaction } from '@electric-sql/pglite';
 import { computeSortOrder } from './areas.ts';
+import { BackupFormatError } from './errors.ts';
+
+type BackupRow = Record<string, unknown>;
+
+const BACKUP_TABLES = [
+  'saved_circles',
+  'count_years',
+  'areas',
+  'people',
+  'person_emails',
+  'participations',
+  'notes',
+  'circle_boundaries',
+  'area_results',
+] as const;
+
+type BackupTable = (typeof BACKUP_TABLES)[number];
+
+function isRecord(value: unknown): value is BackupRow {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseBackup(jsonText: string): Partial<Record<BackupTable, BackupRow[]>> {
+  let data: unknown;
+  try {
+    data = JSON.parse(jsonText);
+  } catch (err) {
+    throw new BackupFormatError(null, err);
+  }
+  if (!isRecord(data)) throw new BackupFormatError(null);
+  const tables: Partial<Record<BackupTable, BackupRow[]>> = {};
+  for (const table of BACKUP_TABLES) {
+    const rows = data[table];
+    if (rows === undefined) continue;
+    if (!Array.isArray(rows) || !rows.every(isRecord)) throw new BackupFormatError(table);
+    tables[table] = rows;
+  }
+  return tables;
+}
 
 async function restoreAreaResults(
   tx: Transaction,
@@ -63,17 +102,7 @@ export async function exportJsonBackup(db: PGlite): Promise<string> {
 }
 
 export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ people: number; participations: number; circles: number }> {
-  const data = JSON.parse(jsonText) as {
-    saved_circles?: Array<Record<string, unknown>>;
-    count_years?: Array<Record<string, unknown>>;
-    areas?: Array<Record<string, unknown>>;
-    people?: Array<Record<string, unknown>>;
-    person_emails?: Array<Record<string, unknown>>;
-    participations?: Array<Record<string, unknown>>;
-    notes?: Array<Record<string, unknown>>;
-    circle_boundaries?: Array<Record<string, unknown>>;
-    area_results?: Array<Record<string, unknown>>;
-  };
+  const data = parseBackup(jsonText);
   const circles = data.saved_circles ?? [];
   const years = data.count_years ?? [];
   const areas = data.areas ?? [];
@@ -83,11 +112,16 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
   const notes = data.notes ?? [];
   const boundaries = data.circle_boundaries ?? [];
 
+  let restoredCircles = 0;
+  let restoredParticipations = 0;
+  const idMap = new Map<number, number>();
+
   await db.transaction(async (tx) => {
     // Upsert circles and clear roster data for the imported circle(s) while keeping KML boundaries
     for (const c of circles) {
       const code = String(c.code ?? '').trim().toUpperCase();
       if (!code) continue;
+      restoredCircles += 1;
       if (c.is_active) {
         await tx.query('UPDATE public.saved_circles SET is_active = FALSE WHERE is_active = TRUE');
       }
@@ -190,7 +224,6 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
 
     await restoreAreaResults(tx, data.area_results, areas);
 
-    const idMap = new Map<number, number>();
     for (const p of people) {
       const res = await tx.query<{ id: number }>(
         `INSERT INTO public.people (
@@ -239,7 +272,7 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
     for (const pt of participations) {
       const newPersonId = idMap.get(Number(pt.person_id));
       if (!newPersonId) continue;
-      await tx.query(
+      const inserted = await tx.query(
         `INSERT INTO public.participations (
             circle_code, count_year, person_id, rsvp_status, counter_type, assigned_area_code,
             is_area_leader, is_new_participant, companions, results_submitted,
@@ -269,6 +302,7 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
           pt.raw_form_response == null ? null : JSON.stringify(pt.raw_form_response),
         ]
       );
+      restoredParticipations += inserted.affectedRows ?? 0;
     }
 
     for (const n of notes) {
@@ -307,5 +341,5 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
     }
   });
 
-  return { people: people.length, participations: participations.length, circles: circles.length };
+  return { people: idMap.size, participations: restoredParticipations, circles: restoredCircles };
 }

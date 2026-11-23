@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { BackupFormatError } from './errors.ts';
 import { openTestDb, scalar } from './testing/testDb.ts';
 import type { CbcDb } from './cbcDb.ts';
 
@@ -102,10 +103,38 @@ test('a backup that fails midway leaves the existing data untouched', async () =
   const backup = JSON.parse(await db.exportJsonBackup());
   backup.participations[0].rsvp_status = 'not_a_status';
 
-  await assert.rejects(db.importJsonBackup(JSON.stringify(backup)));
+  await assert.rejects(db.importJsonBackup(JSON.stringify(backup)), /not_a_status/);
 
   assert.equal(await scalar(client, 'SELECT COUNT(*)::INT FROM public.people'), 2);
   assert.equal(await scalar(client, 'SELECT COUNT(*)::INT FROM public.participations'), 2);
+});
+
+test('a file that is not a backup is refused and changes nothing', async () => {
+  const { db, client } = await seededDb();
+
+  for (const [text, table] of [
+    ['not json', null],
+    ['[1, 2]', null],
+    ['{"people": {"id": 1}}', 'people'],
+    ['{"participations": ["x"]}', 'participations'],
+  ] as const) {
+    await assert.rejects(
+      db.importJsonBackup(text),
+      (err) => err instanceof BackupFormatError && err.table === table
+    );
+  }
+
+  assert.equal(await scalar(client, 'SELECT COUNT(*)::INT FROM public.people'), 2);
+});
+
+test('the restore count leaves out season records whose person is not in the backup', async () => {
+  const { db } = await seededDb();
+  const backup = JSON.parse(await db.exportJsonBackup());
+  backup.participations[0].person_id = -1;
+
+  const counts = await db.importJsonBackup(JSON.stringify(backup));
+
+  assert.deepEqual(counts, { people: 2, participations: 1, circles: 1 });
 });
 
 test('an older backup without area flags keeps the flags already in the app', async () => {

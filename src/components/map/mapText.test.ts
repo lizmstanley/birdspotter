@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { areaDisplayName, areaLabel, escapeHtml, isOuterCircleBoundary } from './mapText.ts';
 
 test('escapes every character that could open markup', () => {
-  assert.equal(escapeHtml('<a href="x">Tom & Jerry</a>'), '&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&lt;/a&gt;');
+  assert.equal(
+    escapeHtml(`<a href="x" title='y'>Tom & Jerry</a>`),
+    '&lt;a href=&quot;x&quot; title=&#39;y&#39;&gt;Tom &amp; Jerry&lt;/a&gt;'
+  );
 });
 
 test('a numeric area code reads as "Area N"; a named one stays as is', () => {

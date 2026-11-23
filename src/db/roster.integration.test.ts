@@ -70,6 +70,19 @@ test('a row with no RSVP and no default stops the whole import', async () => {
   assert.equal(await scalar(client, 'SELECT COUNT(*)::INT FROM public.people'), 0);
 });
 
+test('a row with no RSVP keeps the stored RSVP when no default is chosen', async () => {
+  const { db } = await dbWithCircle();
+  await seed(db, [row('ada@example.com', { rsvp_status: 'undecided' })]);
+
+  await db.importParticipants(CIRCLE, [row('ada@example.com', { area_code: '2B' })], {
+    updateExisting: true,
+    isCurrentList: false,
+  });
+
+  const [assignment] = await db.getAssignments(CIRCLE);
+  assert.deepEqual([assignment.rsvp_status, assignment.area], ['undecided', '2B']);
+});
+
 test('with updateExisting off, an existing season record is never changed', async () => {
   const { db } = await dbWithCircle();
   await seed(db, [row('ada@example.com', { rsvp_status: 'confirmed', counter_type: 'field', area_code: '1A' })]);

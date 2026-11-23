@@ -25,12 +25,16 @@ export function useAutoSave(db: LocalCbcDb, setError: SetError, flash: Flash) {
   useEffect(() => {
     void requestPersistentStorage();
     void (async () => {
-      const handle = await loadHandle();
-      if (!handle) return;
-      handleRef.current = handle;
-      setStatus((await hasPermission(handle)) ? 'on' : 'needs-permission');
+      try {
+        const handle = await loadHandle();
+        if (!handle) return;
+        handleRef.current = handle;
+        setStatus((await hasPermission(handle)) ? 'on' : 'needs-permission');
+      } catch (err) {
+        setError(`Auto-save could not resume: ${describeError(err)}`);
+      }
     })();
-  }, []);
+  }, [setError]);
 
   async function save() {
     const handle = handleRef.current;

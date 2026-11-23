@@ -3,6 +3,9 @@
  * Zero dependency on PGlite or CBC roster state—reusable directly in Aviscout.
  */
 import { circle } from '@turf/circle';
+import { EbirdKeyRejectedError, EbirdRequestError } from './errors.ts';
+
+const EBIRD_KEY_REJECTED_STATUS = 403;
 
 export interface EbirdHotspot {
   locId: string;
@@ -47,9 +50,8 @@ export async function fetchHotspotsInCircle(
   const res = await fetch(url, {
     headers: { 'X-eBirdApiToken': apiKey.trim() },
   });
-  if (!res.ok) {
-    throw new Error(`eBird hotspots request failed (${res.status}): ${await res.text()}`);
-  }
+  if (res.status === EBIRD_KEY_REJECTED_STATUS) throw new EbirdKeyRejectedError('hotspots');
+  if (!res.ok) throw new EbirdRequestError('hotspots', res.status, await res.text());
   return (await res.json()) as EbirdHotspot[];
 }
 
@@ -69,8 +71,7 @@ export async function fetchRecentSightingsInCircle(
   const res = await fetch(url, {
     headers: { 'X-eBirdApiToken': apiKey.trim() },
   });
-  if (!res.ok) {
-    throw new Error(`eBird sightings request failed (${res.status}): ${await res.text()}`);
-  }
+  if (res.status === EBIRD_KEY_REJECTED_STATUS) throw new EbirdKeyRejectedError('sightings');
+  if (!res.ok) throw new EbirdRequestError('sightings', res.status, await res.text());
   return (await res.json()) as EbirdObservation[];
 }

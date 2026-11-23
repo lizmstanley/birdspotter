@@ -3,6 +3,7 @@
  * circle page, https://cbc.audubon.org/en/join/circles/<CODE>.
  * The page is a Next.js app; its data sits in `self.__next_f.push([1, "..."])` script chunks.
  */
+import { AudubonProxyUnavailableError, AudubonRequestError } from './errors.ts';
 
 export interface AudubonCircleDetails {
   readonly code: string;
@@ -25,21 +26,21 @@ export function audubonCirclePageUrl(code: string): string {
 
 /**
  * @returns the circle's details, or null when the code is malformed or the page has no such circle
- * @throws when the request fails or times out
+ * @throws AudubonProxyUnavailableError when the app does not run on a local dev or preview server
+ * @throws AudubonRequestError when the request fails with a status other than 404
  */
 export async function fetchAudubonCircleDetails(code: string): Promise<AudubonCircleDetails | null> {
   const normalized = code.trim().toUpperCase();
   if (!CIRCLE_CODE.test(normalized)) return null;
   // cbc.audubon.org sends no CORS headers. Only the local dev and preview servers proxy it.
   if (typeof location !== 'undefined' && !['localhost', '127.0.0.1'].includes(location.hostname)) {
-    throw new Error(
-      'This only works when the app runs on your computer (npm run dev), because the Audubon site blocks requests from other sites.'
-    );
+    throw new AudubonProxyUnavailableError(location.hostname);
   }
   const res = await fetch(`/audubon-cbc/en/join/circles/${normalized}`, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
-  if (!res.ok) return null;
+  if (res.status === 404) return null;
+  if (!res.ok) throw new AudubonRequestError(normalized, res.status);
   return parseAudubonCirclePage(await res.text(), normalized);
 }
 

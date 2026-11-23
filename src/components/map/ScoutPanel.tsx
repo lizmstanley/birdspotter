@@ -5,7 +5,7 @@ interface ScoutPanelProps {
   readonly scouting: ReturnType<typeof useScouting>;
   readonly activeCode: string;
   readonly radiusMiles: number;
-  readonly onSaveScoutedCircle?: (circle: ScoutedCircleDraft) => Promise<void>;
+  readonly onSaveScoutedCircle?: (circle: ScoutedCircleDraft) => Promise<boolean>;
 }
 
 export function ScoutPanel({ scouting, activeCode, radiusMiles, onSaveScoutedCircle }: ScoutPanelProps) {
@@ -24,7 +24,9 @@ export function ScoutPanel({ scouting, activeCode, radiusMiles, onSaveScoutedCir
       compiler_email: target.compilerEmail ?? null,
       count_date: target.countDate ?? null,
       audubon_url: target.audubonUrl ?? null,
-    }).then(() => scouting.clearTarget());
+    }).then((isAdded) => {
+      if (isAdded) scouting.clearTarget();
+    });
   }
 
   return (

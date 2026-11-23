@@ -2,7 +2,7 @@ export class MissingDefaultRsvpError extends Error {
   readonly email: string;
 
   constructor(email: string) {
-    super('pgliteDb: a row has no RSVP and no default RSVP was chosen for new people.');
+    super('roster: a row has no RSVP and no default RSVP was chosen for new people.');
     this.email = email;
     this.name = 'MissingDefaultRsvpError';
   }
@@ -11,7 +11,7 @@ export class MissingDefaultRsvpError extends Error {
 export class LegacyMigrationError extends Error {
   constructor(cause: unknown) {
     super(
-      'pgliteDb: could not move your roster from the older database format. Nothing was changed.',
+      'migrations: could not move your roster from the older database format. Nothing was changed.',
       { cause }
     );
     this.name = 'LegacyMigrationError';
@@ -54,7 +54,7 @@ export class SchemaTooNewError extends Error {
 
 export class DatabaseNotOpenError extends Error {
   constructor() {
-    super('pgliteDb: call init() before using the database.');
+    super('cbcDb: call init() before using the database.');
     this.name = 'DatabaseNotOpenError';
   }
 }
@@ -84,5 +84,25 @@ export class SeasonRolloverError extends Error {
     this.currentYear = currentYear;
     this.requestedYear = requestedYear;
     this.name = 'SeasonRolloverError';
+  }
+}
+
+export class CircleNotFoundError extends Error {
+  readonly circleCode: string;
+
+  constructor(circleCode: string) {
+    super('circles: no saved circle has this code.');
+    this.circleCode = circleCode;
+    this.name = 'CircleNotFoundError';
+  }
+}
+
+export class BackupFormatError extends Error {
+  readonly table: string | null;
+
+  constructor(table: string | null, cause?: unknown) {
+    super('backup: this file is not a CBC Circle Manager backup.', { cause });
+    this.table = table;
+    this.name = 'BackupFormatError';
   }
 }

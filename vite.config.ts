@@ -16,8 +16,8 @@ export default defineConfig({
   base: process.env.GITHUB_PAGES ? '/cbc-circle-manager/' : '/',
   plugins: [react()],
   optimizeDeps: {
-    // Required so Vite does not pre-bundle PGlite's WASM or MapLibre's Web Worker
-    exclude: ['@electric-sql/pglite', 'maplibre-gl'],
+    // Pre-bundling breaks PGlite's WASM loading. MapLibre must stay pre-bundled: it ships only a UMD build.
+    exclude: ['@electric-sql/pglite'],
   },
   server: { proxy: audubonProxy },
   preview: { proxy: audubonProxy },

@@ -1,7 +1,7 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { countDateInSeason } from '../services/countDay.ts';
 import { seasonInPreparation } from '../services/season.ts';
-import { CountDateOutsideSeasonError } from './errors.ts';
+import { CircleNotFoundError, CountDateOutsideSeasonError } from './errors.ts';
 import type { Queryable } from './queryable.ts';
 import type { CircleInfoInput, CircleInput, SavedCircle } from './types.ts';
 
@@ -82,7 +82,8 @@ export async function upsertFavoriteCircle(db: PGlite, circle: CircleInput): Pro
 export async function setActiveCircle(db: PGlite, code: string): Promise<void> {
   await db.transaction(async (tx) => {
     await tx.query('UPDATE public.saved_circles SET is_active = FALSE WHERE is_active = TRUE');
-    await tx.query('UPDATE public.saved_circles SET is_active = TRUE WHERE code = $1', [code]);
+    const res = await tx.query('UPDATE public.saved_circles SET is_active = TRUE WHERE code = $1', [code]);
+    if (!res.affectedRows) throw new CircleNotFoundError(code);
   });
 }
 

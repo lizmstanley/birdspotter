@@ -27,7 +27,7 @@ export interface NewCirclePayload {
 }
 
 interface Props {
-  onCreateCircle: (payload: NewCirclePayload) => Promise<void>;
+  onCreateCircle: (payload: NewCirclePayload) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -103,7 +103,7 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
         baseFileName.replace(/[^A-Za-z0-9]/g, '').slice(0, 6).toUpperCase() ||
         'KML1';
 
-      await onCreateCircle({
+      const isAdded = await onCreateCircle({
         code: derivedCode,
         name: derivedName,
         center_lat: center[1],
@@ -111,7 +111,7 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
         radius_miles: 7.5,
         initialBoundaries: parsed,
       });
-      onClose();
+      if (isAdded) onClose();
     } catch (err) {
       setStatus(`KML/KMZ import error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -125,7 +125,7 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
     setStatus(null);
     try {
       const c = await withAudubonPageDetails(result);
-      await onCreateCircle({
+      const isAdded = await onCreateCircle({
         code: c.code,
         name: c.name,
         state_province: c.state || null,
@@ -137,7 +137,7 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
         count_date: c.countDate ?? null,
         audubon_url: c.source === 'audubon' ? c.joinUrl : null,
       });
-      onClose();
+      if (isAdded) onClose();
     } finally {
       setAddingCode(null);
     }
@@ -150,14 +150,14 @@ export function AddCirclePanel({ onCreateCircle, onClose }: Props) {
       setStatus('Enter a Circle Code, Name, and valid Latitude / Longitude.');
       return;
     }
-    await onCreateCircle({
+    const isAdded = await onCreateCircle({
       code: manualCode.trim().toUpperCase(),
       name: manualName.trim(),
       center_lat: lat,
       center_lng: lng,
       radius_miles: 7.5,
     });
-    onClose();
+    if (isAdded) onClose();
   }
 
   return (
