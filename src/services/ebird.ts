@@ -105,6 +105,19 @@ export async function fetchHotspotsInCircle(
   return fetchEbirdList('hotspots', url, apiKey, isHotspot);
 }
 
+export function recentSightingsUrl(
+  lat: number,
+  lng: number,
+  radiusMiles = CBC_CIRCLE_RADIUS_MILES,
+  backDays = 7
+): string {
+  const clampedDays = Math.min(30, Math.max(1, backDays));
+  return (
+    `https://api.ebird.org/v2/data/obs/geo/recent?lat=${encodeURIComponent(lat)}` +
+    `&lng=${encodeURIComponent(lng)}&dist=${searchDistanceKm(radiusMiles)}&back=${clampedDays}&fmt=json`
+  );
+}
+
 export async function fetchRecentSightingsInCircle(
   apiKey: string,
   lat: number,
@@ -112,9 +125,5 @@ export async function fetchRecentSightingsInCircle(
   radiusMiles = CBC_CIRCLE_RADIUS_MILES,
   backDays = 7
 ): Promise<EbirdObservation[]> {
-  const clampedDays = Math.min(30, Math.max(1, backDays));
-  const url =
-    `https://api.ebird.org/v2/data/obs/geo/recent?lat=${encodeURIComponent(lat)}` +
-    `&lng=${encodeURIComponent(lng)}&dist=${searchDistanceKm(radiusMiles)}&back=${clampedDays}&fmt=json`;
-  return fetchEbirdList('sightings', url, apiKey, isObservation);
+  return fetchEbirdList('sightings', recentSightingsUrl(lat, lng, radiusMiles, backDays), apiKey, isObservation);
 }

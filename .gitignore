@@ -29,3 +29,6 @@ etl/
 *backup*.json
 *restore*.json
 *autosave*.json
+
+# Factory run working state
+.factory/

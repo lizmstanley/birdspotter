@@ -6,19 +6,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vite build --mode circle-scout-spike",
     "preview": "vite preview",
     "test": "node --test \"src/**/*.test.ts\"",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
-    "lint": "eslint src"
+    "lint": "eslint src circle-scout"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",
     "@turf/boolean-point-in-polygon": "^7.2.0",
     "@turf/circle": "^7.2.0",
     "@turf/helpers": "^7.2.0",
+    "@turf/simplify": "^7.2.0",
     "fflate": "^0.8.2",
+    "jsqr": "^1.4.0",
     "maplibre-gl": "^5.1.0",
+    "qrcode-generator": "^2.0.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "xlsx": "^0.18.5"

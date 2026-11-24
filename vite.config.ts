@@ -11,7 +11,10 @@ const audubonProxy: Record<string, ProxyOptions> = {
   },
 };
 
-export default defineConfig({
+// The spike page builds in its own pass so the main app's bundles stay as they were.
+const SPIKE_MODE = 'circle-scout-spike';
+
+export default defineConfig(({ mode }) => ({
   // GitHub Pages serves this repo under /cbc-circle-manager/. Local dev and preview stay at /.
   base: process.env.GITHUB_PAGES ? '/cbc-circle-manager/' : '/',
   plugins: [react()],
@@ -19,6 +22,10 @@ export default defineConfig({
     // Pre-bundling breaks PGlite's WASM loading. MapLibre must stay pre-bundled: it ships only a UMD build.
     exclude: ['@electric-sql/pglite'],
   },
+  build:
+    mode === SPIKE_MODE
+      ? { emptyOutDir: false, rollupOptions: { input: 'circle-scout/spike/index.html' } }
+      : undefined,
   server: { proxy: audubonProxy },
   preview: { proxy: audubonProxy },
-});
+}));
