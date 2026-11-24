@@ -32,3 +32,4 @@ etl/
 
 # Factory run working state
 .factory/
+.claude/worktrees/
