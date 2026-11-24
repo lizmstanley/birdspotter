@@ -78,7 +78,7 @@ Not sure how to lay out your file? Under **What columns can I use?** there's a s
 
 ## Use it online
 
-The app is hosted at https://lizmstanley.github.io/cbc-circle-manager/. Your data stays in your browser. It isn't sent to GitHub or any server. Each address has its own browser database, so the hosted copy and a copy you run yourself don't share data. Use **Export Backup** to move data between them.
+The app is hosted at https://lizstanley.com/cbc-circle-manager/. Your data stays in your browser. It isn't sent to GitHub or any server. Each address has its own browser database, so the hosted copy and a copy you run yourself don't share data. Use **Export Backup** to move data between them.
 
 **Refresh from Audubon** works only when you run the app on your own computer, because the Audubon site blocks requests from other sites. Everything else works in the hosted copy.
 
