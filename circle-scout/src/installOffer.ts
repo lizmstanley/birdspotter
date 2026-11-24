@@ -7,7 +7,7 @@ export interface InstallContext {
   readonly maxTouchPoints: number;
 }
 
-function isAppleMobile(userAgent: string, maxTouchPoints: number): boolean {
+export function isAppleMobile(userAgent: string, maxTouchPoints: number): boolean {
   if (/iPhone|iPad|iPod/.test(userAgent)) return true;
   // iPadOS Safari reports a Mac user agent; only the touch screen tells it apart.
   return userAgent.includes('Macintosh') && maxTouchPoints > 1;

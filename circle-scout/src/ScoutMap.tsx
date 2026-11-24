@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
-import type { FeatureCollection, GeoJSON, Position } from 'geojson';
+import type { Feature, FeatureCollection, GeoJSON, Polygon, Position } from 'geojson';
 import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from '../../src/components/map/basemap.ts';
 import { addCircleLayers, CIRCLE_SOURCE } from '../../src/components/map/mapLayers.ts';
 import type { AreaLinkData, AreaOutlineGeometry } from '../../src/services/areaLink.ts';
 import { buildCirclePolygon } from '../../src/services/ebird.ts';
+import { areaStatusAt, areaStatusText } from './areaStatus.ts';
+import type { AreaStorage } from './savedAreas.ts';
+import type { LiveLocation } from './locationTracking.ts';
+import { useLiveLocation } from './useLiveLocation.ts';
 
 const START_CENTER: [number, number] = [-96, 39];
 const START_ZOOM = 3;
@@ -12,6 +16,7 @@ const AREA_SOURCE = 'scout-area';
 const AREA_COLOR = '#15803d';
 const FIT_PADDING_PX = 40;
 const NOTHING: FeatureCollection = { type: 'FeatureCollection', features: [] };
+const POSITION_TIMEOUT_MS = 20_000;
 
 function addAreaLayers(map: maplibregl.Map): void {
   map.addSource(AREA_SOURCE, { type: 'geojson', data: NOTHING });
@@ -55,36 +60,81 @@ function setSourceData(map: maplibregl.Map, sourceId: string, data: GeoJSON): vo
   if (source instanceof maplibregl.GeoJSONSource) source.setData(data);
 }
 
-/** Shows the area's circle and outline, zoomed to the outline; with no area, the start view. */
-export function ScoutMap({ area }: { readonly area: AreaLinkData | null }) {
+interface ReadyMap {
+  readonly map: maplibregl.Map;
+  readonly locationControl: maplibregl.GeolocateControl;
+}
+
+interface ScoutMapProps {
+  readonly area: AreaLinkData | null;
+  readonly storage: AreaStorage | null;
+}
+
+/** @returns the location line's text and whether it is an error, or null when there is nothing to say */
+function locationLine(
+  live: LiveLocation,
+  area: AreaLinkData | null,
+  circle: Feature<Polygon> | null
+): { readonly text: string; readonly isError: boolean } | null {
+  if (live.error) return { text: live.error, isError: true };
+  if (!area || !circle || !live.isTracking) return null;
+  if (!live.position) return { text: 'Finding your location…', isError: false };
+  const [lng, lat] = live.position;
+  return { text: areaStatusText(areaStatusAt(area, circle, lng, lat)), isError: false };
+}
+
+/**
+ * Shows the area's circle and outline, zoomed to the outline, and the person's live location;
+ * with no area, the start view and the location alone.
+ */
+export function ScoutMap({ area, storage }: ScoutMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [readyMap, setReadyMap] = useState<maplibregl.Map | null>(null);
+  const [ready, setReady] = useState<ReadyMap | null>(null);
+  const live = useLiveLocation(ready?.locationControl ?? null, storage);
+  const circle = useMemo(() => (area ? buildCirclePolygon(area.circleCenter[0], area.circleCenter[1]) : null), [area]);
+  const line = locationLine(live, area, circle);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const map = new maplibregl.Map({ container, style: BASEMAP_STYLE_URL, center: START_CENTER, zoom: START_ZOOM });
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    // Added before load: its setup waits only on a permissions query, so it is done before a saved tracking state restarts it.
+    const locationControl = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true, timeout: POSITION_TIMEOUT_MS },
+      trackUserLocation: true,
+      showAccuracyCircle: true,
+    });
+    map.addControl(locationControl, 'top-right');
     fallBackToBlankBasemap(map);
     map.once('load', () => {
       addCircleLayers(map);
       addAreaLayers(map);
-      setReadyMap(map);
+      setReady({ map, locationControl });
     });
     return () => {
-      setReadyMap(null);
+      setReady(null);
       map.remove();
     };
   }, []);
 
+  const readyMap = ready?.map ?? null;
   useEffect(() => {
     if (!readyMap) return;
-    const circle = area ? buildCirclePolygon(area.circleCenter[0], area.circleCenter[1]) : NOTHING;
-    setSourceData(readyMap, CIRCLE_SOURCE, circle);
+    setSourceData(readyMap, CIRCLE_SOURCE, circle ?? NOTHING);
     setSourceData(readyMap, AREA_SOURCE, area?.outline ?? NOTHING);
     if (area) readyMap.fitBounds(outlineBounds(area.outline), { padding: FIT_PADDING_PX });
     else readyMap.jumpTo({ center: START_CENTER, zoom: START_ZOOM });
-  }, [readyMap, area]);
+  }, [readyMap, area, circle]);
 
-  return <div ref={containerRef} className="scout-map" />;
+  return (
+    <>
+      {line && (
+        <p className={line.isError ? 'scout-location scout-location-error' : 'scout-location'} role="status">
+          {line.text}
+        </p>
+      )}
+      <div ref={containerRef} className="scout-map" />
+    </>
+  );
 }
