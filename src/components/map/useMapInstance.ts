@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
-import { BASEMAP_STYLE_URL } from './basemap.ts';
+import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from './basemap.ts';
 import { addAreaLayers, addCircleLayers } from './mapLayers.ts';
 import { useLatest } from '../../hooks/useLatest.ts';
-
-const BLANK_STYLE: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [] };
 
 interface MapInstanceOptions {
   readonly centerLat: number;
@@ -48,16 +46,11 @@ export function useMapInstance({ centerLat, centerLng, onPinDragged, onMapNotice
       onPinDraggedRef.current(Number(lat.toFixed(5)), Number(lng.toFixed(5)));
     });
 
-    let hasStyle = false;
-    map.once('style.load', () => {
-      hasStyle = true;
-    });
+    fallBackToBlankBasemap(map);
 
     map.on('error', (ev) => {
       const msg = ev.error?.message || (typeof ev.error === 'string' ? ev.error : '');
       if (msg) onMapNoticeRef.current(`Map notice: ${msg}`);
-      // MapLibre never retries a failed style fetch, so `load` would never fire and no overlay would draw.
-      if (!hasStyle) map.setStyle(BLANK_STYLE);
     });
 
     map.on('load', () => {
