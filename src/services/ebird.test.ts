@@ -215,3 +215,42 @@ test('requests still work when the browser blocks storage', async (t) => {
   assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
   assert.equal(fetchMock.mock.callCount(), 2);
 });
+
+test('a saved copy is used until it reaches the given age, then fetched again', async (t) => {
+  const halfHour = 30 * 60 * 1000;
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', async (url: string) =>
+    Response.json(url.includes('/hotspot/') ? [HOTSPOT] : [SIGHTING])
+  );
+
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, halfHour);
+  await fetchHotspotsInCircle('key', 44.8, -93.3, 15, halfHour);
+  t.mock.timers.setTime(new Date(2026, 10, 20, 9, 29).getTime());
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, halfHour);
+  await fetchHotspotsInCircle('key', 44.8, -93.3, 15, halfHour);
+  assert.equal(fetchMock.mock.callCount(), 2);
+
+  t.mock.timers.setTime(new Date(2026, 10, 20, 9, 30).getTime());
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, halfHour);
+  await fetchHotspotsInCircle('key', 44.8, -93.3, 15, halfHour);
+  assert.equal(fetchMock.mock.callCount(), 4);
+});
+
+test('a copy too old for one caller is still used by a caller with no age limit', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  t.mock.timers.setTime(new Date(2026, 10, 20, 15, 0).getTime());
+  assert.deepEqual(await fetchRecentSightingsInCircle('key', 44.8, -93.3), [SIGHTING]);
+  assert.equal(fetchMock.mock.callCount(), 1);
+});
+
+test('a copy saved as a bare list, with no saved time, is fetched again', async (t) => {
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([HOTSPOT]));
+  await fetchHotspotsInCircle('key', 44.8, -93.3);
+  storage.setItem(storage.key(0) ?? '', JSON.stringify([HOTSPOT]));
+
+  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
+  assert.equal(fetchMock.mock.callCount(), 2);
+});
