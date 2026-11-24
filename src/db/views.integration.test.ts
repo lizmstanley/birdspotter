@@ -40,6 +40,22 @@ test('an area is open until a confirmed field counter is assigned', async () => 
   );
 });
 
+test('current assignments carry each person phone', async () => {
+  const { db, client } = await dbWithCircle();
+  await load(db, [
+    { full_name: 'Ada', email: 'ada@example.com', rsvp_status: 'confirmed', area_code: '1A' },
+    { full_name: 'Grace', email: 'grace@example.com', rsvp_status: 'confirmed', area_code: '1A' },
+  ]);
+  await client.query(`UPDATE public.people SET phone = '812-555-0100' WHERE full_name = 'Ada'`);
+
+  const phones = (await db.getAssignments(CIRCLE)).map((row) => [row.full_name, row.phone]);
+
+  assert.deepEqual(phones, [
+    ['Ada', '812-555-0100'],
+    ['Grace', null],
+  ]);
+});
+
 test('an area marked not counted is never open', async () => {
   const { db } = await dbWithCircle();
   await db.setAreaCounted(CIRCLE, '9Z', false);

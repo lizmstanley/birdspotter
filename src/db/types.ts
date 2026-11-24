@@ -29,6 +29,7 @@ export interface AssignmentRow {
   active_notes: string;
   first_year_participated: number | null;
   seasons_counted: number;
+  phone: string | null;
 }
 
 export interface PersonHistory {
