@@ -11,8 +11,8 @@ const audubonProxy: Record<string, ProxyOptions> = {
   },
 };
 
-// The spike page builds in its own pass so the main app's bundles stay as they were.
-const SPIKE_MODE = 'circle-scout-spike';
+// Circle Scout builds in its own pass so it shares no chunks with the web app and the web app's bundles stay as they were.
+const CIRCLE_SCOUT_MODE = 'circle-scout';
 
 export default defineConfig(({ mode }) => ({
   // GitHub Pages serves this repo under /cbc-circle-manager/. Local dev and preview stay at /.
@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
     exclude: ['@electric-sql/pglite'],
   },
   build:
-    mode === SPIKE_MODE
-      ? { emptyOutDir: false, rollupOptions: { input: 'circle-scout/spike/index.html' } }
+    mode === CIRCLE_SCOUT_MODE
+      ? { emptyOutDir: false, rollupOptions: { input: 'circle-scout/index.html' } }
       : undefined,
   server: { proxy: audubonProxy },
   preview: { proxy: audubonProxy },

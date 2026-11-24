@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { EBIRD_KEY_REQUEST_URL } from '../services/ebird.ts';
 
 export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/cbc-circle-manager/discussions';
 
@@ -27,7 +28,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
         <ol className="help-steps">
           <li>
             Sign in to your free eBird / Cornell Lab account and open the{' '}
-            <a href="https://ebird.org/api/keygen" target="_blank" rel="noreferrer">
+            <a href={EBIRD_KEY_REQUEST_URL} target="_blank" rel="noreferrer">
               eBird API Key Request Page (ebird.org/api/keygen)
             </a>
             .

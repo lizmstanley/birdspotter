@@ -6,6 +6,7 @@ import { EbirdKeyRejectedError, EbirdRequestError, UnexpectedResponseError } fro
 import { FETCH_TIMEOUT_MS, isRecord } from './http.ts';
 
 export const EBIRD_SITE_URL = 'https://ebird.org';
+export const EBIRD_KEY_REQUEST_URL = 'https://ebird.org/api/keygen';
 
 const EBIRD_KEY_REJECTED_STATUS = 403;
 
