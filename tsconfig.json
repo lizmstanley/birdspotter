@@ -24,6 +24,7 @@
     "circle-scout"
   ],
   "exclude": [
-    "src/**/*.test.ts"
+    "src/**/*.test.ts",
+    "circle-scout/**/*.test.ts"
   ]
 }
