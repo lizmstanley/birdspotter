@@ -1,5 +1,5 @@
 import * as maplibregl from 'maplibre-gl';
-import { getBasemapStyle } from '../../src/components/map/basemap.ts';
+import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from '../../src/components/map/basemap.ts';
 import { geometryParts, type Outline } from './outlinePayload.ts';
 
 const OUTLINE_SOURCE = 'shared-outline';
@@ -16,11 +16,12 @@ export interface SpikeMap {
 export function createSpikeMap(container: HTMLElement): SpikeMap {
   const map = new maplibregl.Map({
     container,
-    style: getBasemapStyle('street'),
+    style: BASEMAP_STYLE_URL,
     center: START_CENTER,
     zoom: START_ZOOM,
   });
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
+  fallBackToBlankBasemap(map);
   const loaded = new Promise<void>((resolve) => map.once('load', () => resolve()));
   return { map, loaded };
 }
