@@ -89,15 +89,15 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
       </div>
 
       <div className="card">
-        <h3>2. Map Basemaps &amp; Audubon Circle Search (No API Keys Needed)</h3>
+        <h3>2. Street Map &amp; Audubon Circle Search (No API Keys Needed)</h3>
         <ul className="help-list">
           <li>
-            <strong>Street Map (OpenStreetMap):</strong> Uses keyless OpenStreetMap raster tiles—no
-            registration required.
-          </li>
-          <li>
-            <strong>Satellite Imagery (Esri World Imagery):</strong> Uses keyless Esri satellite
-            tiles—no registration required.
+            <strong>Street Map (OpenFreeMap):</strong> Uses free{' '}
+            <a href="https://openfreemap.org" target="_blank" rel="noreferrer">
+              OpenFreeMap
+            </a>{' '}
+            vector tiles built from OpenStreetMap data, with no key or registration. Satellite imagery
+            is not offered, because Esri&apos;s World Imagery terms require Esri software or an ArcGIS subscription.
           </li>
           <li>
             <strong>Audubon Circle Lookup:</strong> Searches Audubon&apos;s public ArcGIS CBC layer by
