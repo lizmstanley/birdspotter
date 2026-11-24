@@ -16,10 +16,22 @@ export interface ModeCorrection {
   readonly mode: TravelMode;
 }
 
+/** The area active when the count started. */
+export interface SessionArea {
+  readonly name: string;
+  readonly code: string;
+}
+
 export interface CountSession {
   readonly startTime: number;
   readonly stopTime: number | null;
   readonly areaName: string | null;
+  /** The area number on the count sheet; null when no area was active or the count was saved before it was kept. */
+  readonly areaCode: string | null;
+  /** People in the party, entered by the counter. */
+  readonly participants: number;
+  /** Entered by the counter; feeder watching is not part of the recorded route or its hours. */
+  readonly feederHours: number;
   /** Runs of points recorded without a break; the space between two runs is a gap. */
   readonly tracks: readonly (readonly RoutePoint[])[];
   /** Later corrections win over earlier ones. */
@@ -32,14 +44,32 @@ export interface LocationFix extends RoutePoint {
 }
 
 export const SESSION_STORAGE_KEY = 'cbc_scout_session';
-const SESSION_FORMAT_VERSION = 1;
+const SESSION_FORMAT_VERSION = 2;
+const FIRST_SESSION_FORMAT_VERSION = 1;
 const MAX_ACCURACY_M = 50;
 const MIN_STEP_M = 20;
 const EARTH_RADIUS_M = 6_371_000;
 const COORDINATE_DECIMALS = 6;
 
-export function startSession(startTime: number, areaName: string | null): CountSession {
-  return { startTime, stopTime: null, areaName, tracks: [[]], corrections: [] };
+export function isParticipantCount(value: number): boolean {
+  return Number.isInteger(value) && value >= 1;
+}
+
+export function isFeederHours(value: number): boolean {
+  return Number.isFinite(value) && value >= 0;
+}
+
+export function startSession(startTime: number, area: SessionArea | null): CountSession {
+  return {
+    startTime,
+    stopTime: null,
+    areaName: area?.name ?? null,
+    areaCode: area?.code ?? null,
+    participants: 1,
+    feederHours: 0,
+    tracks: [[]],
+    corrections: [],
+  };
 }
 
 export function stopSession(session: CountSession, stopTime: number): CountSession {
@@ -96,6 +126,16 @@ export function withCorrection(session: CountSession, correction: ModeCorrection
   return { ...session, corrections: [...session.corrections, correction] };
 }
 
+/** @returns the same session when the count is not a whole number of at least 1 */
+export function withParticipants(session: CountSession, participants: number): CountSession {
+  return isParticipantCount(participants) ? { ...session, participants } : session;
+}
+
+/** @returns the same session when the hours are negative or not a number */
+export function withFeederHours(session: CountSession, feederHours: number): CountSession {
+  return isFeederHours(feederHours) ? { ...session, feederHours } : session;
+}
+
 type StoredPoint = readonly [lng: number, lat: number, time: number];
 
 interface StoredSession {
@@ -103,6 +143,9 @@ interface StoredSession {
   readonly startTime: number;
   readonly stopTime: number | null;
   readonly areaName: string | null;
+  readonly areaCode: string | null;
+  readonly participants: number;
+  readonly feederHours: number;
   readonly tracks: readonly (readonly StoredPoint[])[];
   readonly corrections: readonly ModeCorrection[];
 }
@@ -117,6 +160,9 @@ function toStored(session: CountSession): StoredSession {
     startTime: session.startTime,
     stopTime: session.stopTime,
     areaName: session.areaName,
+    areaCode: session.areaCode,
+    participants: session.participants,
+    feederHours: session.feederHours,
     tracks: session.tracks.map((track) =>
       track.map((point): StoredPoint => [roundCoordinate(point.lng), roundCoordinate(point.lat), point.time])
     ),
@@ -150,16 +196,34 @@ function readCorrection(value: unknown): ModeCorrection | null {
   return { from: value.from, to: value.to, mode: value.mode };
 }
 
+function isTextOrNull(value: unknown): value is string | null {
+  return value === null || typeof value === 'string';
+}
+
+type PartyDetails = Pick<CountSession, 'areaName' | 'areaCode' | 'participants' | 'feederHours'>;
+
+/** A version 1 session has no area code, participants, or feeder hours, so it gets the defaults a new count starts with. */
+function readPartyDetails(value: Record<string, unknown>): PartyDetails | null {
+  const { version, areaName } = value;
+  if (!isTextOrNull(areaName)) return null;
+  if (version === FIRST_SESSION_FORMAT_VERSION) return { areaName, areaCode: null, participants: 1, feederHours: 0 };
+  if (version !== SESSION_FORMAT_VERSION) return null;
+  const { areaCode, participants, feederHours } = value;
+  if (!isTextOrNull(areaCode) || !isFiniteNumber(participants) || !isFiniteNumber(feederHours)) return null;
+  if (!isParticipantCount(participants) || !isFeederHours(feederHours)) return null;
+  return { areaName, areaCode, participants, feederHours };
+}
+
 function fromStored(value: unknown): CountSession | null {
-  if (!isRecord(value) || value.version !== SESSION_FORMAT_VERSION || !isFiniteNumber(value.startTime)) return null;
-  const { startTime, stopTime, areaName } = value;
-  if (stopTime !== null && !isFiniteNumber(stopTime)) return null;
-  if (areaName !== null && typeof areaName !== 'string') return null;
+  if (!isRecord(value) || !isFiniteNumber(value.startTime)) return null;
+  const details = readPartyDetails(value);
+  const { startTime, stopTime } = value;
+  if (!details || (stopTime !== null && !isFiniteNumber(stopTime))) return null;
   if (!Array.isArray(value.tracks) || !Array.isArray(value.corrections)) return null;
   const tracks = value.tracks.map(readTrack);
   const corrections = value.corrections.map(readCorrection);
   if (!tracks.every((track) => track !== null) || !corrections.every((item) => item !== null)) return null;
-  return { startTime, stopTime, areaName, tracks: tracks.length > 0 ? tracks : [[]], corrections };
+  return { startTime, stopTime, ...details, tracks: tracks.length > 0 ? tracks : [[]], corrections };
 }
 
 export type StoredSessionRead =

@@ -250,3 +250,26 @@ button {
   height: 14px;
   border-radius: 3px;
 }
+
+.scout-party {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.scout-party label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.scout-party input {
+  width: 8rem;
+  padding: 8px;
+}
+
+.scout-party input[aria-invalid='true'] {
+  outline: 2px solid #b91c1c;
+}

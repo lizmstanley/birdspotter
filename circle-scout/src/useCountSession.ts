@@ -7,9 +7,12 @@ import {
   stopSession,
   withBreak,
   withCorrection,
+  withFeederHours,
   withFix,
+  withParticipants,
   writeCountSession,
   type CountSession,
+  type SessionArea,
   type TravelMode,
 } from './countSession.ts';
 import type { AreaStorage } from './savedAreas.ts';
@@ -81,12 +84,15 @@ export function useCountSession({ control, storage, setError }: CountSessionOpti
   return {
     session,
     isScreenLockable: isSessionRunning && isScreenLockable,
-    start: (areaName: string | null) => {
+    start: (area: SessionArea | null) => {
       setIsScreenLockable(false);
-      setSession(startSession(Date.now(), areaName));
+      setSession(startSession(Date.now(), area));
     },
     stop: () => setSession((current) => current && stopSession(current, Date.now())),
     discard: () => setSession(null),
+    setParticipants: (participants: number) =>
+      setSession((current) => current && withParticipants(current, participants)),
+    setFeederHours: (hours: number) => setSession((current) => current && withFeederHours(current, hours)),
     setStretchMode: (stretch: Stretch, mode: TravelMode) =>
       setSession(
         (current) => current && withCorrection(current, { from: stretch.startTime, to: stretch.endTime, mode })

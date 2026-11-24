@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { describeError } from '../../src/services/describeError.ts';
-import type { CountSession, TravelMode } from './countSession.ts';
+import { isFeederHours, isParticipantCount, type CountSession, type TravelMode } from './countSession.ts';
 import { MODE_COLORS } from './routeLayers.ts';
 import { sessionTotals, type SessionTotals, type Stretch } from './sessionStretches.ts';
-import { formatAmount, formatTime, MODE_LABELS, sessionSummaryText, type StoppedSession } from './sessionSummary.ts';
+import { formatAmount, formatTime, gapNote, MODE_LABELS, sessionSummaryText, type StoppedSession } from './sessionSummary.ts';
 
 const CLOCK_TICK_MS = 15_000;
 
@@ -16,6 +16,8 @@ interface SessionPanelProps {
   readonly onStop: () => void;
   readonly onDiscard: () => void;
   readonly onSetMode: (stretch: Stretch, mode: TravelMode) => void;
+  readonly onSetParticipants: (participants: number) => void;
+  readonly onSetFeederHours: (hours: number) => void;
   readonly setError: (message: string | null) => void;
   readonly setNotice: (message: string | null) => void;
 }
@@ -55,7 +57,74 @@ function StretchList({ stretches, onSetMode }: Pick<SessionPanelProps, 'stretche
   );
 }
 
-function TotalsTable({ totals }: { readonly totals: SessionTotals }) {
+interface NumberFieldProps {
+  readonly label: string;
+  readonly value: number;
+  readonly inputMode: 'numeric' | 'decimal';
+  readonly step: number;
+  readonly min: number;
+  readonly isValid: (value: number) => boolean;
+  readonly onChange: (value: number) => void;
+}
+
+/**
+ * Keeps the typed text, so a field can be cleared while typing, and passes on only values that pass `isValid`.
+ * Leaving the field puts back the saved value, so the field never shows a number the shared totals do not use.
+ */
+function NumberField({ label, value, inputMode, step, min, isValid, onChange }: NumberFieldProps) {
+  const [text, setText] = useState(String(value));
+  const isTextValid = (candidate: string) => candidate.trim() !== '' && isValid(Number(candidate));
+  return (
+    <label>
+      {label}
+      <input
+        type="number"
+        inputMode={inputMode}
+        step={step}
+        min={min}
+        value={text}
+        aria-invalid={!isTextValid(text)}
+        onChange={(event) => {
+          const next = event.target.value;
+          setText(next);
+          if (isTextValid(next)) onChange(Number(next));
+        }}
+        onBlur={() => setText(String(value))}
+      />
+    </label>
+  );
+}
+
+type PartyFieldsProps = Pick<SessionPanelProps, 'onSetParticipants' | 'onSetFeederHours'> & {
+  readonly session: CountSession;
+};
+
+function PartyFields({ session, onSetParticipants, onSetFeederHours }: PartyFieldsProps) {
+  return (
+    <div className="scout-party">
+      <NumberField
+        label="Participants"
+        value={session.participants}
+        inputMode="numeric"
+        step={1}
+        min={1}
+        isValid={isParticipantCount}
+        onChange={onSetParticipants}
+      />
+      <NumberField
+        label="Feeder watching hours"
+        value={session.feederHours}
+        inputMode="decimal"
+        step={0.25}
+        min={0}
+        isValid={isFeederHours}
+        onChange={onSetFeederHours}
+      />
+    </div>
+  );
+}
+
+function TotalsTable({ totals, feederHours }: { readonly totals: SessionTotals; readonly feederHours: number }) {
   return (
     <table className="scout-totals">
       <thead>
@@ -67,19 +136,19 @@ function TotalsTable({ totals }: { readonly totals: SessionTotals }) {
       </thead>
       <tbody>
         <tr>
-          <th scope="row">{MODE_LABELS.foot}</th>
-          <td>{formatAmount(totals.footHours)}</td>
-          <td>{formatAmount(totals.footMiles)}</td>
-        </tr>
-        <tr>
           <th scope="row">{MODE_LABELS.car}</th>
           <td>{formatAmount(totals.carHours)}</td>
           <td>{formatAmount(totals.carMiles)}</td>
         </tr>
         <tr>
-          <th scope="row">Total</th>
-          <td>{formatAmount(totals.totalHours)}</td>
-          <td>{formatAmount(totals.footMiles + totals.carMiles)}</td>
+          <th scope="row">{MODE_LABELS.foot}</th>
+          <td>{formatAmount(totals.footHours)}</td>
+          <td>{formatAmount(totals.footMiles)}</td>
+        </tr>
+        <tr>
+          <th scope="row">Feeder watching</th>
+          <td>{formatAmount(feederHours)}</td>
+          <td />
         </tr>
       </tbody>
     </table>
@@ -99,7 +168,7 @@ function useClock(isTicking: boolean): number {
 
 export function SessionPanel(props: SessionPanelProps) {
   const { session, stretches, isScreenLockable, isLocationOff, onStart, onStop, onDiscard, onSetMode } = props;
-  const { setError, setNotice } = props;
+  const { onSetParticipants, onSetFeederHours, setError, setNotice } = props;
   const now = useClock(session !== null && session.stopTime === null);
 
   if (!session) {
@@ -110,7 +179,7 @@ export function SessionPanel(props: SessionPanelProps) {
             Start count
           </button>
         </div>
-        <p>Records your party's hours and miles on foot and by car while Circle Scout is open.</p>
+        <p>Records your party's hours and miles by vehicle and by foot while Circle Scout is open.</p>
       </section>
     );
   }
@@ -136,6 +205,12 @@ export function SessionPanel(props: SessionPanelProps) {
         {isScreenLockable && (
           <p>This browser cannot keep the screen on. Recording pauses while the screen is locked.</p>
         )}
+        <PartyFields
+          key={session.startTime}
+          session={session}
+          onSetParticipants={onSetParticipants}
+          onSetFeederHours={onSetFeederHours}
+        />
         <StretchList stretches={stretches} onSetMode={onSetMode} />
       </section>
     );
@@ -144,6 +219,8 @@ export function SessionPanel(props: SessionPanelProps) {
   const stopped: StoppedSession = { ...session, stopTime: session.stopTime };
 
   async function handleShare(): Promise<void> {
+    // iOS may not blur a field on tap, so an invalid entry would stay on screen beside the saved value that is sent.
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     const text = sessionSummaryText(stopped, totals);
     try {
       if (typeof navigator.share === 'function') {
@@ -172,8 +249,14 @@ export function SessionPanel(props: SessionPanelProps) {
       <h2>
         Count totals, {formatTime(session.startTime)} to {formatTime(session.stopTime)}
       </h2>
-      <TotalsTable totals={totals} />
-      <p>{formatAmount(totals.gapMiles)} of the miles are straight lines across gaps in the route.</p>
+      <TotalsTable totals={totals} feederHours={session.feederHours} />
+      {totals.gapMiles > 0 && <p>{gapNote(totals.gapMiles)}</p>}
+      <PartyFields
+        key={session.startTime}
+        session={session}
+        onSetParticipants={onSetParticipants}
+        onSetFeederHours={onSetFeederHours}
+      />
       <div className="scout-actions">
         <button type="button" onClick={() => void handleShare()}>
           Share totals

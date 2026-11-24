@@ -7,7 +7,9 @@ import {
   stopSession,
   withBreak,
   withCorrection,
+  withFeederHours,
   withFix,
+  withParticipants,
   writeCountSession,
   type CountSession,
   type LocationFix,
@@ -65,25 +67,61 @@ test('repeated breaks with no fix between them leave one empty track', () => {
   );
 });
 
-test('saves and restores a session with its tracks and corrections', () => {
+test('takes a whole number of participants of at least 1 and feeder hours of at least 0', () => {
+  const session = startSession(START_TIME, null);
+  assert.equal(withParticipants(session, 4).participants, 4);
+  for (const bad of [0, -1, 2.5, Number.NaN]) assert.equal(withParticipants(session, bad), session, String(bad));
+  assert.equal(withFeederHours(session, 1.25).feederHours, 1.25);
+  assert.equal(withFeederHours(withFeederHours(session, 2), 0).feederHours, 0);
+  for (const bad of [-0.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+    assert.equal(withFeederHours(session, bad), session, String(bad));
+  }
+});
+
+test('saves and restores a session with its area, party details, tracks, and corrections', () => {
   const storage = new MemoryStorage();
   const withGap = withFix(withBreak(recorded(fixAt(0, 1), fixAt(100, 3))), fixAt(900, 20));
-  const session = stopSession(
-    withCorrection({ ...withGap, areaName: 'Minneapolis North: 12 - Richfield' }, { from: 1, to: 2, mode: 'car' }),
-    START_TIME + 30 * MINUTE_MS
+  const withParty = withFeederHours(
+    withParticipants({ ...withGap, areaName: 'Bloomington: Area 12, Richfield', areaCode: '12' }, 3),
+    1.5
   );
+  const session = stopSession(withCorrection(withParty, { from: 1, to: 2, mode: 'car' }), START_TIME + 30 * MINUTE_MS);
   assert.equal(writeCountSession(storage, session), true);
   const read = readCountSession(storage);
   assert.equal(read.status, 'found');
   if (read.status !== 'found') return;
   assert.equal(read.session.stopTime, session.stopTime);
   assert.equal(read.session.areaName, session.areaName);
+  assert.equal(read.session.areaCode, '12');
+  assert.equal(read.session.participants, 3);
+  assert.equal(read.session.feederHours, 1.5);
   assert.deepEqual(read.session.corrections, session.corrections);
   assert.deepEqual(
     read.session.tracks.map((track) => track.map((point) => point.time)),
     session.tracks.map((track) => track.map((point) => point.time))
   );
   assert.ok(Math.abs(read.session.tracks[1][0].lat - session.tracks[1][0].lat) < 1e-6);
+});
+
+test('restores a count saved in the first format with its area name and the starting party details', () => {
+  const storage = new MemoryStorage();
+  const firstFormat = {
+    version: 1,
+    startTime: START_TIME,
+    stopTime: START_TIME + 30 * MINUTE_MS,
+    areaName: 'Bloomington: Area 12, Richfield',
+    tracks: [[[-93.3, 44.8, START_TIME + MINUTE_MS]]],
+    corrections: [{ from: 1, to: 2, mode: 'car' }],
+  };
+  storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(firstFormat));
+  const read = readCountSession(storage);
+  assert.equal(read.status, 'found');
+  if (read.status !== 'found') return;
+  assert.equal(read.session.areaName, 'Bloomington: Area 12, Richfield');
+  assert.equal(read.session.areaCode, null);
+  assert.equal(read.session.participants, 1);
+  assert.equal(read.session.feederHours, 0);
+  assert.equal(read.session.tracks[0][0].time, START_TIME + MINUTE_MS);
 });
 
 test('reports no session when nothing is saved', () => {
@@ -94,7 +132,12 @@ test('reports a saved session it cannot read', () => {
   const good = JSON.parse(writeAndRead(startSession(START_TIME, null)));
   const cases = [
     'not json',
-    JSON.stringify({ ...good, version: 2 }),
+    JSON.stringify({ ...good, version: 3 }),
+    JSON.stringify({ ...good, participants: 0 }),
+    JSON.stringify({ ...good, participants: 1.5 }),
+    JSON.stringify({ ...good, feederHours: -1 }),
+    JSON.stringify({ ...good, areaCode: 12 }),
+    JSON.stringify({ ...good, version: 1, areaName: 12 }),
     JSON.stringify({ ...good, tracks: [[[1, 2]]] }),
     JSON.stringify({ ...good, corrections: [{ from: 1, to: 2, mode: 'boat' }] }),
     JSON.stringify({ ...good, stopTime: 'later' }),
