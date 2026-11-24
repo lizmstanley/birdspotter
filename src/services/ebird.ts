@@ -74,9 +74,10 @@ async function fetchEbirdList<T>(
   endpoint: EbirdEndpoint,
   url: string,
   apiKey: string,
-  isItem: (value: unknown) => value is T
+  isItem: (value: unknown) => value is T,
+  maxAgeMs: number | undefined
 ): Promise<T[]> {
-  const saved = readTodaysCopy(url, isItem);
+  const saved = readTodaysCopy(url, isItem, maxAgeMs);
   if (saved) return saved;
   const res = await fetch(url, {
     headers: { 'X-eBirdApiToken': apiKey.trim() },
@@ -94,16 +95,18 @@ function searchDistanceKm(radiusMiles: number): string {
   return Math.min(50, Math.max(1, radiusMiles * 1.609344)).toFixed(2);
 }
 
+/** @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used */
 export async function fetchHotspotsInCircle(
   apiKey: string,
   lat: number,
   lng: number,
-  radiusMiles = CBC_CIRCLE_RADIUS_MILES
+  radiusMiles = CBC_CIRCLE_RADIUS_MILES,
+  maxAgeMs?: number
 ): Promise<EbirdHotspot[]> {
   const url =
     `https://api.ebird.org/v2/ref/hotspot/geo?lat=${encodeURIComponent(lat)}` +
     `&lng=${encodeURIComponent(lng)}&dist=${searchDistanceKm(radiusMiles)}&fmt=json`;
-  return fetchEbirdList('hotspots', url, apiKey, isHotspot);
+  return fetchEbirdList('hotspots', url, apiKey, isHotspot, maxAgeMs);
 }
 
 export function recentSightingsUrl(
@@ -119,12 +122,15 @@ export function recentSightingsUrl(
   );
 }
 
+/** @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used */
 export async function fetchRecentSightingsInCircle(
   apiKey: string,
   lat: number,
   lng: number,
   radiusMiles = CBC_CIRCLE_RADIUS_MILES,
-  backDays = 7
+  backDays = 7,
+  maxAgeMs?: number
 ): Promise<EbirdObservation[]> {
-  return fetchEbirdList('sightings', recentSightingsUrl(lat, lng, radiusMiles, backDays), apiKey, isObservation);
+  const url = recentSightingsUrl(lat, lng, radiusMiles, backDays);
+  return fetchEbirdList('sightings', url, apiKey, isObservation, maxAgeMs);
 }

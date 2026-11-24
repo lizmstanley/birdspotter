@@ -1,13 +1,18 @@
 import { useState } from 'react';
+import type { GeolocateControl } from 'maplibre-gl';
 import { useEbirdKey } from '../../src/hooks/useEbirdKey.ts';
 import { AreaPanel } from './AreaPanel.tsx';
 import type { AreaStartup } from './areaStartup.ts';
 import { EbirdKeyForm } from './EbirdKeyForm.tsx';
 import { InstallBanner } from './InstallBanner.tsx';
 import type { InstallPromptStore } from './installPrompt.ts';
+import { NearbyPanel } from './NearbyPanel.tsx';
 import type { AreaStorage } from './savedAreas.ts';
 import { ScoutMap } from './ScoutMap.tsx';
+import { useLiveLocation } from './useLiveLocation.ts';
 import { useSavedAreas } from './useSavedAreas.ts';
+
+type Panel = 'nearby' | 'area';
 
 interface CircleScoutAppProps {
   readonly installPrompt: InstallPromptStore;
@@ -25,6 +30,11 @@ export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleSc
     setError,
     setNotice,
   });
+  const [locationControl, setLocationControl] = useState<GeolocateControl | null>(null);
+  const live = useLiveLocation(locationControl, storage);
+  // With no area yet, the counter's first job is loading one.
+  const [panel, setPanel] = useState<Panel>(activeArea ? 'nearby' : 'area');
+  const area = activeArea?.data ?? null;
 
   return (
     <div className="scout">
@@ -41,14 +51,28 @@ export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleSc
       )}
       {ebirdApiKey ? (
         <>
-          <ScoutMap area={activeArea?.data ?? null} storage={storage} />
-          <AreaPanel
-            areas={areas}
-            activeArea={activeArea}
-            onLoadText={loadAreaText}
-            onPick={pickArea}
-            onRemove={removeArea}
-          />
+          <ScoutMap area={area} live={live} onLocationControl={setLocationControl} />
+          <div className="scout-tabs">
+            <button type="button" aria-pressed={panel === 'nearby'} onClick={() => setPanel('nearby')}>
+              Nearby
+            </button>
+            <button type="button" aria-pressed={panel === 'area'} onClick={() => setPanel('area')}>
+              Your area
+            </button>
+          </div>
+          {/* Hidden, not unmounted, so the day range and loaded rows survive a look at the area. */}
+          <div hidden={panel !== 'nearby'}>
+            <NearbyPanel apiKey={ebirdApiKey} area={area} live={live} />
+          </div>
+          {panel === 'area' && (
+            <AreaPanel
+              areas={areas}
+              activeArea={activeArea}
+              onLoadText={loadAreaText}
+              onPick={pickArea}
+              onRemove={removeArea}
+            />
+          )}
         </>
       ) : (
         <EbirdKeyForm onSave={saveEbirdKey} />

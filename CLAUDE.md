@@ -17,7 +17,7 @@ Two browser-only apps share one `package.json`, `vite.config.ts`, and `tsconfig.
 - `src/db/pgliteDb.ts`: `LocalCbcDb`, the only file that opens PGlite on IndexedDB. `src/services/autoSave.ts` keeps the Auto-Save file handle in a separate IndexedDB database, `cbc-circle-manager-autosave`. `browserMigrations.ts` bundles the SQL files with `import.meta.glob`; `testing/testDb.ts` reads the same files from disk for tests.
 - `src/db/migrations.ts`: runner. All pending migrations, their `schema_version` rows, and `views.sql` run in one transaction. A database newer than the app throws `SchemaTooNewError`.
 - `src/db/legacySingleCircle.ts`: moves the pre-multi-circle format into a circle coded `LEGACY`.
-- `src/services/`: logic, network clients, and browser storage helpers. eBird (`ebird.ts`, with a one-day `localStorage` cache in `ebirdCache.ts`), Audubon circle search (`audubonCircles.ts`, ArcGIS) and circle page scraping (`audubonCirclePage.ts`), KML/KMZ/GeoJSON parsing, roster import checks, seasons and count dates, and the area link format (`areaLink.ts`).
+- `src/services/`: logic, network clients, and browser storage helpers. eBird (`ebird.ts`, with a `localStorage` cache in `ebirdCache.ts` kept for the local day, or less when the caller passes a maximum age, as Circle Scout does), Audubon circle search (`audubonCircles.ts`, ArcGIS) and circle page scraping (`audubonCirclePage.ts`), KML/KMZ/GeoJSON parsing, roster import checks, seasons and count dates, and the area link format (`areaLink.ts`).
 - `src/hooks/`: web app state and actions. `src/components/`: `TabContent.tsx` maps each `Tab` in `src/tabs.ts` to its component; the map is `CircleMap.tsx` with its parts in `components/map/`, and roster import is `SpreadsheetImporter.tsx` with its parts in `components/import/`.
 - `circle-scout/src/areaStartup.ts`: reads an area link from the address before React renders, then strips it from the address bar.
 - `circle-scout/src/areaLinkText.ts`: finds the payload in pasted text or a scanned QR code.
@@ -28,8 +28,8 @@ Two browser-only apps share one `package.json`, `vite.config.ts`, and `tsconfig.
 
 Circle Scout imports from the web app, never the reverse. Today it imports:
 
-- `src/services/areaLink.ts`, `autoSave.ts`, `describeError.ts`, `ebird.ts`
-- `src/components/map/basemap.ts`, `mapLayers.ts` (MapLibre only, no React)
+- `src/services/areaLink.ts`, `autoSave.ts`, `cbcCircle.ts`, `describeError.ts`, `ebird.ts`, `errors.ts`
+- `src/components/map/basemap.ts`, `mapLayers.ts` (MapLibre only, no React), `mapText.ts`
 - `src/hooks/useEbirdKey.ts`, `useLatest.ts` (depend only on `react`)
 
 It must never pull in `src/db`, `@electric-sql/pglite`, or a web app component, directly or through a service. `areaShare.ts`, `importPreview.ts`, `audubonImport.ts`, and `rosterSummary.ts` import from `src/db`. Those imports are `import type` today, so they add nothing to a bundle. A runtime import there would put PGlite into Circle Scout's build if Circle Scout ever imports that service. No lint rule checks this.

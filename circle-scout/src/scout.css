@@ -176,3 +176,80 @@ button {
 .scout-scanner video[hidden] {
   display: none;
 }
+
+.scout-tabs {
+  display: flex;
+  border-top: 1px solid #cbd5e1;
+}
+
+.scout-tabs button {
+  flex: 1;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+.scout-tabs button[aria-pressed='true'] {
+  border-bottom-color: #15803d;
+  background: #f8fafc;
+}
+
+.scout-nearby {
+  border-top: 0;
+}
+
+.scout-nearby h2 {
+  margin: 12px 0 4px;
+  font-size: 1.05rem;
+}
+
+.scout-nearby h3 {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.scout-nearby-days select {
+  min-height: 44px;
+  font: inherit;
+}
+
+.scout-nearby-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scout-nearby-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.scout-nearby-count,
+.scout-nearby-detail {
+  color: #475569;
+}
+
+.scout-nearby-detail {
+  font-size: 0.9rem;
+}
+
+.scout-nearby-distance {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.scout-nearby-error {
+  color: #991b1b;
+}
+
+.scout-nearby-credit {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: #475569;
+}

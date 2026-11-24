@@ -1,0 +1,116 @@
+import { useMemo, useState, type ReactNode } from 'react';
+import { areaDisplayName } from '../../src/components/map/mapText.ts';
+import type { AreaLinkData } from '../../src/services/areaLink.ts';
+import { buildCirclePolygon, EBIRD_SITE_URL } from '../../src/services/ebird.ts';
+import type { LiveLocation } from './locationTracking.ts';
+import { isInAreaTest, sortNearby, type NearbyRow, type Place } from './nearby.ts';
+import { HotspotRow, SightingRow } from './NearbyRows.tsx';
+import { useNearbyData } from './useNearbyData.ts';
+
+const DEFAULT_BACK_DAYS = 7;
+const BACK_DAY_CHOICES = Array.from({ length: 30 }, (_, index) => index + 1);
+
+interface NearbyPanelProps {
+  readonly apiKey: string;
+  readonly area: AreaLinkData | null;
+  readonly live: LiveLocation;
+}
+
+interface GroupTitles {
+  readonly inArea: string;
+  readonly elsewhere: string;
+}
+
+function groupTitles(area: AreaLinkData): GroupTitles {
+  if (area.outline.type === 'LineString') return { inArea: 'In the circle', elsewhere: 'Outside the circle' };
+  return { inArea: `In ${areaDisplayName(area.areaCode)}`, elsewhere: 'Outside your area' };
+}
+
+interface RowGroupsProps<T extends Place> {
+  readonly rows: readonly NearbyRow<T>[];
+  readonly titles: GroupTitles | null;
+  readonly renderRow: (row: NearbyRow<T>) => ReactNode;
+}
+
+function RowGroups<T extends Place>({ rows, titles, renderRow }: RowGroupsProps<T>) {
+  if (!titles) return <ul className="scout-nearby-list">{rows.map(renderRow)}</ul>;
+  const inArea = rows.filter((row) => row.isInArea);
+  const elsewhere = rows.filter((row) => !row.isInArea);
+  return (
+    <>
+      {inArea.length > 0 && <h3>{titles.inArea}</h3>}
+      <ul className="scout-nearby-list">{inArea.map(renderRow)}</ul>
+      {elsewhere.length > 0 && <h3>{titles.elsewhere}</h3>}
+      <ul className="scout-nearby-list">{elsewhere.map(renderRow)}</ul>
+    </>
+  );
+}
+
+function waitingText(live: LiveLocation): string {
+  if (live.error) return live.error;
+  if (live.isTracking) return 'Finding your location…';
+  return 'Turn on location with the location button on the map to see what is nearby.';
+}
+
+/** Recent sightings and hotspots, nearest first, with those in the person's area ahead of the rest. */
+export function NearbyPanel({ apiKey, area, live }: NearbyPanelProps) {
+  const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
+  const { position } = live;
+  const data = useNearbyData(apiKey, area, position, backDays);
+  const isInArea = useMemo(() => {
+    if (!area) return null;
+    return isInAreaTest(area, buildCirclePolygon(area.circleCenter[0], area.circleCenter[1]));
+  }, [area]);
+  const sightings = useMemo(
+    () => (position ? sortNearby(data.sightings, position, isInArea) : []),
+    [data.sightings, position, isInArea]
+  );
+  const hotspots = useMemo(
+    () => (position ? sortNearby(data.hotspots, position, isInArea) : []),
+    [data.hotspots, position, isInArea]
+  );
+  const titles = area ? groupTitles(area) : null;
+
+  return (
+    <section className="scout-area scout-nearby" aria-label="Nearby">
+      <label className="scout-nearby-days">
+        Sightings from the last{' '}
+        <select value={backDays} onChange={(event) => setBackDays(Number(event.target.value))}>
+          {BACK_DAY_CHOICES.map((days) => (
+            <option key={days} value={days}>
+              {days === 1 ? '1 day' : `${days} days`}
+            </option>
+          ))}
+        </select>
+      </label>
+      {data.error && (
+        <p className="scout-nearby-error" role="alert">
+          {data.error}
+        </p>
+      )}
+      {!position && <p role="status">{waitingText(live)}</p>}
+      {position && data.isLoading && <p role="status">Loading eBird data…</p>}
+      {position && (
+        <>
+          <h2>Recent sightings</h2>
+          {sightings.length === 0 && !data.isLoading && <p>No sightings reported here in that time.</p>}
+          <RowGroups
+            rows={sightings}
+            titles={titles}
+            renderRow={(row) => <SightingRow key={`${row.item.subId}-${row.item.speciesCode}`} row={row} />}
+          />
+          <h2>Hotspots</h2>
+          {hotspots.length === 0 && !data.isLoading && <p>No eBird hotspots here.</p>}
+          <RowGroups rows={hotspots} titles={titles} renderRow={(row) => <HotspotRow key={row.item.locId} row={row} />} />
+        </>
+      )}
+      <p className="scout-nearby-credit">
+        Bird data from{' '}
+        <a href={EBIRD_SITE_URL} target="_blank" rel="noreferrer">
+          eBird.org
+        </a>
+        , checked every half hour.
+      </p>
+    </section>
+  );
+}
