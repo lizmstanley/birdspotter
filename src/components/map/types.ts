@@ -1,7 +1,5 @@
 import type { GeoJsonGeometry } from '../../services/kmlParser.ts';
 
-export type BasemapKind = 'street' | 'satellite';
-
 export interface AreaBoundaryItem {
   code: string;
   label?: string | null;

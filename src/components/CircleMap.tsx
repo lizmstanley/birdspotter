@@ -9,7 +9,7 @@ import { EbirdControls } from './map/EbirdControls';
 import { HotspotsTable, SightingsTable } from './map/EbirdTables';
 import { LayerLegend } from './map/LayerLegend';
 import { ScoutPanel } from './map/ScoutPanel';
-import type { AreaBoundaryItem, BasemapKind, ScoutedCircleDraft } from './map/types';
+import type { AreaBoundaryItem, ScoutedCircleDraft } from './map/types';
 import { useAreaLayer } from './map/useAreaLayer';
 import { useCircleLayer } from './map/useCircleLayer';
 import { useEbirdData } from './map/useEbirdData';
@@ -53,7 +53,6 @@ export function CircleMap({
   onSaveScoutedCircle,
   ebirdApiKey,
 }: CircleMapProps) {
-  const [basemap, setBasemap] = useState<BasemapKind>('street');
   const [showCircleOverlay, setShowCircleOverlay] = useState(true);
   const [showAreas, setShowAreas] = useState(true);
   const [showHotspots, setShowHotspots] = useState(true);
@@ -91,7 +90,6 @@ export function CircleMap({
   }, [activeCode]);
 
   const { containerRef, mapRef, markerRef, mapReady } = useMapInstance({
-    basemap,
     centerLat,
     centerLng,
     onPinDragged: (lat, lng) => (isScouting ? scouting.movePin(lat, lng) : onCenterChange?.(lat, lng)),
@@ -155,16 +153,6 @@ export function CircleMap({
                 </span>
               )}
             </p>
-          </div>
-          <div className="controls">
-            <div className="segmented">
-              <button className={basemap === 'street' ? 'active' : ''} onClick={() => setBasemap('street')}>
-                Street (OSM)
-              </button>
-              <button className={basemap === 'satellite' ? 'active' : ''} onClick={() => setBasemap('satellite')}>
-                Satellite (Esri)
-              </button>
-            </div>
           </div>
         </div>
 

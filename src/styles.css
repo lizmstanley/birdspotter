@@ -284,25 +284,6 @@ button:disabled {
   border-color: var(--forest-800);
 }
 
-.segmented {
-  display: inline-flex;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: var(--surface);
-}
-
-.segmented button {
-  border: none;
-  border-radius: 0;
-  background: transparent;
-}
-
-.segmented button.active {
-  background: var(--forest-700);
-  color: #ffffff;
-}
-
 /* ---------- Navigation Tabs ---------- */
 .tabs {
   display: flex;
