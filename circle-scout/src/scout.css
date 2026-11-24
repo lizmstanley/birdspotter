@@ -83,6 +83,20 @@ button {
   margin-top: 12px;
 }
 
+.scout-location {
+  margin: 0;
+  padding: 8px 16px;
+  background: #e0f2fe;
+  color: #075985;
+  font-weight: 600;
+}
+
+.scout-location-error {
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 400;
+}
+
 .scout-notice {
   margin: 0;
   padding: 8px 16px;
