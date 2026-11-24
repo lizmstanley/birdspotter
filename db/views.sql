@@ -38,7 +38,9 @@ SELECT
           AND past.count_year < cy.year
           AND past.rsvp_status = 'confirmed'
           AND past.assigned_area_code IS NOT NULL
-    ) AS seasons_counted
+    ) AS seasons_counted,
+    -- CREATE OR REPLACE VIEW can only add columns at the end.
+    pe.phone
 FROM public.participations p
 JOIN public.count_years cy
     ON cy.circle_code = p.circle_code
@@ -70,7 +72,8 @@ GROUP BY
     p.rsvp_status,
     p.counter_type,
     p.is_area_leader,
-    p.companions
+    p.companions,
+    pe.phone
 ORDER BY
     a.sort_order NULLS LAST,
     p.assigned_area_code NULLS LAST,

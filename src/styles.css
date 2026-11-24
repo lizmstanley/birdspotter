@@ -1056,3 +1056,17 @@ code {
   justify-content: space-between;
   gap: 10px;
 }
+
+.share-area-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.share-area-qr {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  margin-top: 8px;
+  image-rendering: pixelated;
+}

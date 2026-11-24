@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import type { AreaOption, AssignmentRow } from '../db/pgliteDb';
+import type { AreaLinkData } from '../services/areaLink';
 import { areaDisplayName } from './map/mapText';
 import { countingSince } from './PersonHistoryDialog';
+import { ShareAreaPanel } from './ShareAreaPanel';
 
 interface Props {
   circleCode: string;
@@ -11,11 +14,15 @@ interface Props {
   areaInfo?: AreaOption | null;
   allAreas: AreaOption[];
   assignments: AssignmentRow[];
+  /** Null when the area has no outline to share. */
+  areaLinkData: AreaLinkData | null;
   backLabel: string;
   onBack: () => void;
   onOpenPerson: (personId: number) => void;
   onReassign: (participationId: number, newArea: string) => Promise<void>;
   onCopyBcc: (emails: string[], label: string) => void;
+  onShareLink: (title: string, url: string) => void;
+  onCopyLink: (url: string) => void;
   onToggleCounted: (areaCode: string, isCounted: boolean) => Promise<void>;
   onToggleResultsReceived: (areaCode: string, received: boolean) => Promise<void>;
 }
@@ -29,11 +36,14 @@ export function AreaDetailPage({
   areaInfo,
   allAreas,
   assignments,
+  areaLinkData,
   backLabel,
   onBack,
   onOpenPerson,
   onReassign,
   onCopyBcc,
+  onShareLink,
+  onCopyLink,
   onToggleCounted,
   onToggleResultsReceived,
 }: Props) {
@@ -42,6 +52,7 @@ export function AreaDetailPage({
   );
   const emails = areaAssignments.map((a) => a.email).filter((e): e is string => Boolean(e));
   const title = areaDisplayName(areaCode);
+  const [isSharing, setIsSharing] = useState(false);
 
   return (
     <div className="stack">
@@ -94,8 +105,27 @@ export function AreaDetailPage({
             >
               Copy Area BCC ({emails.length})
             </button>
+            {areaLinkData && (
+              <button
+                type="button"
+                aria-expanded={isSharing}
+                title="Make a link and QR code that open this area in Circle Scout"
+                onClick={() => setIsSharing(!isSharing)}
+              >
+                {isSharing ? 'Hide Share Area' : 'Share Area'}
+              </button>
+            )}
           </div>
         </div>
+
+        {areaLinkData && isSharing && (
+          <ShareAreaPanel
+            title={`${circleCode} ${title}`}
+            linkData={areaLinkData}
+            onShareLink={onShareLink}
+            onCopyLink={onCopyLink}
+          />
+        )}
 
         <div className="stats-grid" style={{ marginTop: 12, marginBottom: 0 }}>
           <div className="stat-card">

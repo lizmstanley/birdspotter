@@ -21,8 +21,10 @@ import { useSeasonActions } from './hooks/useSeasonActions';
 import { areResultsDue } from './services/countDay';
 import { seasonToRollOverTo } from './services/season';
 import { describeError } from './services/describeError';
-import { shareApp } from './services/shareApp';
+import { copyLink, shareApp, shareLink } from './services/shareApp';
 import type { AreaReturnTab, SelectedArea, Tab } from './tabs';
+
+const AREA_LINK_COPIED = 'Area link copied. Paste it into a text or email.';
 
 export function App() {
   const db = useMemo(() => new LocalCbcDb(), []);
@@ -151,6 +153,10 @@ export function App() {
               rosterActions={rosterActions}
               onOpenPerson={setHistoryPersonId}
               onCopyBcc={copyBcc}
+              onShareLink={(title, url) =>
+                void shareLink({ title, url }, AREA_LINK_COPIED, flash, setError)
+              }
+              onCopyLink={(url) => void copyLink(url, AREA_LINK_COPIED, flash, setError)}
               onOpenArea={openArea}
               onSelectTab={setTab}
             />

@@ -4,6 +4,7 @@ import type { useAreaActions } from '../hooks/useAreaActions';
 import type { ActiveCircleData } from '../hooks/useCircleData';
 import type { useCircleActions } from '../hooks/useCircleActions';
 import type { useRosterActions } from '../hooks/useRosterActions';
+import { buildAreaLinkData } from '../services/areaShare';
 import { countCountersByArea } from '../services/rosterSummary';
 import { AREA_RETURN_LABELS, type AreaReturnTab, type SelectedArea, type Tab } from '../tabs';
 import { AllAreasPage } from './AllAreasPage';
@@ -29,6 +30,8 @@ interface Props {
   rosterActions: ReturnType<typeof useRosterActions>;
   onOpenPerson: (personId: number) => void;
   onCopyBcc: (emails: string[], label: string) => void;
+  onShareLink: (title: string, url: string) => void;
+  onCopyLink: (url: string) => void;
   onOpenArea: (code: string, label: string | null | undefined, from: AreaReturnTab) => void;
   onSelectTab: (tab: Tab) => void;
 }
@@ -146,9 +149,15 @@ function AreaDetail({
   areaActions,
   onOpenPerson,
   onCopyBcc,
+  onShareLink,
+  onCopyLink,
   onSelectTab,
 }: Props & { selectedArea: SelectedArea }) {
   const selectedCode = selectedArea.code.toUpperCase();
+  const areaLinkData = useMemo(
+    () => buildAreaLinkData(circle, data.areaBoundaries, data.assignments, selectedArea.code),
+    [circle, data.areaBoundaries, data.assignments, selectedArea.code]
+  );
   const areaInfo = data.areas.find((a) => a.code.toUpperCase() === selectedCode) ?? null;
   return (
     <AreaDetailPage
@@ -160,11 +169,14 @@ function AreaDetail({
       areaInfo={areaInfo}
       allAreas={countedAreas}
       assignments={data.assignments}
+      areaLinkData={areaLinkData}
       backLabel={AREA_RETURN_LABELS[selectedArea.from]}
       onBack={() => onSelectTab(selectedArea.from)}
       onOpenPerson={onOpenPerson}
       onReassign={areaActions.reassign}
       onCopyBcc={onCopyBcc}
+      onShareLink={onShareLink}
+      onCopyLink={onCopyLink}
       onToggleCounted={areaActions.toggleAreaCounted}
       onToggleResultsReceived={areaActions.toggleResultsReceived}
     />
