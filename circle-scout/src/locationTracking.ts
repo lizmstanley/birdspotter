@@ -42,6 +42,15 @@ function deniedMessage(): string {
   return locationDeniedMessage(navigator.userAgent, navigator.maxTouchPoints);
 }
 
+/** Starts the control's location watch unless one is running or the control is still setting up. */
+export function startTracking(control: GeolocateControl): void {
+  const state = control._watchState;
+  if (state === undefined || !STOPPED_STATES.has(state)) return;
+  // From an error state the first press turns tracking off; the next starts a fresh watch.
+  if (state !== 'OFF') control.trigger();
+  control.trigger();
+}
+
 /**
  * Follows the control's location watch, restores tracking on start, and restarts a stopped watch when the page is shown again.
  * @param control a control already added to the map
@@ -91,11 +100,7 @@ export function followLocationControl(
 
   function restartIfStopped(): void {
     if (document.visibilityState !== 'visible' || !wantsTracking) return;
-    const state = watchState();
-    if (state === undefined || !STOPPED_STATES.has(state)) return;
-    // From an error state the first press turns tracking off; the next starts a fresh watch.
-    if (state !== 'OFF') control.trigger();
-    control.trigger();
+    startTracking(control);
   }
 
   control.on('trackuserlocationstart', handleStart);

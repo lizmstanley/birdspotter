@@ -41,7 +41,7 @@ export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleSc
       )}
       {ebirdApiKey ? (
         <>
-          <ScoutMap area={activeArea?.data ?? null} storage={storage} />
+          <ScoutMap area={activeArea?.data ?? null} storage={storage} setError={setError} setNotice={setNotice} />
           <AreaPanel
             areas={areas}
             activeArea={activeArea}

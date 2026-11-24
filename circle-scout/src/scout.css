@@ -176,3 +176,77 @@ button {
 .scout-scanner video[hidden] {
   display: none;
 }
+
+.scout-session {
+  max-height: 40dvh;
+  overflow-y: auto;
+  padding: 8px 16px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.scout-session h2 {
+  margin: 4px 0 8px;
+  font-size: 1.05rem;
+}
+
+.scout-session p {
+  margin: 0 0 8px;
+}
+
+.scout-session .scout-actions {
+  align-items: center;
+}
+
+.scout-session .scout-session-status {
+  flex: 1;
+  margin: 0;
+  font-weight: 600;
+}
+
+.scout-totals {
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+
+.scout-totals th,
+.scout-totals td {
+  padding: 4px 12px 4px 0;
+  text-align: left;
+}
+
+.scout-totals td {
+  font-variant-numeric: tabular-nums;
+}
+
+.scout-stretches summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.scout-stretches ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scout-stretches li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.scout-stretches select {
+  min-height: 44px;
+  font: inherit;
+}
+
+.scout-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
