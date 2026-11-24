@@ -56,3 +56,12 @@ export function saveTodaysCopy(requestKey: string, items: readonly unknown[]): v
     // Full or blocked storage only costs a repeat request; the fetched data is still shown.
   }
 }
+
+/** Drops today's saved copy of a request so the next fetch goes to the network. */
+export function forgetTodaysCopy(requestKey: string): void {
+  try {
+    browserStorage()?.removeItem(dayPrefix(new Date()) + requestKey);
+  } catch {
+    // Blocked storage holds no saved copy to drop.
+  }
+}

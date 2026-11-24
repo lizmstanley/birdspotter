@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchHotspotsInCircle, fetchRecentSightingsInCircle } from './ebird.ts';
+import { fetchHotspotsInCircle, fetchRecentSightingsInCircle, recentSightingsUrl } from './ebird.ts';
+import { forgetTodaysCopy } from './ebirdCache.ts';
 import { EbirdKeyRejectedError, EbirdRequestError, UnexpectedResponseError } from './errors.ts';
 import { FETCH_TIMEOUT_MS } from './http.ts';
 
@@ -167,6 +168,19 @@ test('a different place, radius, or day range is its own request', async (t) => 
   await fetchRecentSightingsInCircle('key', 44.8, -93.3, 10, 7);
   await fetchHotspotsInCircle('key', 44.8, -93.3);
   assert.equal(fetchMock.mock.callCount(), 6);
+});
+
+test('forgetting a saved copy fetches that request again and keeps the others', async (t) => {
+  const fetchMock = t.mock.method(globalThis, 'fetch', async (url: string) =>
+    Response.json(url.includes('/hotspot/') ? [HOTSPOT] : [SIGHTING])
+  );
+
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  await fetchHotspotsInCircle('key', 44.8, -93.3);
+  forgetTodaysCopy(recentSightingsUrl(44.8, -93.3));
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  await fetchHotspotsInCircle('key', 44.8, -93.3);
+  assert.equal(fetchMock.mock.callCount(), 3);
 });
 
 test('a failed or malformed response is not saved', async (t) => {
