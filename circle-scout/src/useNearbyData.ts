@@ -10,11 +10,6 @@ import {
 } from '../../src/services/ebird.ts';
 import { nearbyQuery, type LngLat, type NearbyQuery } from './nearby.ts';
 
-/**
- * Both the saved-copy age limit and the refresh interval. A copy just short of this age when the list
- * loads is replaced at the next refresh, so what the list shows is never an hour old.
- */
-export const NEARBY_REFRESH_MS = 30 * 60 * 1000;
 /** A failed fetch is most often a dropped signal, which comes back within minutes. */
 const RETRY_AFTER_ERROR_MS = 60 * 1000;
 
@@ -29,6 +24,7 @@ export interface NearbyData {
   readonly hotspots: readonly EbirdHotspot[];
   readonly sightings: readonly EbirdObservation[];
   readonly error: string | null;
+  readonly isKeyRejected: boolean;
   readonly isLoading: boolean;
 }
 
@@ -38,17 +34,22 @@ interface LoadedData {
   readonly sightings: readonly EbirdObservation[];
   readonly error: string | null;
   /** A rejected key fails the same way on every retry, so only other failures retry soon. */
-  readonly shouldRetrySoon: boolean;
+  readonly isKeyRejected: boolean;
 }
 
-const NO_DATA: Omit<LoadedData, 'request'> = { hotspots: [], sightings: [], error: null, shouldRetrySoon: false };
+const NO_DATA: Omit<LoadedData, 'request'> = { hotspots: [], sightings: [], error: null, isKeyRejected: false };
 
-/** Fetches the eBird data for the Nearby list and fetches it again every half hour while the page is shown. */
+/**
+ * Fetches the eBird data for the Nearby list and fetches it again at each interval while the page is shown.
+ * @param refreshMs both the refresh interval and the saved-copy age limit. A copy just short of this age when
+ *   the list loads is replaced at the next refresh, so what the list shows is never twice this old.
+ */
 export function useNearbyData(
   apiKey: string,
   area: AreaLinkData | null,
   position: LngLat | null,
-  backDays: number
+  backDays: number,
+  refreshMs: number
 ): NearbyData {
   const [query, setQuery] = useState<NearbyQuery | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
@@ -68,11 +69,11 @@ export function useNearbyData(
     const thisRequest = { query: { center: [lng, lat] as const, radiusMiles }, backDays, refreshCount };
     let isCurrent = true;
     Promise.all([
-      fetchHotspotsInCircle(apiKey, lat, lng, radiusMiles, NEARBY_REFRESH_MS),
-      fetchRecentSightingsInCircle(apiKey, lat, lng, radiusMiles, backDays, NEARBY_REFRESH_MS),
+      fetchHotspotsInCircle(apiKey, lat, lng, radiusMiles, refreshMs),
+      fetchRecentSightingsInCircle(apiKey, lat, lng, radiusMiles, backDays, refreshMs),
     ])
       .then(([hotspots, sightings]) => {
-        if (isCurrent) setLoaded({ request: thisRequest, hotspots, sightings, error: null, shouldRetrySoon: false });
+        if (isCurrent) setLoaded({ request: thisRequest, hotspots, sightings, error: null, isKeyRejected: false });
       })
       .catch((err: unknown) => {
         if (!isCurrent) return;
@@ -81,20 +82,27 @@ export function useNearbyData(
           ...(last ?? NO_DATA),
           request: thisRequest,
           error: describeError(err),
-          shouldRetrySoon: !(err instanceof EbirdKeyRejectedError),
+          isKeyRejected: err instanceof EbirdKeyRejectedError,
         }));
       });
     return () => {
       isCurrent = false;
     };
-  }, [apiKey, hasQuery, lng, lat, radiusMiles, backDays, refreshCount]);
+  }, [apiKey, hasQuery, lng, lat, radiusMiles, backDays, refreshCount, refreshMs]);
 
-  const refreshDelayMs = loaded?.shouldRetrySoon ? RETRY_AFTER_ERROR_MS : NEARBY_REFRESH_MS;
+  const shouldRetrySoon = loaded?.error != null && !loaded.isKeyRejected;
+  const refreshDelayMs = shouldRetrySoon ? RETRY_AFTER_ERROR_MS : refreshMs;
   useRefreshWhileShown(loaded?.request ?? null, refreshDelayMs, setRefreshCount);
 
   const isLoading = request !== null && !isSameRequest(loaded?.request ?? null, request);
   const shown = loaded ?? NO_DATA;
-  return { hotspots: shown.hotspots, sightings: shown.sightings, error: shown.error, isLoading };
+  return {
+    hotspots: shown.hotspots,
+    sightings: shown.sightings,
+    error: shown.error,
+    isKeyRejected: shown.isKeyRejected,
+    isLoading,
+  };
 }
 
 /**

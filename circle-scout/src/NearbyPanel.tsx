@@ -3,6 +3,7 @@ import { areaDisplayName } from '../../src/components/map/mapText.ts';
 import type { AreaLinkData } from '../../src/services/areaLink.ts';
 import { buildCirclePolygon, EBIRD_SITE_URL } from '../../src/services/ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
+import { refreshIntervalText, type RefreshMinutes } from './scoutSettings.ts';
 import { isInAreaTest, sortNearby, type NearbyRow, type Place } from './nearby.ts';
 import { HotspotRow, SightingRow } from './NearbyRows.tsx';
 import { useNearbyData } from './useNearbyData.ts';
@@ -14,6 +15,8 @@ interface NearbyPanelProps {
   readonly apiKey: string;
   readonly area: AreaLinkData | null;
   readonly live: LiveLocation;
+  readonly refreshMinutes: RefreshMinutes;
+  readonly onFixKey: () => void;
 }
 
 interface GroupTitles {
@@ -53,10 +56,10 @@ function waitingText(live: LiveLocation): string {
 }
 
 /** Recent sightings and hotspots, nearest first, with those in the person's area ahead of the rest. */
-export function NearbyPanel({ apiKey, area, live }: NearbyPanelProps) {
+export function NearbyPanel({ apiKey, area, live, refreshMinutes, onFixKey }: NearbyPanelProps) {
   const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
   const { position } = live;
-  const data = useNearbyData(apiKey, area, position, backDays);
+  const data = useNearbyData(apiKey, area, position, backDays, refreshMinutes * 60 * 1000);
   const isInArea = useMemo(() => {
     if (!area) return null;
     return isInAreaTest(area, buildCirclePolygon(area.circleCenter[0], area.circleCenter[1]));
@@ -83,7 +86,15 @@ export function NearbyPanel({ apiKey, area, live }: NearbyPanelProps) {
           ))}
         </select>
       </label>
-      {data.error && (
+      {data.isKeyRejected && (
+        <div className="scout-nearby-error" role="alert">
+          <p>eBird rejected your API key. Fix it under eBird key in the menu.</p>
+          <button type="button" onClick={onFixKey}>
+            Fix eBird key
+          </button>
+        </div>
+      )}
+      {data.error && !data.isKeyRejected && (
         <p className="scout-nearby-error" role="alert">
           {data.error}
         </p>
@@ -109,7 +120,7 @@ export function NearbyPanel({ apiKey, area, live }: NearbyPanelProps) {
         <a href={EBIRD_SITE_URL} target="_blank" rel="noreferrer">
           eBird.org
         </a>
-        , checked every half hour.
+        , checked {refreshIntervalText(refreshMinutes)}.
       </p>
     </section>
   );
