@@ -1,16 +1,24 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import type { AreaLinkData } from '../../src/services/areaLink.ts';
 import { describeError } from '../../src/services/describeError.ts';
-import { EbirdKeyRejectedError } from '../../src/services/errors.ts';
+import { EbirdKeyRejectedError, EbirdUnreachableError } from '../../src/services/errors.ts';
 import {
+  EBIRD_DATA_LIFETIME_MS,
   fetchHotspotsInCircle,
   fetchRecentNotableSightingsInCircle,
   fetchRecentSightingsInCircle,
   type EbirdHotspot,
+  type EbirdList,
   type EbirdObservation,
 } from '../../src/services/ebird.ts';
 import { nearbyQuery, type LngLat, type NearbyQuery } from './nearby.ts';
-import { hotspotsDelayMs, sightingsDelayMs, type FetchOutcome } from './nearbyRefresh.ts';
+import {
+  fetchAgainAt,
+  heldAfterFailure,
+  hotspotsDelayMs,
+  sightingsDelayMs,
+  type FetchOutcome,
+} from './nearbyRefresh.ts';
 
 interface ListRequest {
   readonly query: NearbyQuery;
@@ -32,21 +40,35 @@ export interface NearbyData extends Sightings {
   readonly error: string | null;
   readonly isKeyRejected: boolean;
   readonly isLoading: boolean;
+  /** eBird could not be reached at the last fetch of either list. */
+  readonly hasNoSignal: boolean;
+  /** When eBird sent the sightings shown, in epoch milliseconds, or null when none are held. */
+  readonly sightingsFetchedAt: number | null;
+  /** When eBird sent the hotspots shown, in epoch milliseconds, or null when none are held. */
+  readonly hotspotsFetchedAt: number | null;
+}
+
+interface Fetched<Data> {
+  readonly data: Data;
+  readonly fetchedAt: number;
+  readonly hasNoSignal: boolean;
 }
 
 interface Loaded<Request, Data> extends FetchOutcome {
   readonly request: Request;
   readonly data: Data;
+  readonly fetchedAt: number | null;
 }
 
-const NO_OUTCOME: FetchOutcome = { error: null, isKeyRejected: false };
+const NO_OUTCOME: FetchOutcome = { error: null, isKeyRejected: false, hasNoSignal: false };
 const NO_SIGHTINGS: Sightings = { regular: [], notable: [] };
 const NO_HOTSPOTS: readonly EbirdHotspot[] = [];
 
 /**
  * Fetches the eBird data for the Nearby and Suggestions lists, nothing while the key is empty. Regular and notable sightings are fetched together, and again at each
- * interval while the page is shown; hotspots change rarely, so they use any copy saved today and are fetched again
- * only for a new query or key, or after a failure.
+ * interval while the page is shown; hotspots change rarely, so they use a copy saved in the last 6 hours and are
+ * fetched again only for a new query or key, after a failure, or when 6 hours old. With no signal, each list shows a
+ * saved copy or the last data it held, until that data is 6 hours old.
  * @param refreshMs both the sightings refresh interval and their saved-copy age limit. A copy just short of this age
  *   when the list loads is replaced at the next refresh, so the sightings shown are never twice this old.
  */
@@ -74,7 +96,8 @@ export function useNearbyData(
   useEffect(() => {
     if (!hasQuery) return;
     const request = { query: { center: [lng, lat] as const, radiusMiles }, fetchCount: hotspotsFetchCount };
-    return loadInto(setHotspots, request, fetchHotspotsInCircle(apiKey, lat, lng, radiusMiles), NO_HOTSPOTS);
+    const fetched = fetchHotspotsInCircle(apiKey, lat, lng, radiusMiles, EBIRD_DATA_LIFETIME_MS).then(fromList);
+    return loadInto(setHotspots, request, fetched, NO_HOTSPOTS);
   }, [apiKey, hasQuery, lng, lat, radiusMiles, hotspotsFetchCount]);
 
   useEffect(() => {
@@ -83,7 +106,11 @@ export function useNearbyData(
     const fetched = Promise.all([
       fetchRecentSightingsInCircle(apiKey, lat, lng, radiusMiles, backDays, refreshMs),
       fetchRecentNotableSightingsInCircle(apiKey, lat, lng, radiusMiles, backDays, refreshMs),
-    ]).then(([regular, notable]) => ({ regular, notable }));
+    ]).then(([regular, notable]) => ({
+      data: { regular: regular.items, notable: notable.items },
+      fetchedAt: Math.min(regular.fetchedAt, notable.fetchedAt),
+      hasNoSignal: regular.isNoSignalCopy || notable.isNoSignalCopy,
+    }));
     return loadInto(setSightings, request, fetched, NO_SIGHTINGS);
   }, [apiKey, hasQuery, lng, lat, radiusMiles, backDays, sightingsFetchCount, refreshMs]);
 
@@ -91,8 +118,8 @@ export function useNearbyData(
   const hotspotsOutcome = hotspots ?? NO_OUTCOME;
   const sightingsDelay = sightingsDelayMs(sightingsOutcome, refreshMs);
   const hotspotsDelay = hotspotsDelayMs(hotspotsOutcome, refreshMs);
-  useFetchAgainWhileShown(sightings?.request ?? null, sightingsDelay, setSightingsFetchCount);
-  useFetchAgainWhileShown(hotspots?.request ?? null, hotspotsDelay, setHotspotsFetchCount);
+  useFetchAgainWhileShown(sightings, sightingsDelay, setSightingsFetchCount);
+  useFetchAgainWhileShown(hotspots, hotspotsDelay, setHotspotsFetchCount);
 
   const isSightingsLoaded =
     isLoadedFor(sightings?.request ?? null, query, sightingsFetchCount) && sightings?.request.backDays === backDays;
@@ -100,10 +127,22 @@ export function useNearbyData(
   return {
     hotspots: hotspots?.data ?? NO_HOTSPOTS,
     ...(sightings?.data ?? NO_SIGHTINGS),
-    error: sightingsOutcome.error ?? hotspotsOutcome.error,
+    error: shownError(sightingsOutcome) ?? shownError(hotspotsOutcome),
     isKeyRejected: sightingsOutcome.isKeyRejected || hotspotsOutcome.isKeyRejected,
     isLoading: query !== null && !(isSightingsLoaded && isHotspotsLoaded),
+    hasNoSignal: sightingsOutcome.hasNoSignal || hotspotsOutcome.hasNoSignal,
+    sightingsFetchedAt: sightings?.fetchedAt ?? null,
+    hotspotsFetchedAt: hotspots?.fetchedAt ?? null,
   };
+}
+
+function fromList<T>(list: EbirdList<T>): Fetched<readonly T[]> {
+  return { data: list.items, fetchedAt: list.fetchedAt, hasNoSignal: list.isNoSignalCopy };
+}
+
+/** No signal has its own notice, so its error text is not shown. */
+function shownError(outcome: FetchOutcome): string | null {
+  return outcome.hasNoSignal ? null : outcome.error;
 }
 
 /**
@@ -113,22 +152,24 @@ export function useNearbyData(
 function loadInto<Request, Data>(
   setLoaded: Dispatch<SetStateAction<Loaded<Request, Data> | null>>,
   request: Request,
-  fetched: Promise<Data>,
+  fetched: Promise<Fetched<Data>>,
   empty: Data
 ): () => void {
   let isCurrent = true;
   fetched
-    .then((data) => {
-      if (isCurrent) setLoaded({ request, data, error: null, isKeyRejected: false });
+    .then(({ data, fetchedAt, hasNoSignal }) => {
+      if (isCurrent) setLoaded({ request, data, fetchedAt, hasNoSignal, error: null, isKeyRejected: false });
     })
     .catch((err: unknown) => {
       if (!isCurrent) return;
-      // The last rows stay up, so a dropped signal does not empty the list.
+      const failedAt = Date.now();
+      const isKeyRejected = err instanceof EbirdKeyRejectedError;
       setLoaded((last) => ({
         request,
-        data: last?.data ?? empty,
+        ...(heldAfterFailure(last, failedAt, isKeyRejected) ?? { data: empty, fetchedAt: null }),
         error: describeError(err),
-        isKeyRejected: err instanceof EbirdKeyRejectedError,
+        isKeyRejected,
+        hasNoSignal: err instanceof EbirdUnreachableError,
       }));
     });
   return () => {
@@ -137,28 +178,32 @@ function loadInto<Request, Data>(
 }
 
 /**
- * Counts up a while after each load, or when the page is next shown if it was hidden then.
- * A phone can pause timers while the page is hidden, so the visibility check covers a timer that never fired.
- * @param delayMs how long after the load to count up; null to wait for a new load
+ * Counts up a while after each load, or once the data loaded reaches eBird's cache limit, or when the page is next
+ * shown if it was hidden then. A phone can pause timers while the page is hidden, so the visibility check covers a
+ * timer that never fired.
+ * @param delayMs how long after the load to count up; null to wait for a new load or the cache limit
  */
 function useFetchAgainWhileShown(
-  loadedRequest: object | null,
+  loaded: { readonly request: object; readonly fetchedAt: number | null } | null,
   delayMs: number | null,
   setFetchCount: Dispatch<SetStateAction<number>>
 ): void {
+  const loadedRequest = loaded?.request ?? null;
+  const fetchedAt = loaded?.fetchedAt ?? null;
   useEffect(() => {
-    if (!loadedRequest || delayMs === null) return;
-    const dueAt = Date.now() + delayMs;
-    function fetchAgainIfDue(): void {
+    if (!loadedRequest) return;
+    const dueAt = fetchAgainAt(Date.now(), delayMs, fetchedAt);
+    if (dueAt === null) return;
+    const fetchAgainIfDue = (): void => {
       if (document.visibilityState === 'visible' && Date.now() >= dueAt) setFetchCount((count) => count + 1);
-    }
-    const timer = setTimeout(fetchAgainIfDue, delayMs);
+    };
+    const timer = setTimeout(fetchAgainIfDue, Math.max(0, dueAt - Date.now()));
     document.addEventListener('visibilitychange', fetchAgainIfDue);
     return () => {
       clearTimeout(timer);
       document.removeEventListener('visibilitychange', fetchAgainIfDue);
     };
-  }, [loadedRequest, delayMs, setFetchCount]);
+  }, [loadedRequest, fetchedAt, delayMs, setFetchCount]);
 }
 
 function isSameQuery(a: NearbyQuery | null, b: NearbyQuery | null): boolean {

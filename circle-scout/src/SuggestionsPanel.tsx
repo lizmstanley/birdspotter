@@ -54,7 +54,7 @@ export function SuggestionsPanel({
       {position && (
         <>
           <h2>Hotspots to visit</h2>
-          {hotspots.length === 0 && !data.isLoading && <p>No eBird hotspots here.</p>}
+          {hotspots.length === 0 && !data.isLoading && data.hotspotsFetchedAt !== null && <p>No eBird hotspots here.</p>}
           <ul className="scout-nearby-list">
             {hotspots.map(({ row, speciesCount }) => (
               <HotspotRow key={row.item.locId} row={row} reason={hotspotReason(speciesCount)} />
@@ -63,7 +63,7 @@ export function SuggestionsPanel({
           {birdsIsInArea && (
             <>
               <h2>Birds to look for</h2>
-              {birds.length === 0 && !data.isLoading && (
+              {birds.length === 0 && !data.isLoading && data.sightingsFetchedAt !== null && (
                 <p>No species last reported outside your area in that time.</p>
               )}
               <ul className="scout-nearby-list">
@@ -80,7 +80,7 @@ export function SuggestionsPanel({
           )}
         </>
       )}
-      <EbirdCredit refreshMinutes={refreshMinutes} />
+      <EbirdCredit refreshMinutes={refreshMinutes} hasNoSignal={data.hasNoSignal} />
     </section>
   );
 }

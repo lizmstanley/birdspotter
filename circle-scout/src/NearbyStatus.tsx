@@ -1,5 +1,6 @@
 import { EBIRD_SITE_URL } from '../../src/services/ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
+import { noSignalText } from './noSignalText.ts';
 import { refreshIntervalText, type RefreshMinutes } from './scoutSettings.ts';
 import type { NearbyData } from './useNearbyData.ts';
 
@@ -32,20 +33,26 @@ export function NearbyStatus({ data, live, onFixKey }: NearbyStatusProps) {
           {data.error}
         </p>
       )}
+      {data.hasNoSignal && <p role="status">{noSignalText(data.sightingsFetchedAt, data.hotspotsFetchedAt)}</p>}
       {!live.position && <p role="status">{waitingText(live)}</p>}
       {live.position && data.isLoading && <p role="status">Loading eBird data…</p>}
     </>
   );
 }
 
-export function EbirdCredit({ refreshMinutes }: { readonly refreshMinutes: RefreshMinutes }) {
+interface EbirdCreditProps {
+  readonly refreshMinutes: RefreshMinutes;
+  readonly hasNoSignal: boolean;
+}
+
+export function EbirdCredit({ refreshMinutes, hasNoSignal }: EbirdCreditProps) {
   return (
     <p className="scout-nearby-credit">
       Bird data from{' '}
       <a href={EBIRD_SITE_URL} target="_blank" rel="noreferrer">
         eBird.org
       </a>
-      , checked {refreshIntervalText(refreshMinutes)}.
+      {hasNoSignal ? '.' : `, checked ${refreshIntervalText(refreshMinutes)}.`}
     </p>
   );
 }
