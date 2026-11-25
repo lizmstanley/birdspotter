@@ -18,7 +18,7 @@ export class EbirdKeyRejectedError extends Error {
   readonly endpoint: EbirdEndpoint;
 
   constructor(endpoint: EbirdEndpoint) {
-    super('ebird: eBird rejected the API key. Check the key on the Help & API Keys tab.');
+    super('ebird: eBird rejected the API key.');
     this.endpoint = endpoint;
     this.name = 'EbirdKeyRejectedError';
   }
