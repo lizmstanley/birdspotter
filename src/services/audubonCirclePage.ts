@@ -4,7 +4,7 @@
  * The page is a Next.js app; its data sits in `self.__next_f.push([1, "..."])` script chunks.
  */
 import { AudubonProxyUnavailableError, AudubonRequestError, AudubonUnreachableError } from './errors.ts';
-import { FETCH_TIMEOUT_MS, isRecord, isRequestFailure } from './http.ts';
+import { FETCH_TIMEOUT_MS, isRecord, isRequestFailure } from '@birdspotter/birding-core/http.ts';
 
 export interface AudubonCircleDetails {
   readonly code: string;

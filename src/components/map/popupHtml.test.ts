@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hotspotClickHtml, hotspotHoverHtml, sightingHtml } from './popupHtml.ts';
-import type { EbirdHotspot, EbirdObservation } from '../../services/ebird.ts';
+import type { EbirdHotspot, EbirdObservation } from '@birdspotter/birding-core/ebird.ts';
 
 const hotspot = {
   locId: 'L123',

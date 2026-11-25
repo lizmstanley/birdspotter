@@ -25,16 +25,6 @@ export function isAutoSaveSupported(): boolean {
   return typeof (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker === 'function';
 }
 
-export async function requestPersistentStorage(): Promise<boolean> {
-  try {
-    if (!navigator.storage?.persist) return false;
-    if (await navigator.storage.persisted()) return true;
-    return await navigator.storage.persist();
-  } catch {
-    return false;
-  }
-}
-
 function openIdb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(IDB_NAME, 1);

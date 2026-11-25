@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
-import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from './basemap.ts';
+import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from '@birdspotter/birding-core/basemap.ts';
 import { addAreaLayers, addCircleLayers } from './mapLayers.ts';
-import { useLatest } from '../../hooks/useLatest.ts';
+import { useLatest } from '@birdspotter/birding-core/useLatest.ts';
 
 interface MapInstanceOptions {
   readonly centerLat: number;

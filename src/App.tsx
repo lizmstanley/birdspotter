@@ -14,7 +14,7 @@ import { useAreaActions } from './hooks/useAreaActions';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useCircleActions } from './hooks/useCircleActions';
 import { useCircleData } from './hooks/useCircleData';
-import { useEbirdKey } from './hooks/useEbirdKey';
+import { useEbirdKey } from '@birdspotter/birding-core/useEbirdKey.ts';
 import { useNotices } from './hooks/useNotices';
 import { useRosterActions } from './hooks/useRosterActions';
 import { useSeasonActions } from './hooks/useSeasonActions';

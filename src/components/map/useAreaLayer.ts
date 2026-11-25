@@ -6,7 +6,7 @@ import { buildAreaFeatures, toUpperCaseSet } from './areaFeatures.ts';
 import { AREAS_SOURCE } from './mapLayers.ts';
 import { addAreaLabelMarker } from './markers.ts';
 import { isOuterCircleBoundary } from './mapText.ts';
-import { useLatest } from '../../hooks/useLatest.ts';
+import { useLatest } from '@birdspotter/birding-core/useLatest.ts';
 import type { AreaBoundaryItem } from './types.ts';
 
 interface AreaLayerOptions {

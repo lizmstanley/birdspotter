@@ -1,4 +1,4 @@
-import type { EbirdHotspot, EbirdObservation } from '../../services/ebird.ts';
+import type { EbirdHotspot, EbirdObservation } from '@birdspotter/birding-core/ebird.ts';
 import { EbirdCredit } from './EbirdCredit.tsx';
 import { areaLabel } from './mapText.ts';
 

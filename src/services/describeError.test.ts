@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describeError } from './describeError.ts';
-import { AudubonRequestError, EbirdRequestError, InvalidCoordinatesError } from './errors.ts';
+import { EbirdRequestError } from '@birdspotter/birding-core/errors.ts';
+import { AudubonRequestError, InvalidCoordinatesError } from './errors.ts';
 
 test('a failed eBird or Audubon request shows its HTTP status', () => {
   assert.equal(

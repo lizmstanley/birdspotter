@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { EBIRD_KEY_REQUEST_URL } from '../services/ebird.ts';
+import { EBIRD_KEY_REQUEST_URL } from '@birdspotter/birding-core/ebird.ts';
 import { CBC_SCOUT_URL } from '../services/shareApp.ts';
 
 export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/birdspotter/discussions';

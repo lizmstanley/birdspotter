@@ -5,7 +5,7 @@ import {
   fetchRecentSightingsInCircle,
   type EbirdHotspot,
   type EbirdObservation,
-} from '../../services/ebird.ts';
+} from '@birdspotter/birding-core/ebird.ts';
 
 interface EbirdDataOptions {
   readonly ebirdApiKey: string;

@@ -1,8 +1,8 @@
 import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { searchAudubonCircles, withAudubonPageDetails, type AudubonCircleResult } from './audubonCircles.ts';
-import { UnexpectedResponseError } from './errors.ts';
-import { FETCH_TIMEOUT_MS } from './http.ts';
+import { UnexpectedResponseError } from '@birdspotter/birding-core/errors.ts';
+import { FETCH_TIMEOUT_MS } from '@birdspotter/birding-core/http.ts';
 
 const LAYER = 'https://services.example/arcgis/rest/services/CBC/FeatureServer';
 const BLOOMINGTON = { Abbrev: 'MNBL', Name: 'Bloomington', Latitude: 44.83, Longitude: -93.3 };

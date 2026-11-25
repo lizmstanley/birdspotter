@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { requestPersistentStorage } from '@birdspotter/birding-core/persistentStorage.ts';
 import type { LocalCbcDb } from '../db/pgliteDb';
 import {
   chooseAutoSaveFile,
@@ -7,7 +8,6 @@ import {
   isAutoSaveSupported,
   loadHandle,
   requestPermission,
-  requestPersistentStorage,
   writeBackupFile,
   type AutoSaveStatus,
   type FileHandleLike,

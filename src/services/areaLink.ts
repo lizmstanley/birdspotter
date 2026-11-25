@@ -1,8 +1,8 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import { simplify } from '@turf/simplify';
 import type { LineString, MultiPolygon, Polygon, Position } from 'geojson';
-import { isLatitude, isLongitude } from './coordinates.ts';
-import { isRecord } from './http.ts';
+import { isLatitude, isLongitude } from '@birdspotter/birding-core/coordinates.ts';
+import { isRecord } from '@birdspotter/birding-core/http.ts';
 
 export type AreaOutlineGeometry = Polygon | MultiPolygon | LineString;
 

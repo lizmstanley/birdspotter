@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react';
 import type * as maplibregl from 'maplibre-gl';
-import type { EbirdHotspot, EbirdObservation } from '../../services/ebird.ts';
+import type { EbirdHotspot, EbirdObservation } from '@birdspotter/birding-core/ebird.ts';
 import { addHotspotMarker, addSightingMarker } from './markers.ts';
 
 interface EbirdMarkersOptions {

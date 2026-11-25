@@ -1,4 +1,4 @@
-import { EBIRD_SITE_URL } from '../../services/ebird.ts';
+import { EBIRD_SITE_URL } from '@birdspotter/birding-core/ebird.ts';
 
 export function EbirdCredit() {
   return (

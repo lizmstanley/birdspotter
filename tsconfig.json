@@ -21,10 +21,11 @@
   },
   "include": [
     "src",
-    "cbc-scout"
+    "packages",
+    "apps"
   ],
   "exclude": [
-    "src/**/*.test.ts",
-    "cbc-scout/**/*.test.ts"
+    "**/*.test.ts",
+    "**/node_modules"
   ]
 }
