@@ -95,30 +95,37 @@ test('with no notable reports, every regular row stays', () => {
 test('with a pinned query, that query is used wherever the person is', () => {
   const pinned: NearbyQuery = { center: [-93.25, 44.95], radiusMiles: 15 };
 
-  assert.equal(nearbyQuery(pinned, null, null), pinned);
-  assert.equal(nearbyQuery(pinned, [-80, 30], null), pinned);
+  assert.equal(nearbyQuery(pinned, null, null, NEARBY_RADIUS_MILES), pinned);
+  assert.equal(nearbyQuery(pinned, [-80, 30], null, NEARBY_RADIUS_MILES), pinned);
 });
 
 test('with nothing pinned and no position yet, there is no query', () => {
-  assert.equal(nearbyQuery(null, null, null), null);
+  assert.equal(nearbyQuery(null, null, null, NEARBY_RADIUS_MILES), null);
 });
 
 test('with nothing pinned, the query stays put until the person is half its radius away', () => {
-  const first = nearbyQuery(null, [-93.25, 44.95], null);
+  const first = nearbyQuery(null, [-93.25, 44.95], null, NEARBY_RADIUS_MILES);
   assert.deepEqual(first, { center: [-93.25, 44.95], radiusMiles: NEARBY_RADIUS_MILES });
 
   const halfRadiusInDegrees = NEARBY_RADIUS_MILES / 2 / MILES_PER_DEGREE_LATITUDE;
   const stillClose: [number, number] = [-93.25, 44.95 + halfRadiusInDegrees * 0.98];
-  assert.equal(nearbyQuery(null, stillClose, first), first);
+  assert.equal(nearbyQuery(null, stillClose, first, NEARBY_RADIUS_MILES), first);
 
   const movedAway: [number, number] = [-93.25, 44.95 + halfRadiusInDegrees * 1.02];
-  assert.deepEqual(nearbyQuery(null, movedAway, first), { center: movedAway, radiusMiles: NEARBY_RADIUS_MILES });
+  assert.deepEqual(nearbyQuery(null, movedAway, first, NEARBY_RADIUS_MILES), { center: movedAway, radiusMiles: NEARBY_RADIUS_MILES });
 });
 
 test('an earlier query too small to cover half the radius around the person is replaced', () => {
   const small: NearbyQuery = { center: [-93.25, 44.95], radiusMiles: NEARBY_RADIUS_MILES / 2 };
 
-  assert.notEqual(nearbyQuery(null, [-93.25, 44.951], small), small);
+  assert.notEqual(nearbyQuery(null, [-93.25, 44.951], small, NEARBY_RADIUS_MILES), small);
+});
+
+test('a new radius starts a new search around the person, even close to the last one', () => {
+  const wide = nearbyQuery(null, [-93.25, 44.95], null, 25);
+  const closeBy: [number, number] = [-93.25, 44.951];
+
+  assert.deepEqual(nearbyQuery(null, closeBy, wide, 2), { center: closeBy, radiusMiles: 2 });
 });
 
 test('names the compass point a place lies toward', () => {

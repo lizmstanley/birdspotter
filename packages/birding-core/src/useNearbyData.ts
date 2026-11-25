@@ -69,6 +69,7 @@ const NO_HOTSPOTS: readonly EbirdHotspot[] = [];
  * fetched again only for a new query or key, after a failure, or when 6 hours old. With no signal, each list shows a
  * saved copy or the last data it held, until that data is 6 hours old.
  * @param pinnedQuery the search the app holds in place, or null to search around the person
+ * @param searchRadiusMiles how far around the person to search when nothing is pinned
  * @param refreshMs both the sightings refresh interval and their saved-copy age limit. A copy just short of this age
  *   when the list loads is replaced at the next refresh, so the sightings shown are never twice this old.
  */
@@ -76,6 +77,7 @@ export function useNearbyData(
   apiKey: string,
   pinnedQuery: NearbyQuery | null,
   position: LngLat | null,
+  searchRadiusMiles: number,
   backDays: number,
   refreshMs: number
 ): NearbyData {
@@ -85,7 +87,7 @@ export function useNearbyData(
   const [sightings, setSightings] = useState<Loaded<SightingsRequest, Sightings> | null>(null);
   const [hotspots, setHotspots] = useState<Loaded<ListRequest, readonly EbirdHotspot[]> | null>(null);
 
-  const nextQuery = apiKey ? nearbyQuery(pinnedQuery, position, query) : null;
+  const nextQuery = apiKey ? nearbyQuery(pinnedQuery, position, query, searchRadiusMiles) : null;
   // Kept in state so it moves only when nearbyQuery moves it, not on every location fix.
   if (nextQuery !== query && !isSameQuery(nextQuery, query)) setQuery(nextQuery);
 

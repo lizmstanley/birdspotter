@@ -4,6 +4,7 @@ import { describeError } from './describeError';
 // Shared links always point at the hosted copy, even from a copy running on someone's own computer.
 const HOSTED_APP_URL = 'https://lizstanley.com/birdspotter/';
 export const CBC_SCOUT_URL = `${HOSTED_APP_URL}cbc-scout/`;
+export const LETS_GO_BIRDING_URL = `${HOSTED_APP_URL}lets-go-birding/`;
 
 /** Opens the device's share sheet, or copies the link where the browser has none. */
 export async function shareLink(
