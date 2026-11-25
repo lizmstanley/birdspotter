@@ -51,7 +51,7 @@ The key stays in the browser and goes only to eBird. No key is stored by the app
 
 ### eBird results are kept for the day
 
-Each eBird response is saved in `localStorage` under the local date and the request URL, so the same hotspot or sighting request runs at most once a day. The URL holds the center, radius, and day range, and never the key. Writing a new copy drops copies from earlier days, which bounds storage to one day of requests. Errors and responses that fail validation are not saved, and a saved copy is validated again on read.
+Each eBird response is saved in `localStorage` under the local date and the request URL, so the same hotspot or sighting request runs at most once a day. Circle Scout is the exception for sightings: it fetches them again once the saved copy is older than its refresh interval. The URL holds the center, radius, and day range, and never the key. Writing a new copy drops copies from earlier days, which bounds storage to one day of requests. Errors and responses that fail validation are not saved, and a saved copy is validated again on read.
 
 Rejected: a PGlite table. The data is a disposable copy of eBird's, not circle data, so it stays out of backups and migrations.
 
