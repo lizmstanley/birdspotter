@@ -25,7 +25,7 @@ export function SettingsForm({ settings, isSaved, onChange }: SettingsFormProps)
       </select>
       {!isSaved && (
         <p className="scout-settings-error" role="alert">
-          Your browser blocked saving settings. They work until you close Circle Scout.
+          Your browser blocked saving settings. They work until you close CBC Scout.
         </p>
       )}
       <p>Checking less often uses less data and battery.</p>

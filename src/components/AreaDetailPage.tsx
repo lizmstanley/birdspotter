@@ -109,7 +109,7 @@ export function AreaDetailPage({
               <button
                 type="button"
                 aria-expanded={isSharing}
-                title="Make a link and QR code that open this area in Circle Scout"
+                title="Make a link and QR code that open this area in CBC Scout"
                 onClick={() => setIsSharing(!isSharing)}
               >
                 {isSharing ? 'Hide Share Area' : 'Share Area'}

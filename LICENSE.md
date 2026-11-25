@@ -1,4 +1,4 @@
-Required Notice: Copyright 2026 Liz Stanley (https://github.com/lizmstanley/cbc-circle-manager)
+Required Notice: Copyright 2026 Liz Stanley (https://github.com/lizmstanley/birdspotter)
 
 # PolyForm Noncommercial License 1.0.0
 

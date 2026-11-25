@@ -14,7 +14,7 @@ export function InstallBanner({ installPrompt }: { installPrompt: InstallPromptS
   if (offer === 'install-button') {
     return (
       <div className="scout-install">
-        <span>Install Circle Scout on this device.</span>
+        <span>Install CBC Scout on this device.</span>
         <button type="button" onClick={() => void installPrompt.install()}>
           Install
         </button>

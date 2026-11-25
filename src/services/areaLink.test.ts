@@ -14,7 +14,7 @@ import {
   type AreaLinkData,
 } from './areaLink.ts';
 
-const BASE_URL = 'https://example.test/circle-scout/';
+const BASE_URL = 'https://example.test/cbc-scout/';
 
 const SQUARE: Position[][] = [
   [

@@ -71,7 +71,7 @@ test('the opening link is taken and its area data removed from the address', () 
   const href = `${SCOUT_URL}?from=mail#${areaPayload()}`;
   const { win, replacedUrls } = fakeWindow(href);
   assert.equal(takeAreaLinkFromAddress(win), href);
-  assert.deepEqual(replacedUrls, ['/circle-scout/?from=mail']);
+  assert.deepEqual(replacedUrls, ['/cbc-scout/?from=mail']);
 });
 
 test('an address with no area data is left alone', () => {

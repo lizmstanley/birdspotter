@@ -44,7 +44,7 @@ export function watchInstallPrompt(win: Window): InstallPromptStore {
         await prompt.userChoice;
       } catch (err) {
         // Nothing to retry: Chrome offers a fresh prompt on a later page load.
-        console.warn('Circle Scout: install prompt failed', err);
+        console.warn('CBC Scout: install prompt failed', err);
       }
     },
   };

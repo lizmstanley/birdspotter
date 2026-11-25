@@ -10,7 +10,7 @@ const TIMEOUT_MESSAGE = 'No code found in 2 minutes. Try again, or use Paste lin
 
 function cameraProblem(err: unknown): string {
   if (err instanceof DOMException && err.name === 'NotAllowedError') {
-    return "Circle Scout may not use the camera. Allow the camera for this site in the phone's settings, or use Paste link.";
+    return "CBC Scout may not use the camera. Allow the camera for this site in the phone's settings, or use Paste link.";
   }
   if (err instanceof DOMException && err.name === 'NotFoundError') return 'No camera found. Use Paste link instead.';
   return `The camera did not start: ${describeError(err)}. Use Paste link instead.`;

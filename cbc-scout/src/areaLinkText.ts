@@ -6,9 +6,9 @@ export type AreaLinkRead =
   | { readonly status: 'failed'; readonly message: string };
 
 export const DAMAGED_LINK_MESSAGE =
-  'This link or code is damaged or is not a Circle Scout area. Ask the compiler for a new one.';
+  'This link or code is damaged or is not a CBC Scout area. Ask the compiler for a new one.';
 export const NEWER_LINK_MESSAGE =
-  'This area was made by a newer Circle Scout. Close and reopen Circle Scout to update it, then try again.';
+  'This area was made by a newer CBC Scout. Close and reopen CBC Scout to update it, then try again.';
 
 const URLS_IN_TEXT = /https?:\/\/\S+/g;
 const BARE_PAYLOAD = /^[A-Za-z0-9_-]+$/;

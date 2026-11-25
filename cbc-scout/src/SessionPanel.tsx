@@ -179,7 +179,7 @@ export function SessionPanel(props: SessionPanelProps) {
             Start count
           </button>
         </div>
-        <p>Records your party's hours and miles by vehicle and by foot while Circle Scout is open.</p>
+        <p>Records your party's hours and miles by vehicle and by foot while CBC Scout is open.</p>
       </section>
     );
   }
