@@ -8,7 +8,10 @@ import { InstallBanner } from './InstallBanner.tsx';
 import type { InstallPromptStore } from './installPrompt.ts';
 import { NearbyPanel } from './NearbyPanel.tsx';
 import type { AreaStorage } from './savedAreas.ts';
+import { ScoutBar, ScoutScreen, type Screen } from './ScoutBar.tsx';
+import { readScoutSettings, writeScoutSettings, type ScoutSettings } from './scoutSettings.ts';
 import { ScoutMap } from './ScoutMap.tsx';
+import { SettingsForm } from './SettingsForm.tsx';
 import { useLiveLocation } from './useLiveLocation.ts';
 import { useSavedAreas } from './useSavedAreas.ts';
 
@@ -35,9 +38,23 @@ export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleSc
   // With no area yet, the counter's first job is loading one.
   const [panel, setPanel] = useState<Panel>(activeArea ? 'nearby' : 'area');
   const area = activeArea?.data ?? null;
+  const [screen, setScreen] = useState<Screen | null>(null);
+  const [settings, setSettings] = useState(() => readScoutSettings(storage));
+  const [isSettingsSaved, setIsSettingsSaved] = useState(true);
+
+  function changeSettings(next: ScoutSettings): void {
+    setSettings(next);
+    setIsSettingsSaved(writeScoutSettings(storage, next));
+  }
+
+  function changeKey(key: string): void {
+    saveEbirdKey(key);
+    setScreen(null);
+  }
 
   return (
     <div className="scout">
+      {ebirdApiKey && <ScoutBar onOpen={setScreen} />}
       <InstallBanner installPrompt={installPrompt} />
       {error && (
         <p className="scout-error" role="alert">
@@ -62,7 +79,13 @@ export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleSc
           </div>
           {/* Hidden, not unmounted, so the day range and loaded rows survive a look at the area. */}
           <div hidden={panel !== 'nearby'}>
-            <NearbyPanel apiKey={ebirdApiKey} area={area} live={live} />
+            <NearbyPanel
+              apiKey={ebirdApiKey}
+              area={area}
+              live={live}
+              refreshMinutes={settings.refreshMinutes}
+              onFixKey={() => setScreen('ebird-key')}
+            />
           </div>
           {panel === 'area' && (
             <AreaPanel
@@ -73,9 +96,18 @@ export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleSc
               onRemove={removeArea}
             />
           )}
+          {screen && (
+            <ScoutScreen screen={screen} onClose={() => setScreen(null)}>
+              {screen === 'ebird-key' && <EbirdKeyForm savedKey={ebirdApiKey} onSave={changeKey} />}
+              {screen === 'settings' && <SettingsForm settings={settings} isSaved={isSettingsSaved} onChange={changeSettings} />}
+            </ScoutScreen>
+          )}
         </>
       ) : (
-        <EbirdKeyForm onSave={saveEbirdKey} />
+        <div className="scout-first-run">
+          <h1>Circle Scout</h1>
+          <EbirdKeyForm savedKey="" onSave={saveEbirdKey} />
+        </div>
       )}
     </div>
   );
