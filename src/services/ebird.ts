@@ -2,15 +2,13 @@ import { circle } from '@turf/circle';
 import { CBC_CIRCLE_RADIUS_MILES } from './cbcCircle.ts';
 import { readTodaysCopy, saveTodaysCopy } from './ebirdCache.ts';
 import { isLatitude, isLongitude } from './coordinates.ts';
-import { EbirdKeyRejectedError, EbirdRequestError, UnexpectedResponseError } from './errors.ts';
+import { EbirdKeyRejectedError, EbirdRequestError, UnexpectedResponseError, type EbirdEndpoint } from './errors.ts';
 import { FETCH_TIMEOUT_MS, isRecord } from './http.ts';
 
 export const EBIRD_SITE_URL = 'https://ebird.org';
 export const EBIRD_KEY_REQUEST_URL = 'https://ebird.org/api/keygen';
 
 const EBIRD_KEY_REJECTED_STATUS = 403;
-
-type EbirdEndpoint = 'hotspots' | 'sightings';
 
 export interface EbirdHotspot {
   locId: string;
@@ -74,9 +72,10 @@ async function fetchEbirdList<T>(
   endpoint: EbirdEndpoint,
   url: string,
   apiKey: string,
-  isItem: (value: unknown) => value is T
+  isItem: (value: unknown) => value is T,
+  maxAgeMs: number | undefined
 ): Promise<T[]> {
-  const saved = readTodaysCopy(url, isItem);
+  const saved = readTodaysCopy(url, isItem, maxAgeMs);
   if (saved) return saved;
   const res = await fetch(url, {
     headers: { 'X-eBirdApiToken': apiKey.trim() },
@@ -94,16 +93,30 @@ function searchDistanceKm(radiusMiles: number): string {
   return Math.min(50, Math.max(1, radiusMiles * 1.609344)).toFixed(2);
 }
 
+/** @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used */
 export async function fetchHotspotsInCircle(
   apiKey: string,
   lat: number,
   lng: number,
-  radiusMiles = CBC_CIRCLE_RADIUS_MILES
+  radiusMiles = CBC_CIRCLE_RADIUS_MILES,
+  maxAgeMs?: number
 ): Promise<EbirdHotspot[]> {
   const url =
     `https://api.ebird.org/v2/ref/hotspot/geo?lat=${encodeURIComponent(lat)}` +
     `&lng=${encodeURIComponent(lng)}&dist=${searchDistanceKm(radiusMiles)}&fmt=json`;
-  return fetchEbirdList('hotspots', url, apiKey, isHotspot);
+  return fetchEbirdList('hotspots', url, apiKey, isHotspot, maxAgeMs);
+}
+
+export function ebirdChecklistUrl(subId: string): string {
+  return `${EBIRD_SITE_URL}/checklist/${encodeURIComponent(subId)}`;
+}
+
+function recentObservationsUrl(path: string, lat: number, lng: number, radiusMiles: number, backDays: number): string {
+  const clampedDays = Math.min(30, Math.max(1, backDays));
+  return (
+    `https://api.ebird.org/v2/data/obs/geo/${path}?lat=${encodeURIComponent(lat)}` +
+    `&lng=${encodeURIComponent(lng)}&dist=${searchDistanceKm(radiusMiles)}&back=${clampedDays}`
+  );
 }
 
 export function recentSightingsUrl(
@@ -112,19 +125,45 @@ export function recentSightingsUrl(
   radiusMiles = CBC_CIRCLE_RADIUS_MILES,
   backDays = 7
 ): string {
-  const clampedDays = Math.min(30, Math.max(1, backDays));
-  return (
-    `https://api.ebird.org/v2/data/obs/geo/recent?lat=${encodeURIComponent(lat)}` +
-    `&lng=${encodeURIComponent(lng)}&dist=${searchDistanceKm(radiusMiles)}&back=${clampedDays}&fmt=json`
-  );
+  return `${recentObservationsUrl('recent', lat, lng, radiusMiles, backDays)}&fmt=json`;
 }
 
+/** Uses `detail=simple` so each report has the same fields as a regular sighting. */
+export function recentNotableSightingsUrl(
+  lat: number,
+  lng: number,
+  radiusMiles = CBC_CIRCLE_RADIUS_MILES,
+  backDays = 7
+): string {
+  return `${recentObservationsUrl('recent/notable', lat, lng, radiusMiles, backDays)}&detail=simple&fmt=json`;
+}
+
+/** @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used */
 export async function fetchRecentSightingsInCircle(
   apiKey: string,
   lat: number,
   lng: number,
   radiusMiles = CBC_CIRCLE_RADIUS_MILES,
-  backDays = 7
+  backDays = 7,
+  maxAgeMs?: number
 ): Promise<EbirdObservation[]> {
-  return fetchEbirdList('sightings', recentSightingsUrl(lat, lng, radiusMiles, backDays), apiKey, isObservation);
+  const url = recentSightingsUrl(lat, lng, radiusMiles, backDays);
+  return fetchEbirdList('sightings', url, apiKey, isObservation, maxAgeMs);
+}
+
+/**
+ * Reports eBird marks as rare or out of season for the region. Unlike regular sightings, every report of a species
+ * is returned, not only the latest.
+ * @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used
+ */
+export async function fetchRecentNotableSightingsInCircle(
+  apiKey: string,
+  lat: number,
+  lng: number,
+  radiusMiles = CBC_CIRCLE_RADIUS_MILES,
+  backDays = 7,
+  maxAgeMs?: number
+): Promise<EbirdObservation[]> {
+  const url = recentNotableSightingsUrl(lat, lng, radiusMiles, backDays);
+  return fetchEbirdList('notable sightings', url, apiKey, isObservation, maxAgeMs);
 }

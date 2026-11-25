@@ -7,13 +7,12 @@ import type { AreaLinkData, AreaOutlineGeometry } from '../../src/services/areaL
 import { buildCirclePolygon } from '../../src/services/ebird.ts';
 import { areaName } from './areaName.ts';
 import { areaStatusAt, areaStatusText } from './areaStatus.ts';
+import type { LiveLocation } from './locationTracking.ts';
 import { addRouteLayers, ROUTE_SOURCE, routeFeatures } from './routeLayers.ts';
 import type { AreaStorage } from './savedAreas.ts';
-import type { LiveLocation } from './locationTracking.ts';
 import { SessionPanel } from './SessionPanel.tsx';
 import { sessionStretches } from './sessionStretches.ts';
 import { useCountSession } from './useCountSession.ts';
-import { useLiveLocation } from './useLiveLocation.ts';
 
 const START_CENTER: [number, number] = [-96, 39];
 const START_ZOOM = 3;
@@ -72,6 +71,9 @@ interface ReadyMap {
 
 interface ScoutMapProps {
   readonly area: AreaLinkData | null;
+  readonly live: LiveLocation;
+  /** Receives the map's location control once the map has loaded, and null when the map is removed. */
+  readonly onLocationControl: (control: maplibregl.GeolocateControl | null) => void;
   readonly storage: AreaStorage | null;
   readonly setError: (message: string | null) => void;
   readonly setNotice: (message: string | null) => void;
@@ -94,10 +96,9 @@ function locationLine(
  * Shows the area's circle and outline, zoomed to the outline, the person's live location, and the count's route;
  * with no area, the start view, the location, and the route.
  */
-export function ScoutMap({ area, storage, setError, setNotice }: ScoutMapProps) {
+export function ScoutMap({ area, live, onLocationControl, storage, setError, setNotice }: ScoutMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [ready, setReady] = useState<ReadyMap | null>(null);
-  const live = useLiveLocation(ready?.locationControl ?? null, storage);
   const circle = useMemo(() => (area ? buildCirclePolygon(area.circleCenter[0], area.circleCenter[1]) : null), [area]);
   const line = locationLine(live, area, circle);
   const count = useCountSession({ control: ready?.locationControl ?? null, storage, setError });
@@ -127,6 +128,12 @@ export function ScoutMap({ area, storage, setError, setNotice }: ScoutMapProps) 
       map.remove();
     };
   }, []);
+
+  const locationControl = ready?.locationControl ?? null;
+  useEffect(() => {
+    onLocationControl(locationControl);
+    return () => onLocationControl(null);
+  }, [locationControl, onLocationControl]);
 
   const readyMap = ready?.map ?? null;
   useEffect(() => {

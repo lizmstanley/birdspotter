@@ -13,6 +13,7 @@ body,
 }
 
 .scout {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -51,10 +52,6 @@ body,
   box-sizing: border-box;
   margin: 0 auto;
   padding: 16px;
-}
-
-.scout-key h1 {
-  font-size: 1.4rem;
 }
 
 .scout-key label {
@@ -175,6 +172,263 @@ button {
 
 .scout-scanner video[hidden] {
   display: none;
+}
+
+.scout-tabs {
+  display: flex;
+  border-top: 1px solid #cbd5e1;
+}
+
+.scout-tabs button {
+  flex: 1;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+.scout-tabs button[aria-pressed='true'] {
+  border-bottom-color: #15803d;
+  background: #f8fafc;
+}
+
+.scout-nearby {
+  border-top: 0;
+}
+
+.scout-nearby h2 {
+  margin: 12px 0 4px;
+  font-size: 1.05rem;
+}
+
+.scout-nearby h3 {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.scout-nearby-days select {
+  min-height: 44px;
+  font: inherit;
+}
+
+.scout-nearby-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scout-nearby-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.scout-nearby-place {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+}
+
+a.scout-nearby-place {
+  color: inherit;
+  text-decoration: none;
+}
+
+.scout-nearby-where {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.scout-nearby-directions {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid #15803d;
+  border-radius: 6px;
+  color: #15803d;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.scout-nearby-row-notable {
+  padding: 8px;
+  border-left: 4px solid #d97706;
+  background: #fffbeb;
+}
+
+.scout-nearby-notable {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.scout-nearby-count,
+.scout-nearby-detail {
+  color: #475569;
+}
+
+.scout-nearby-detail {
+  font-size: 0.9rem;
+}
+
+.scout-nearby-reason {
+  font-size: 0.9rem;
+  color: #15803d;
+}
+
+.scout-nearby-distance {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.scout-nearby-error {
+  color: #991b1b;
+}
+
+.scout-nearby-credit {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.scout-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: #15803d;
+  color: #fff;
+}
+
+.scout-bar button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.scout-bar-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+}
+
+.scout-bar-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.scout-menu {
+  position: absolute;
+  top: 100%;
+  left: 8px;
+  z-index: 3;
+  min-width: 12rem;
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.2);
+}
+
+.scout-menu ul {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.scout-bar .scout-menu button {
+  width: 100%;
+  text-align: left;
+}
+
+.scout-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  padding: inherit;
+  background: #f8fafc;
+}
+
+.scout-screen-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.scout-first-run h1 {
+  max-width: 32rem;
+  margin: 16px auto 0;
+  padding: 0 16px;
+  font-size: 1.4rem;
+}
+
+.scout-key-field {
+  position: relative;
+}
+
+.scout-key .scout-key-field input {
+  padding-right: 52px;
+}
+
+.scout-key .scout-key-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  transform: translateY(-50%);
+}
+
+.scout-settings {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.scout-settings label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.scout-settings select {
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+}
+
+.scout-settings p {
+  color: #475569;
+}
+
+.scout-settings .scout-settings-error {
+  color: #991b1b;
 }
 
 .scout-session {
