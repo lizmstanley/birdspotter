@@ -30,7 +30,7 @@ export function EbirdKeyForm({ savedKey, onSave }: EbirdKeyFormProps) {
   return (
     <form className="scout-key" onSubmit={handleSubmit}>
       <p>
-        Circle Scout uses your own free eBird API key. The key stays on this phone and is sent only to
+        CBC Scout uses your own free eBird API key. The key stays on this phone and is sent only to
         eBird.
       </p>
       <label htmlFor="ebird-key">eBird API key</label>

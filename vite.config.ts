@@ -11,20 +11,20 @@ const audubonProxy: Record<string, ProxyOptions> = {
   },
 };
 
-// Circle Scout builds in its own pass so it shares no chunks with the web app and the web app's bundles stay as they were.
-const CIRCLE_SCOUT_MODE = 'circle-scout';
+// CBC Scout builds in its own pass so it shares no chunks with the web app and the web app's bundles stay as they were.
+const CBC_SCOUT_MODE = 'cbc-scout';
 
 export default defineConfig(({ mode }) => ({
-  // GitHub Pages serves this repo under /cbc-circle-manager/. Local dev and preview stay at /.
-  base: process.env.GITHUB_PAGES ? '/cbc-circle-manager/' : '/',
+  // GitHub Pages serves this repo under /birdspotter/. Local dev and preview stay at /.
+  base: process.env.GITHUB_PAGES ? '/birdspotter/' : '/',
   plugins: [react()],
   optimizeDeps: {
     // Pre-bundling breaks PGlite's WASM loading. MapLibre must stay pre-bundled: it ships only a UMD build.
     exclude: ['@electric-sql/pglite'],
   },
   build:
-    mode === CIRCLE_SCOUT_MODE
-      ? { emptyOutDir: false, rollupOptions: { input: 'circle-scout/index.html' } }
+    mode === CBC_SCOUT_MODE
+      ? { emptyOutDir: false, rollupOptions: { input: 'cbc-scout/index.html' } }
       : undefined,
   server: { proxy: audubonProxy },
   preview: { proxy: audubonProxy },

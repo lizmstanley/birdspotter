@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { EBIRD_KEY_REQUEST_URL } from '../services/ebird.ts';
-import { CIRCLE_SCOUT_URL } from '../services/shareApp.ts';
+import { CBC_SCOUT_URL } from '../services/shareApp.ts';
 
-export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/cbc-circle-manager/discussions';
+export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/birdspotter/discussions';
 
 interface Props {
   /** The saved eBird API key, or empty. */
@@ -48,7 +48,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           </li>
           <li>
             This web app saves eBird results in this browser: hotspots for the rest of the day and
-            sightings for up to 6 hours, as eBird&apos;s terms allow. Circle Scout checks for new sightings
+            sightings for up to 6 hours, as eBird&apos;s terms allow. CBC Scout checks for new sightings
             more often (see section 4). Bird data comes from{' '}
             <a href="https://ebird.org" target="_blank" rel="noreferrer">eBird.org</a> under the{' '}
             <a href="https://www.birds.cornell.edu/home/ebird-api-terms-of-use/" target="_blank" rel="noreferrer">
@@ -133,33 +133,33 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
       </div>
 
       <div className="card">
-        <h3>4. Circle Scout for Field Counters</h3>
+        <h3>4. CBC Scout for Field Counters</h3>
         <p>
-          <a href={CIRCLE_SCOUT_URL} target="_blank" rel="noreferrer">
-            Circle Scout
+          <a href={CBC_SCOUT_URL} target="_blank" rel="noreferrer">
+            CBC Scout
           </a>{' '}
           is a phone app for your field counters. It shows a counter their area on a map, where they are,
           and what&apos;s been seen nearby, and it records the party&apos;s hours and miles.
         </p>
         <ul className="help-list">
           <li>
-            <strong>Install:</strong> open <code>{CIRCLE_SCOUT_URL}</code> on the phone. On iPhone and
+            <strong>Install:</strong> open <code>{CBC_SCOUT_URL}</code> on the phone. On iPhone and
             iPad, in Safari, tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>. On
-            Android, in Chrome, tap <strong>Install</strong> on the bar at the top of Circle Scout, once
+            Android, in Chrome, tap <strong>Install</strong> on the bar at the top of CBC Scout, once
             Chrome offers it. It also works in a plain browser tab. On iPhone, the home screen app keeps its
             own storage, apart from Safari.
           </li>
           <li>
-            <strong>eBird key:</strong> Circle Scout asks for a key on its first screen. Get one as in
+            <strong>eBird key:</strong> CBC Scout asks for a key on its first screen. Get one as in
             section 1, paste it, and tap <strong>Save key</strong>. To change it later, open the menu and
-            tap <strong>eBird key</strong>. The web app and Circle Scout share one saved key, but only in
+            tap <strong>eBird key</strong>. The web app and CBC Scout share one saved key, but only in
             the same browser on the same device, so a counter&apos;s phone needs it entered once.
           </li>
           <li>
             <strong>Send an area:</strong> open an area and click <strong>Share Area</strong>. Send the
             link, or print or show its QR code. The counter opens the link, or on the{' '}
             <strong>Your area</strong> tab taps <strong>Paste link</strong> or{' '}
-            <strong>Scan area code</strong>. Circle Scout keeps every area it loads, one active at a time.
+            <strong>Scan area code</strong>. CBC Scout keeps every area it loads, one active at a time.
           </li>
           <li>
             <strong>Map:</strong> the circle and the area&apos;s outline. Tap the location button to show
@@ -185,11 +185,11 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           </li>
           <li>
             <strong>Settings:</strong> in the menu, choose how often to check eBird for new sightings:
-            every 15 minutes, half hour, hour, or 2 hours. Hotspots don&apos;t follow this setting: Circle
+            every 15 minutes, half hour, hour, or 2 hours. Hotspots don&apos;t follow this setting: CBC
             Scout uses a copy saved in the last 6 hours.
           </li>
           <li>
-            <strong>Needs a signal:</strong> Circle Scout needs a signal to open, to draw the map, and to
+            <strong>Needs a signal:</strong> CBC Scout needs a signal to open, to draw the map, and to
             check eBird. With no signal, the lists show the eBird data last loaded for the active area,
             with the time it was fetched, until it is 6 hours old, as eBird&apos;s terms allow. Older data
             is not shown.
@@ -197,7 +197,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           <li>
             <strong>Privacy:</strong> the phone keeps the eBird key, saved areas, settings, whether
             location tracking is on, the count session and its route, and the day&apos;s eBird results.
-            Circle Scout sends the key, the place to search, and the days back to eBird. The place is the
+            CBC Scout sends the key, the place to search, and the days back to eBird. The place is the
             circle&apos;s center when an area is loaded, or your location when none is. It sends map views
             to OpenFreeMap. Nothing goes to any other server. The area data sits after the{' '}
             <code>#</code> in the link, so it never reaches a server.

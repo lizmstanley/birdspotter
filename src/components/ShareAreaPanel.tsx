@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { AreaLinkTooLargeError, buildAreaLink, type AreaLink, type AreaLinkData } from '../services/areaLink';
 import { describeError } from '../services/describeError';
 import { qrCodeDataUrl } from '../services/qrCode';
-import { CIRCLE_SCOUT_URL } from '../services/shareApp';
+import { CBC_SCOUT_URL } from '../services/shareApp';
 
 interface Props {
   title: string;
@@ -15,7 +15,7 @@ type LinkResult = { status: 'ok'; link: AreaLink; qrImageUrl: string } | { statu
 
 function makeLink(linkData: AreaLinkData): LinkResult {
   try {
-    const link = buildAreaLink(CIRCLE_SCOUT_URL, linkData);
+    const link = buildAreaLink(CBC_SCOUT_URL, linkData);
     return { status: 'ok', link, qrImageUrl: qrCodeDataUrl(link.url) };
   } catch (err) {
     if (err instanceof AreaLinkTooLargeError) {
@@ -42,7 +42,7 @@ export function ShareAreaPanel({ title, linkData, onShareLink, onCopyLink }: Pro
   return (
     <div className="share-area-panel">
       <p className="muted">
-        Send this link to the area&apos;s counters. It opens the area in Circle Scout.{' '}
+        Send this link to the area&apos;s counters. It opens the area in CBC Scout.{' '}
         {leaderSummary(linkData.leaders.length)}
       </p>
       <div className="row-actions">

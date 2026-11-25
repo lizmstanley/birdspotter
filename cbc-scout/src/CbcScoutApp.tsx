@@ -23,13 +23,13 @@ type Panel = 'nearby' | 'suggestions' | 'area';
 
 const DEFAULT_BACK_DAYS = 7;
 
-interface CircleScoutAppProps {
+interface CbcScoutAppProps {
   readonly installPrompt: InstallPromptStore;
   readonly areaStartup: AreaStartup;
   readonly storage: AreaStorage | null;
 }
 
-export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleScoutAppProps) {
+export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutAppProps) {
   const [error, setError] = useState<string | null>(areaStartup.error);
   const [notice, setNotice] = useState<string | null>(areaStartup.notice);
   const { ebirdApiKey, saveEbirdKey } = useEbirdKey(setError);
@@ -138,7 +138,7 @@ export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleSc
         </>
       ) : (
         <div className="scout-first-run">
-          <h1>Circle Scout</h1>
+          <h1>CBC Scout</h1>
           <EbirdKeyForm savedKey="" onSave={saveEbirdKey} />
         </div>
       )}

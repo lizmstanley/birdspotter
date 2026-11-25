@@ -8,10 +8,10 @@ export interface AreaStartup {
 }
 
 export const STORAGE_BLOCKED_MESSAGE =
-  'Your browser blocked saving areas. Loaded areas work until you close Circle Scout.';
+  'Your browser blocked saving areas. Loaded areas work until you close CBC Scout.';
 export const BROWSER_TAB_NOTICE =
-  'This link opened in a browser tab. Areas saved here may not show in the installed Circle Scout. ' +
-  'If you installed it, open Circle Scout and paste the same link with Paste link.';
+  'This link opened in a browser tab. Areas saved here may not show in the installed CBC Scout. ' +
+  'If you installed it, open CBC Scout and paste the same link with Paste link.';
 
 export function unreadableAreasMessage(count: number): string {
   return count === 1

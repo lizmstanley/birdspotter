@@ -21,10 +21,10 @@
   },
   "include": [
     "src",
-    "circle-scout"
+    "cbc-scout"
   ],
   "exclude": [
     "src/**/*.test.ts",
-    "circle-scout/**/*.test.ts"
+    "cbc-scout/**/*.test.ts"
   ]
 }

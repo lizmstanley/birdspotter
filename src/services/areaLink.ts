@@ -295,7 +295,7 @@ function simplified(geometry: AreaOutlineGeometry, toleranceDegrees: number): Ar
 
 /**
  * Simplifies the outline step by step until the link fits one QR code at medium error correction.
- * @param baseUrl the Circle Scout page the link opens
+ * @param baseUrl the CBC Scout page the link opens
  * @throws AreaLinkTooLargeError when even the coarsest step does not fit
  */
 export function buildAreaLink(baseUrl: string, data: AreaLinkData): AreaLink {

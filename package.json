@@ -1,16 +1,16 @@
 {
-  "name": "cbc-circle-manager",
+  "name": "birdspotter",
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
   "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && vite build --mode circle-scout",
+    "build": "tsc -b && vite build && vite build --mode cbc-scout",
     "preview": "vite preview",
-    "test": "node --test \"src/**/*.test.ts\" \"circle-scout/src/**/*.test.ts\"",
+    "test": "node --test \"src/**/*.test.ts\" \"cbc-scout/src/**/*.test.ts\"",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
-    "lint": "eslint src circle-scout"
+    "lint": "eslint src cbc-scout"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",

@@ -20,9 +20,9 @@ import { keepScreenOn } from './screenWakeLock.ts';
 import { recordFromLocationControl } from './sessionRecording.ts';
 import type { Stretch } from './sessionStretches.ts';
 
-export const SESSION_UNREADABLE_MESSAGE = 'Circle Scout could not read the saved count, so it was cleared.';
+export const SESSION_UNREADABLE_MESSAGE = 'CBC Scout could not read the saved count, so it was cleared.';
 export const SESSION_NOT_SAVED_MESSAGE =
-  'Your browser is not letting Circle Scout save. This count is lost if Circle Scout closes.';
+  'Your browser is not letting CBC Scout save. This count is lost if CBC Scout closes.';
 
 interface CountSessionOptions {
   readonly control: GeolocateControl | null;

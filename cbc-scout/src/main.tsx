@@ -3,20 +3,20 @@ import { createRoot } from 'react-dom/client';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { requestPersistentStorage } from '../../src/services/autoSave.ts';
 import { startSavedAreas, takeAreaLinkFromAddress } from './areaStartup.ts';
-import { CircleScoutApp } from './CircleScoutApp.tsx';
+import { CbcScoutApp } from './CbcScoutApp.tsx';
 import { isRunningInstalled } from './installOffer.ts';
 import { watchInstallPrompt } from './installPrompt.ts';
 import type { AreaStorage } from './savedAreas.ts';
 import './scout.css';
 
-const SCOUT_PATH = `${import.meta.env.BASE_URL}circle-scout/`;
+const SCOUT_PATH = `${import.meta.env.BASE_URL}cbc-scout/`;
 
 function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
-  // Scoped to Circle Scout's folder so the web app never comes under it.
+  // Scoped to CBC Scout's folder so the web app never comes under it.
   navigator.serviceWorker.register(`${SCOUT_PATH}sw.js`, { scope: SCOUT_PATH }).catch((err: unknown) => {
     // The app still works online without it; only Chrome's install offer depends on it.
-    console.warn('Circle Scout: service worker registration failed', err);
+    console.warn('CBC Scout: service worker registration failed', err);
   });
 }
 
@@ -39,6 +39,6 @@ const areaStartup = startSavedAreas(storage, takeAreaLinkFromAddress(window), is
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <CircleScoutApp installPrompt={installPrompt} areaStartup={areaStartup} storage={storage} />
+    <CbcScoutApp installPrompt={installPrompt} areaStartup={areaStartup} storage={storage} />
   </StrictMode>
 );

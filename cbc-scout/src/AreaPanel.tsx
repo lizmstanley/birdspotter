@@ -54,7 +54,7 @@ function PasteForm({ onLoad, onClose }: { readonly onLoad: (text: string) => boo
       setDraft(text);
       if (onLoad(text)) onClose();
     } catch {
-      setHint('Circle Scout could not read the clipboard. Paste the link into the box instead.');
+      setHint('CBC Scout could not read the clipboard. Paste the link into the box instead.');
     }
   }
 

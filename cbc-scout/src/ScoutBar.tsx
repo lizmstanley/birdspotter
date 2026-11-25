@@ -56,7 +56,7 @@ export function ScoutBar({ onOpen }: { onOpen: (screen: Screen) => void }) {
       >
         <MenuIcon />
       </button>
-      <span className="scout-bar-title">Circle Scout</span>
+      <span className="scout-bar-title">CBC Scout</span>
       <nav id={MENU_ID} className="scout-menu" hidden={!isOpen} aria-label="Menu">
         <ul>
           {SCREENS.map((screen) => (
