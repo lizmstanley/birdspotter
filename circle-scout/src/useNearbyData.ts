@@ -44,7 +44,7 @@ const NO_SIGHTINGS: Sightings = { regular: [], notable: [] };
 const NO_HOTSPOTS: readonly EbirdHotspot[] = [];
 
 /**
- * Fetches the eBird data for the Nearby list. Regular and notable sightings are fetched together, and again at each
+ * Fetches the eBird data for the Nearby and Suggestions lists, nothing while the key is empty. Regular and notable sightings are fetched together, and again at each
  * interval while the page is shown; hotspots change rarely, so they use any copy saved today and are fetched again
  * only for a new query or key, or after a failure.
  * @param refreshMs both the sightings refresh interval and their saved-copy age limit. A copy just short of this age
@@ -63,7 +63,7 @@ export function useNearbyData(
   const [sightings, setSightings] = useState<Loaded<SightingsRequest, Sightings> | null>(null);
   const [hotspots, setHotspots] = useState<Loaded<ListRequest, readonly EbirdHotspot[]> | null>(null);
 
-  const nextQuery = nearbyQuery(area, position, query);
+  const nextQuery = apiKey ? nearbyQuery(area, position, query) : null;
   // Kept in state so it moves only when nearbyQuery moves it, not on every location fix.
   if (nextQuery !== query && !isSameQuery(nextQuery, query)) setQuery(nextQuery);
 

@@ -258,6 +258,11 @@ a.scout-nearby-row {
   font-size: 0.9rem;
 }
 
+.scout-nearby-reason {
+  font-size: 0.9rem;
+  color: #15803d;
+}
+
 .scout-nearby-distance {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
