@@ -30,6 +30,7 @@ export interface EbirdObservation {
   lat: number;
   lng: number;
   subId: string;
+  obsValid?: boolean;
 }
 
 export function buildCirclePolygon(lng: number, lat: number, radiusMiles = CBC_CIRCLE_RADIUS_MILES) {
@@ -43,7 +44,7 @@ function hasStrings(value: Record<string, unknown>, keys: readonly string[]): bo
   return keys.every((key) => typeof value[key] === 'string');
 }
 
-function isOptional(value: unknown, type: 'number' | 'string'): boolean {
+function isOptional(value: unknown, type: 'boolean' | 'number' | 'string'): boolean {
   return value === undefined || typeof value === type;
 }
 
@@ -64,8 +65,14 @@ function isObservation(value: unknown): value is EbirdObservation {
     hasStrings(value, ['speciesCode', 'comName', 'sciName', 'locId', 'locName', 'obsDt', 'subId']) &&
     isLatitude(value.lat) &&
     isLongitude(value.lng) &&
-    isOptional(value.howMany, 'number')
+    isOptional(value.howMany, 'number') &&
+    isOptional(value.obsValid, 'boolean')
   );
+}
+
+/** A report is confirmed once eBird marks it valid; one still waiting for review is not. */
+export function isConfirmedReport(observation: EbirdObservation): boolean {
+  return observation.obsValid === true;
 }
 
 async function fetchEbirdList<T>(
@@ -128,14 +135,17 @@ export function recentSightingsUrl(
   return `${recentObservationsUrl('recent', lat, lng, radiusMiles, backDays)}&fmt=json`;
 }
 
-/** Uses `detail=simple` so each report has the same fields as a regular sighting. */
+/**
+ * Uses `detail=simple` so each report has the same fields as a regular sighting, and
+ * includes reports still waiting for review.
+ */
 export function recentNotableSightingsUrl(
   lat: number,
   lng: number,
   radiusMiles = CBC_CIRCLE_RADIUS_MILES,
   backDays = 7
 ): string {
-  return `${recentObservationsUrl('recent/notable', lat, lng, radiusMiles, backDays)}&detail=simple&fmt=json`;
+  return `${recentObservationsUrl('recent/notable', lat, lng, radiusMiles, backDays)}&detail=simple&includeProvisional=true&fmt=json`;
 }
 
 /** @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used */

@@ -170,6 +170,8 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             area first, then nearest first. They show once location is on. Each place has its distance,
             its direction past a tenth of a mile, and a{' '}
             <strong>Directions</strong> link to Apple Maps on iPhone and iPad, or Google Maps elsewhere.
+            Notable sightings include reports still waiting for review. One an eBird reviewer has confirmed
+            is marked <strong>Confirmed</strong>.
           </li>
           <li>
             <strong>Suggestions:</strong> <strong>Hotspots to visit</strong>, ranked by species last

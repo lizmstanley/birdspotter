@@ -1,4 +1,9 @@
-import { ebirdChecklistUrl, type EbirdHotspot, type EbirdObservation } from '../../src/services/ebird.ts';
+import {
+  ebirdChecklistUrl,
+  isConfirmedReport,
+  type EbirdHotspot,
+  type EbirdObservation,
+} from '../../src/services/ebird.ts';
 import { directionsUrl } from './directions.ts';
 import { formatDistance, type NearbyRow, type Place } from './nearby.ts';
 
@@ -8,13 +13,20 @@ interface SightingRowProps {
   readonly reason?: string;
 }
 
+function sightingRowClass(isNotable: boolean, isConfirmed: boolean): string {
+  if (!isNotable) return 'scout-nearby-row';
+  if (!isConfirmed) return 'scout-nearby-row scout-nearby-row-notable';
+  return 'scout-nearby-row scout-nearby-row-notable scout-nearby-row-confirmed';
+}
+
 export function SightingRow({ row, isNotable, reason }: SightingRowProps) {
   const { comName, howMany, locName, obsDt, subId } = row.item;
-  const className = isNotable ? 'scout-nearby-row scout-nearby-row-notable' : 'scout-nearby-row';
+  const isConfirmed = isNotable && isConfirmedReport(row.item);
   return (
-    <li className={className}>
+    <li className={sightingRowClass(isNotable, isConfirmed)}>
       <a className="scout-nearby-place" href={ebirdChecklistUrl(subId)} target="_blank" rel="noreferrer">
         {isNotable && <span className="scout-nearby-notable">Notable</span>}
+        {isConfirmed && <span className="scout-nearby-confirmed">Confirmed</span>}
         <strong>{comName}</strong> <span className="scout-nearby-count">{howMany ?? 'X'}</span>
         <div className="scout-nearby-detail">
           {locName}, {obsDt}
