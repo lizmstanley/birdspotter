@@ -38,14 +38,14 @@ Hover over a recent sighting to see the species, count, place, and date, with a 
 - **Roster and assignments:** reassign counters between areas, see open areas (areas with no confirmed field counter), and track which areas have sent in results.
 - **Reminders and outreach:** a list of people on your current list who haven't answered yet this season, with a Copy BCC button. Until you mark a current list, it shows every active person who hasn't answered. Possible Outreach lists people on the Audubon list who aren't on your current list, and people on your current list who also have another email that may be old. Tick **This file is my current list** when you import your mailing list. Outreach shows only active and inactive people.
 - **Map:** a draggable 15-mile-diameter circle on an OpenFreeMap street map built from OpenStreetMap data. There is no satellite view, because Esri's World Imagery terms require Esri software or an ArcGIS subscription. Imported area outlines highlight when you hover over them, and clicking one opens that area.
-- **Share an area:** on an area's page, **Share Area** makes a link and a QR code that open the area in Circle Scout. They carry the circle, the area outline, and the name, phone, and email of the area's leaders, and nothing else about people. The data sits after the `#` in the link, so it never reaches a server.
-- **Party hours and miles in Circle Scout:** a counter taps **Start count** in Circle Scout, and while it stays open on screen it keeps the screen on, draws the route, and sorts each stretch by speed into travel by vehicle or by foot. The counter can change any stretch's mode, and enters the number of participants in the party and any feeder watching hours. Time in other apps counts toward hours. A break in recording, such as switching apps, shows as a dashed straight line whose distance counts toward the miles. After **Stop count**, **Share totals** sends the party's line of the count sheet as text: area number, participants, one party, hours by vehicle, by foot, and feeder watching, and miles by vehicle and by foot. The compiler adds up the parties for each area. The route stays on the phone.
-- **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key. Each hotspot and sighting is listed with the count area it falls in. Results are saved in your browser and fetched from eBird at most once a day for the same circle and day range.
+- **Share an area:** on an area's page, **Share Area** makes a link and a QR code that open the area in Circle Scout. They carry the circle, the area outline, and the name, phone, and email of the area's leaders, and nothing else about people. The data sits after the `#` in the link, so it never reaches a server. See [Circle Scout](#circle-scout).
+- **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key. Each hotspot and sighting is listed with the count area it falls in. The web app saves results in your browser and fetches them from eBird at most once a day for the same circle and day range. Circle Scout checks for new sightings more often. See [Settings](#settings).
+- **Circle Scout:** a phone app for your field counters. It shows a counter their area, where they are, and what's been seen nearby, and records the party's hours and miles. See [Circle Scout](#circle-scout).
 - **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) and match its columns, or import the participant list you export from your Audubon circle page, which needs no setup. You can also export the roster to Excel or CSV, and export or restore a full JSON backup.
 
 ## Set up your eBird key
 
-You set the key once, on the **Help & API Keys** tab. It isn't on the map page, and it isn't per circle: one key works for every circle and for scouting.
+In the web app, you set the key once, on the **Help & API Keys** tab. It isn't on the map page, and it isn't per circle: one key works for every circle and for scouting. Circle Scout asks for the key on its own screen. See [Add an eBird key](#add-an-ebird-key).
 
 1. Sign in to eBird and request a free key at [ebird.org/api/keygen](https://ebird.org/api/keygen). For the intended use, something like "Christmas Bird Count circle scouting" is fine. The key shows up right away.
 2. In the app, open the **Help & API Keys** tab.
@@ -54,7 +54,75 @@ You set the key once, on the **Help & API Keys** tab. It isn't on the map page, 
 
 Until a key is saved, **Load Hotspots & Sightings** and the days dropdown are grayed out. Hover over them and they tell you where to add the key. The key is saved only in this browser's `localStorage` and is sent only to eBird. To forget it, click **Remove Key** on the same tab. The hosted copy and a copy you run yourself each need the key saved once, because each address has its own browser storage.
 
-The app saves each eBird result in this browser for the rest of the day. Asking again for the same circle center and day range shows the saved copy instead of calling eBird. A new day, a moved pin, or a different day range fetches fresh data.
+The web app saves each eBird result in this browser for the rest of the day. Asking again for the same circle center and day range shows the saved copy instead of calling eBird. A new day, a moved pin, or a different day range fetches fresh data.
+
+## Circle Scout
+
+Circle Scout is a phone app for your field counters. It's at https://lizstanley.com/cbc-circle-manager/circle-scout/. It shows a counter their area on a map, where they are, and what's been seen nearby, and it records the party's hours and miles. There's no account to make.
+
+### Install it
+
+Open the address on the phone.
+
+- **iPhone and iPad:** in Safari, tap **Share**, then **Add to Home Screen**. Circle Scout shows these steps at the top of the page.
+- **Android:** in Chrome, tap **Install** on the bar at the top of Circle Scout. The bar shows once Chrome offers to install it.
+
+It also works in a plain browser tab. On iPhone, the home screen app keeps its own storage, apart from Safari. If an area link opens in a Safari tab, Circle Scout says so. Open the installed app and paste the same link with **Paste link**.
+
+### Add an eBird key
+
+Circle Scout needs an eBird API key before it shows anything, so its first screen asks for one. Get a key as in [Set up your eBird key](#set-up-your-ebird-key), paste it, and tap **Save key**. The screen links to the eBird request page too.
+
+To change the key later, open the menu at the top and tap **eBird key**. If eBird rejects the key, the lists show a **Fix eBird key** button that opens the same screen.
+
+The web app and Circle Scout share one saved key, but only in the same browser on the same device. A counter's phone needs the key entered once.
+
+### Send counters their area
+
+In the web app, open an area and click **Share Area**. It makes a link and a QR code. Send the link with **Share Link** or **Copy Link**, or print the QR code or show it on screen for counters in person.
+
+The counter loads the area in Circle Scout one of three ways:
+
+- Open the link. Circle Scout opens with the area.
+- On the **Your area** tab, tap **Paste link**, paste the link, and tap **Load**. **Paste from clipboard** does both in one tap, where the phone allows it.
+- On the **Your area** tab, tap **Scan area code** and point the camera at the QR code.
+
+Circle Scout keeps every area it loads, with one active at a time. With more than one, pick the active area from the list on **Your area**. **Remove area** takes the active area off the phone.
+
+### What it shows
+
+- **Map:** the 15-mile circle and the area's outline. Tap the location button on the map to show where you are. While it's on, the line above the map says whether you're in your area, outside your area, or outside the circle. If you leave it on, it's on again the next time you open Circle Scout.
+- **Nearby:** notable sightings, then recent sightings, then eBird hotspots. The lists show once location is on. Each list puts places in your area first, then the rest, nearest first. Pick how many days back, from 1 to 30. With an area loaded, the lists cover the whole circle. With none, they cover 7.5 miles around you. Each sighting links to its eBird checklist.
+- **Suggestions:** **Hotspots to visit**, the hotspots in your area (or every hotspot, with no area loaded) ranked by the species last reported there. With an area loaded whose outline is a shape, not a route line, it also shows **Birds to look for**, species whose latest report is outside your area.
+- **Directions:** every place shows its distance from you, its direction once it's more than a tenth of a mile away, and a **Directions** link. It opens Apple Maps on iPhone and iPad, and Google Maps everywhere else.
+- **Your area:** the area's name and its leaders, with their phone and email as tap-to-call and tap-to-email links.
+- **Start count:** a counter taps **Start count** in Circle Scout, and while it stays open on screen it keeps the screen on, draws the route, and sorts each stretch by speed into travel by vehicle or by foot. The counter can change any stretch's mode, and enters the number of participants in the party and any feeder watching hours. Time in other apps counts toward hours. A break in recording, such as switching apps, shows as a dashed straight line whose distance counts toward the miles. After **Stop count**, **Share totals** sends the party's line of the count sheet as text: area number, participants, one party, hours by vehicle, by foot, and feeder watching, and miles by vehicle and by foot. The compiler adds up the parties for each area. Recording pauses while location is off. The route stays on the phone.
+
+### Settings
+
+Open the menu and tap **Settings**. **Check eBird for new sightings** sets how often the Nearby and Suggestions lists check eBird: every 15 minutes, every half hour, every hour, or every 2 hours. The default is every half hour. Checking less often uses less data and battery. Hotspots change rarely, so they don't follow this setting. Circle Scout uses the copy it saved that day, and fetches them again only for a new search place or key, or after a failed fetch.
+
+### It needs a signal
+
+Circle Scout needs a signal to open, to draw the map, and to check eBird. It doesn't save itself for offline use. If the signal drops, the lists keep what they last loaded.
+
+### What stays on the phone
+
+Circle Scout has no database and no server. It keeps these in the phone's browser storage:
+
+- the eBird key
+- the saved areas
+- the Settings choice
+- whether location tracking is on
+- the count session and its route
+- copies of the day's eBird results
+
+It sends:
+
+- the key, the place to search, and the days back to eBird. The place is the circle's center when an area is loaded, or your location when none is.
+- map views to OpenFreeMap, for the map tiles.
+
+Nothing goes to any other server. The area data sits after the `#` in the link, so it never reaches a server, and Circle Scout removes it from the address bar once it's read. **Directions** and checklist links open Apple Maps, Google Maps, or eBird only when tapped. **Share totals** goes wherever the counter sends it.
 
 ## Import your roster
 
@@ -132,6 +200,7 @@ Bird data comes from [eBird.org](https://ebird.org) and is subject to the [eBird
 
 ```text
 cbc-circle-manager/
+├── circle-scout/                    # Circle Scout: its page (index.html) and its code (src/)
 ├── db/
 │   ├── migrations/                  # Versioned, applied once each, recorded in schema_version
 │   │   ├── 001_initial_schema.sql   # Tables, enums, and indexes, all scoped by circle_code
