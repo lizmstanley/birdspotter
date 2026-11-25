@@ -4,6 +4,7 @@ import { buildCirclePolygon } from '../../src/services/ebird.ts';
 import {
   distanceMiles,
   formatDistance,
+  groupSightings,
   isInAreaTest,
   NEARBY_RADIUS_MILES,
   nearbyQuery,
@@ -75,6 +76,37 @@ test('for a line outline, places in the circle count as in the area', () => {
 
   assert.equal(isInArea(nearOutside), true);
   assert.equal(isInArea({ lng: -93.25, lat: 45.1 }), false);
+});
+
+test('each species shows once: its first notable report, and no regular row', () => {
+  const report = (speciesCode: string, name: string, lat: number) => ({ speciesCode, name, lng: -93.25, lat });
+  const notable = sortNearby(
+    [report('snoowl', 'owl far', 44.91), report('snoowl', 'owl near', 44.95), report('gyrfal', 'falcon', 45.03)],
+    here,
+    isInAreaTest(area, circle)
+  );
+  const regular = sortNearby(
+    [report('bkcchi', 'chickadee', 44.95), report('snoowl', 'owl latest', 44.92), report('gyrfal', 'falcon latest', 45)],
+    here,
+    null
+  );
+
+  const groups = groupSightings(regular, notable);
+
+  assert.deepEqual(
+    groups.notable.map((row) => row.item.name),
+    ['owl near', 'falcon']
+  );
+  assert.deepEqual(
+    groups.regular.map((row) => row.item.name),
+    ['chickadee']
+  );
+});
+
+test('with no notable reports, every regular row stays', () => {
+  const regular = sortNearby([{ speciesCode: 'bkcchi', lng: -93.25, lat: 44.95 }], here, null);
+
+  assert.deepEqual(groupSightings(regular, []), { notable: [], regular });
 });
 
 test('with an area, the query is the whole circle wherever the person is', () => {

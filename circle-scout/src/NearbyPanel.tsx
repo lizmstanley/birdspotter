@@ -1,10 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { areaDisplayName } from '../../src/components/map/mapText.ts';
 import type { AreaLinkData } from '../../src/services/areaLink.ts';
-import { buildCirclePolygon, EBIRD_SITE_URL } from '../../src/services/ebird.ts';
+import { buildCirclePolygon, EBIRD_SITE_URL, type EbirdObservation } from '../../src/services/ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
 import { refreshIntervalText, type RefreshMinutes } from './scoutSettings.ts';
-import { isInAreaTest, sortNearby, type NearbyRow, type Place } from './nearby.ts';
+import { groupSightings, isInAreaTest, sortNearby, type NearbyRow, type Place } from './nearby.ts';
 import { HotspotRow, SightingRow } from './NearbyRows.tsx';
 import { useNearbyData } from './useNearbyData.ts';
 
@@ -49,13 +49,17 @@ function RowGroups<T extends Place>({ rows, titles, renderRow }: RowGroupsProps<
   );
 }
 
+function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean): ReactNode {
+  return <SightingRow key={`${row.item.subId}-${row.item.speciesCode}`} row={row} isNotable={isNotable} />;
+}
+
 function waitingText(live: LiveLocation): string {
   if (live.error) return live.error;
   if (live.isTracking) return 'Finding your location…';
   return 'Turn on location with the location button on the map to see what is nearby.';
 }
 
-/** Recent sightings and hotspots, nearest first, with those in the person's area ahead of the rest. */
+/** Notable sightings, then other recent sightings, then hotspots, each nearest first, with those in the person's area ahead of the rest. */
 export function NearbyPanel({ apiKey, area, live, refreshMinutes, onFixKey }: NearbyPanelProps) {
   const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
   const { position } = live;
@@ -64,10 +68,10 @@ export function NearbyPanel({ apiKey, area, live, refreshMinutes, onFixKey }: Ne
     if (!area) return null;
     return isInAreaTest(area, buildCirclePolygon(area.circleCenter[0], area.circleCenter[1]));
   }, [area]);
-  const sightings = useMemo(
-    () => (position ? sortNearby(data.sightings, position, isInArea) : []),
-    [data.sightings, position, isInArea]
-  );
+  const sightings = useMemo(() => {
+    if (!position) return groupSightings<EbirdObservation>([], []);
+    return groupSightings(sortNearby(data.regular, position, isInArea), sortNearby(data.notable, position, isInArea));
+  }, [data.regular, data.notable, position, isInArea]);
   const hotspots = useMemo(
     () => (position ? sortNearby(data.hotspots, position, isInArea) : []),
     [data.hotspots, position, isInArea]
@@ -103,13 +107,17 @@ export function NearbyPanel({ apiKey, area, live, refreshMinutes, onFixKey }: Ne
       {position && data.isLoading && <p role="status">Loading eBird data…</p>}
       {position && (
         <>
+          {sightings.notable.length > 0 && (
+            <>
+              <h2>Notable sightings</h2>
+              <RowGroups rows={sightings.notable} titles={titles} renderRow={(row) => renderSighting(row, true)} />
+            </>
+          )}
           <h2>Recent sightings</h2>
-          {sightings.length === 0 && !data.isLoading && <p>No sightings reported here in that time.</p>}
-          <RowGroups
-            rows={sightings}
-            titles={titles}
-            renderRow={(row) => <SightingRow key={`${row.item.subId}-${row.item.speciesCode}`} row={row} />}
-          />
+          {sightings.regular.length === 0 && !data.isLoading && (
+            <p>{sightings.notable.length > 0 ? 'No other' : 'No'} sightings reported here in that time.</p>
+          )}
+          <RowGroups rows={sightings.regular} titles={titles} renderRow={(row) => renderSighting(row, false)} />
           <h2>Hotspots</h2>
           {hotspots.length === 0 && !data.isLoading && <p>No eBird hotspots here.</p>}
           <RowGroups rows={hotspots} titles={titles} renderRow={(row) => <HotspotRow key={row.item.locId} row={row} />} />

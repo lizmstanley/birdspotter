@@ -4,6 +4,7 @@ import { describeError } from '../../src/services/describeError.ts';
 import { EbirdKeyRejectedError } from '../../src/services/errors.ts';
 import {
   fetchHotspotsInCircle,
+  fetchRecentNotableSightingsInCircle,
   fetchRecentSightingsInCircle,
   type EbirdHotspot,
   type EbirdObservation,
@@ -21,25 +22,31 @@ interface SightingsRequest extends ListRequest {
   readonly backDays: number;
 }
 
-export interface NearbyData {
+interface Sightings {
+  readonly regular: readonly EbirdObservation[];
+  readonly notable: readonly EbirdObservation[];
+}
+
+export interface NearbyData extends Sightings {
   readonly hotspots: readonly EbirdHotspot[];
-  readonly sightings: readonly EbirdObservation[];
   readonly error: string | null;
   readonly isKeyRejected: boolean;
   readonly isLoading: boolean;
 }
 
-interface Loaded<Request, Item> extends FetchOutcome {
+interface Loaded<Request, Data> extends FetchOutcome {
   readonly request: Request;
-  readonly items: readonly Item[];
+  readonly data: Data;
 }
 
 const NO_OUTCOME: FetchOutcome = { error: null, isKeyRejected: false };
+const NO_SIGHTINGS: Sightings = { regular: [], notable: [] };
+const NO_HOTSPOTS: readonly EbirdHotspot[] = [];
 
 /**
- * Fetches the eBird data for the Nearby list. Sightings are fetched again at each interval while the page is shown;
- * hotspots change rarely, so they use any copy saved today and are fetched again only for a new query or key, or
- * after a failure.
+ * Fetches the eBird data for the Nearby list. Regular and notable sightings are fetched together, and again at each
+ * interval while the page is shown; hotspots change rarely, so they use any copy saved today and are fetched again
+ * only for a new query or key, or after a failure.
  * @param refreshMs both the sightings refresh interval and their saved-copy age limit. A copy just short of this age
  *   when the list loads is replaced at the next refresh, so the sightings shown are never twice this old.
  */
@@ -53,8 +60,8 @@ export function useNearbyData(
   const [query, setQuery] = useState<NearbyQuery | null>(null);
   const [sightingsFetchCount, setSightingsFetchCount] = useState(0);
   const [hotspotsFetchCount, setHotspotsFetchCount] = useState(0);
-  const [sightings, setSightings] = useState<Loaded<SightingsRequest, EbirdObservation> | null>(null);
-  const [hotspots, setHotspots] = useState<Loaded<ListRequest, EbirdHotspot> | null>(null);
+  const [sightings, setSightings] = useState<Loaded<SightingsRequest, Sightings> | null>(null);
+  const [hotspots, setHotspots] = useState<Loaded<ListRequest, readonly EbirdHotspot[]> | null>(null);
 
   const nextQuery = nearbyQuery(area, position, query);
   // Kept in state so it moves only when nearbyQuery moves it, not on every location fix.
@@ -67,14 +74,17 @@ export function useNearbyData(
   useEffect(() => {
     if (!hasQuery) return;
     const request = { query: { center: [lng, lat] as const, radiusMiles }, fetchCount: hotspotsFetchCount };
-    return loadInto(setHotspots, request, fetchHotspotsInCircle(apiKey, lat, lng, radiusMiles));
+    return loadInto(setHotspots, request, fetchHotspotsInCircle(apiKey, lat, lng, radiusMiles), NO_HOTSPOTS);
   }, [apiKey, hasQuery, lng, lat, radiusMiles, hotspotsFetchCount]);
 
   useEffect(() => {
     if (!hasQuery) return;
     const request = { query: { center: [lng, lat] as const, radiusMiles }, backDays, fetchCount: sightingsFetchCount };
-    const fetched = fetchRecentSightingsInCircle(apiKey, lat, lng, radiusMiles, backDays, refreshMs);
-    return loadInto(setSightings, request, fetched);
+    const fetched = Promise.all([
+      fetchRecentSightingsInCircle(apiKey, lat, lng, radiusMiles, backDays, refreshMs),
+      fetchRecentNotableSightingsInCircle(apiKey, lat, lng, radiusMiles, backDays, refreshMs),
+    ]).then(([regular, notable]) => ({ regular, notable }));
+    return loadInto(setSightings, request, fetched, NO_SIGHTINGS);
   }, [apiKey, hasQuery, lng, lat, radiusMiles, backDays, sightingsFetchCount, refreshMs]);
 
   const sightingsOutcome = sightings ?? NO_OUTCOME;
@@ -88,8 +98,8 @@ export function useNearbyData(
     isLoadedFor(sightings?.request ?? null, query, sightingsFetchCount) && sightings?.request.backDays === backDays;
   const isHotspotsLoaded = isLoadedFor(hotspots?.request ?? null, query, hotspotsFetchCount);
   return {
-    hotspots: hotspots?.items ?? [],
-    sightings: sightings?.items ?? [],
+    hotspots: hotspots?.data ?? NO_HOTSPOTS,
+    ...(sightings?.data ?? NO_SIGHTINGS),
     error: sightingsOutcome.error ?? hotspotsOutcome.error,
     isKeyRejected: sightingsOutcome.isKeyRejected || hotspotsOutcome.isKeyRejected,
     isLoading: query !== null && !(isSightingsLoaded && isHotspotsLoaded),
@@ -100,22 +110,23 @@ export function useNearbyData(
  * Stores what a fetch settles to, unless the effect that started it is cleaned up first.
  * @returns the effect cleanup
  */
-function loadInto<Request, Item>(
-  setLoaded: Dispatch<SetStateAction<Loaded<Request, Item> | null>>,
+function loadInto<Request, Data>(
+  setLoaded: Dispatch<SetStateAction<Loaded<Request, Data> | null>>,
   request: Request,
-  fetched: Promise<readonly Item[]>
+  fetched: Promise<Data>,
+  empty: Data
 ): () => void {
   let isCurrent = true;
   fetched
-    .then((items) => {
-      if (isCurrent) setLoaded({ request, items, error: null, isKeyRejected: false });
+    .then((data) => {
+      if (isCurrent) setLoaded({ request, data, error: null, isKeyRejected: false });
     })
     .catch((err: unknown) => {
       if (!isCurrent) return;
       // The last rows stay up, so a dropped signal does not empty the list.
       setLoaded((last) => ({
         request,
-        items: last?.items ?? [],
+        data: last?.data ?? empty,
         error: describeError(err),
         isKeyRejected: err instanceof EbirdKeyRejectedError,
       }));

@@ -227,6 +227,28 @@ button {
   border-bottom: 1px solid #e2e8f0;
 }
 
+a.scout-nearby-row {
+  color: inherit;
+  text-decoration: none;
+}
+
+.scout-nearby-row-notable {
+  padding: 8px;
+  border-left: 4px solid #d97706;
+  background: #fffbeb;
+}
+
+.scout-nearby-notable {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .scout-nearby-count,
 .scout-nearby-detail {
   color: #475569;
