@@ -1,6 +1,6 @@
 import { strFromU8, unzipSync } from 'fflate';
 import { OUTER_CIRCLE_COLORS } from './cbcCircle.ts';
-import { isLatitude, isLongitude } from './coordinates.ts';
+import { isLatitude, isLongitude } from '@birdspotter/birding-core/coordinates.ts';
 import {
   BoundaryFileTooLargeError,
   InvalidCoordinatesError,
@@ -8,7 +8,7 @@ import {
   InvalidKmlError,
   KmzMissingKmlError,
 } from './errors.ts';
-import { isRecord } from './http.ts';
+import { isRecord } from '@birdspotter/birding-core/http.ts';
 
 export const KMZ_MAX_BYTES = 20_000_000;
 export const KMZ_MAX_UNZIPPED_BYTES = 50_000_000;

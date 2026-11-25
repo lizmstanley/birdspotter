@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react';
 import type * as maplibregl from 'maplibre-gl';
-import { buildCirclePolygon } from '../../services/ebird.ts';
+import { buildCirclePolygon } from '@birdspotter/birding-core/ebird.ts';
 import { CIRCLE_SOURCE } from './mapLayers.ts';
 
 interface CircleLayerOptions {

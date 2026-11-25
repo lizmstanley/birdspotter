@@ -162,6 +162,14 @@ npm run dev
 
 Open `http://localhost:5173`. A new browser database starts empty.
 
+CBC Scout runs from its own dev server:
+
+```bash
+npm run dev:cbc-scout
+```
+
+Open the `/cbc-scout/` address it prints. With the web app's dev server also running, CBC Scout gets the next port, a different address, so in dev the two don't share the saved eBird key. The built site serves both from one address, so `npm run preview` and the hosted copy do.
+
 To build a static site:
 
 ```bash
@@ -200,7 +208,10 @@ Bird data comes from [eBird.org](https://ebird.org) and is subject to the [eBird
 
 ```text
 birdspotter/
-├── cbc-scout/                       # CBC Scout: its page (index.html) and its code (src/)
+├── apps/
+│   └── cbc-scout/                   # CBC Scout: its page (index.html) and its code (src/)
+├── packages/
+│   └── birding-core/                # eBird, nearby lists, location, map, and install code any birding app can use
 ├── db/
 │   ├── migrations/                  # Versioned, applied once each, recorded in schema_version
 │   │   ├── 001_initial_schema.sql   # Tables, enums, and indexes, all scoped by circle_code

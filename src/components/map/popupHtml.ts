@@ -1,4 +1,4 @@
-import { EBIRD_SITE_URL, ebirdChecklistUrl, type EbirdHotspot, type EbirdObservation } from '../../services/ebird.ts';
+import { EBIRD_SITE_URL, ebirdChecklistUrl, type EbirdHotspot, type EbirdObservation } from '@birdspotter/birding-core/ebird.ts';
 import { escapeHtml } from './mapText.ts';
 
 const EBIRD_SOURCE_TEXT_HTML = '<div class="tooltip-source">Data: eBird.org</div>';

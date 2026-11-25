@@ -10,7 +10,7 @@ import type {
   SavedCircle,
 } from '../db/pgliteDb';
 import { describeError } from '../services/describeError';
-import { useLatest } from './useLatest';
+import { useLatest } from '@birdspotter/birding-core/useLatest.ts';
 import type { SetError } from './useNotices';
 
 export interface ActiveCircleData {

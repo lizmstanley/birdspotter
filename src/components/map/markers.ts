@@ -1,5 +1,5 @@
 import * as maplibregl from 'maplibre-gl';
-import type { EbirdHotspot, EbirdObservation } from '../../services/ebird.ts';
+import type { EbirdHotspot, EbirdObservation } from '@birdspotter/birding-core/ebird.ts';
 import { areaDisplayName } from './mapText.ts';
 import { BINOCULARS_SVG, BIRD_SVG } from './mapIcons.ts';
 import { hotspotClickHtml, hotspotHoverHtml, sightingHtml } from './popupHtml.ts';

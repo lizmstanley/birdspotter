@@ -1,0 +1,15 @@
+{
+  "name": "@birdspotter/cbc-scout",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@birdspotter/birding-core": "*",
+    "@turf/boolean-point-in-polygon": "^7.2.0",
+    "jsqr": "^1.4.0",
+    "maplibre-gl": "^5.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}

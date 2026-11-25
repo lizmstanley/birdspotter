@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describeError } from './describeError.ts';
-import { AudubonRequestError, EbirdRequestError, InvalidCoordinatesError } from './errors.ts';
+import { EbirdKeyRejectedError, EbirdRequestError } from '@birdspotter/birding-core/errors.ts';
+import { AudubonRequestError, InvalidCoordinatesError } from './errors.ts';
 
 test('a failed eBird or Audubon request shows its HTTP status', () => {
   assert.equal(
@@ -11,6 +12,13 @@ test('a failed eBird or Audubon request shows its HTTP status', () => {
   assert.equal(
     describeError(new AudubonRequestError('MNBL', 500)),
     'audubonCirclePage: the circle page request failed. (HTTP 500)'
+  );
+});
+
+test('a rejected eBird key points at the Help & API Keys tab', () => {
+  assert.equal(
+    describeError(new EbirdKeyRejectedError('hotspots')),
+    'ebird: eBird rejected the API key. Check the key on the Help & API Keys tab.'
   );
 });
 

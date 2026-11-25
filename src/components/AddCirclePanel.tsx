@@ -4,7 +4,7 @@ import {
   withAudubonPageDetails,
   type AudubonCircleResult,
 } from '../services/audubonCircles';
-import { parseCircleCenter } from '../services/coordinates';
+import { parseCircleCenter } from '../services/circleCenter';
 import { computeCollectionCenter, parseBoundaryFile, type ParsedAreaBoundary } from '../services/kmlParser';
 
 export interface NewCirclePayload {

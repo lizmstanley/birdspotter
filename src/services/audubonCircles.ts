@@ -1,12 +1,12 @@
 import { fetchAudubonCircleDetails } from './audubonCirclePage.ts';
-import { isLatitude, isLongitude } from './coordinates.ts';
+import { isLatitude, isLongitude } from '@birdspotter/birding-core/coordinates.ts';
 import {
   AudubonProxyUnavailableError,
   AudubonRequestError,
   AudubonUnreachableError,
-  UnexpectedResponseError,
 } from './errors.ts';
-import { FETCH_TIMEOUT_MS, isRecord, isRequestFailure } from './http.ts';
+import { UnexpectedResponseError } from '@birdspotter/birding-core/errors.ts';
+import { FETCH_TIMEOUT_MS, isRecord, isRequestFailure } from '@birdspotter/birding-core/http.ts';
 
 export interface AudubonCircleResult {
   code: string;
