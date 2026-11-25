@@ -192,7 +192,7 @@ test('both requests give up after the shared fetch timeout', async (t) => {
   );
 });
 
-test('the same request is fetched once per local day and again the next day', async (t) => {
+test('the same hotspot request is fetched once per local day and again the next day', async (t) => {
   // A zone off UTC, so a cache keyed on the UTC date fails here as it would for a user in Minnesota.
   const realTimeZone = process.env.TZ;
   process.env.TZ = 'America/Chicago';
@@ -205,13 +205,13 @@ test('the same request is fetched once per local day and again the next day', as
     Response.json(url.includes('/hotspot/') ? [HOTSPOT] : [SIGHTING])
   );
 
-  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  await fetchHotspotsInCircle('key', 44.8, -93.3);
   t.mock.timers.setTime(new Date(2026, 10, 20, 23, 59).getTime());
-  assert.deepEqual(await fetchRecentSightingsInCircle('key', 44.8, -93.3), [SIGHTING]);
+  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
   assert.equal(fetchMock.mock.callCount(), 1);
 
   t.mock.timers.setTime(new Date(2026, 10, 21, 0, 1).getTime());
-  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  await fetchHotspotsInCircle('key', 44.8, -93.3);
   assert.equal(fetchMock.mock.callCount(), 2);
   assert.equal(storage.length, 1);
 });
@@ -299,9 +299,57 @@ test('a copy too old for one caller is still used by a caller with no age limit'
   const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
 
   await fetchRecentSightingsInCircle('key', 44.8, -93.3);
-  t.mock.timers.setTime(new Date(2026, 10, 20, 15, 0).getTime());
+  t.mock.timers.setTime(new Date(2026, 10, 20, 10, 0).getTime());
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+  t.mock.timers.setTime(new Date(2026, 10, 20, 10, 30).getTime());
   assert.deepEqual(await fetchRecentSightingsInCircle('key', 44.8, -93.3), [SIGHTING]);
-  assert.equal(fetchMock.mock.callCount(), 1);
+  assert.equal(fetchMock.mock.callCount(), 2);
+});
+
+test('saved sightings and notable sightings are used for 6 hours at most, whatever age the caller allows', async (t) => {
+  const day = 24 * 60 * 60 * 1000;
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3, 15, 7, day);
+  t.mock.timers.setTime(new Date(2026, 10, 20, 14, 59).getTime());
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3, 15, 7, day);
+  assert.equal(fetchMock.mock.callCount(), 2);
+
+  t.mock.timers.setTime(new Date(2026, 10, 20, 15, 0).getTime());
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3, 15, 7, day);
+  assert.equal(fetchMock.mock.callCount(), 4);
+});
+
+test('a sightings copy saved today before copies expired is used for 6 hours at most', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  const key = storage.key(0) ?? '';
+  storage.setItem(key, JSON.stringify({ savedAt: Date.now(), items: [SIGHTING] }));
+
+  t.mock.timers.setTime(new Date(2026, 10, 20, 15, 0).getTime());
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  assert.equal(fetchMock.mock.callCount(), 2);
+});
+
+test('saving any request removes expired sightings copies and keeps hotspots for the day', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  t.mock.method(globalThis, 'fetch', async (url: string) =>
+    Response.json(url.includes('/hotspot/') ? [HOTSPOT] : [SIGHTING])
+  );
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3);
+  await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3);
+  await fetchHotspotsInCircle('key', 44.8, -93.3);
+
+  t.mock.timers.setTime(new Date(2026, 10, 20, 15, 0).getTime());
+  await fetchHotspotsInCircle('key', 44.9, -93.3);
+  const saved = Array.from({ length: storage.length }, (_, i) => storage.key(i) ?? '');
+  assert.equal(saved.length, 2);
+  assert.ok(saved.every((key) => key.includes('/hotspot/')));
 });
 
 test('a copy saved as a bare list, with no saved time, is fetched again', async (t) => {

@@ -7,7 +7,7 @@ export function EbirdCredit() {
       <a href={EBIRD_SITE_URL} target="_blank" rel="noreferrer">
         eBird.org
       </a>
-      , refreshed once a day.
+      . Saved hotspots are kept for the day, sightings for 6 hours.
     </p>
   );
 }

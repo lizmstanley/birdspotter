@@ -10,6 +10,9 @@ export const EBIRD_KEY_REQUEST_URL = 'https://ebird.org/api/keygen';
 
 const EBIRD_KEY_REJECTED_STATUS = 403;
 
+/** eBird's API terms allow observations only a short-term cache, of 1 to 6 hours. */
+const OBSERVATION_LIFETIME_MS = 6 * 60 * 60 * 1000;
+
 export interface EbirdHotspot {
   locId: string;
   locName: string;
@@ -80,7 +83,8 @@ async function fetchEbirdList<T>(
   url: string,
   apiKey: string,
   isItem: (value: unknown) => value is T,
-  maxAgeMs: number | undefined
+  maxAgeMs: number | undefined,
+  lifetimeMs?: number
 ): Promise<T[]> {
   const saved = readTodaysCopy(url, isItem, maxAgeMs);
   if (saved) return saved;
@@ -92,8 +96,18 @@ async function fetchEbirdList<T>(
   if (!res.ok) throw new EbirdRequestError(endpoint, res.status, await res.text());
   const body: unknown = await res.json();
   if (!Array.isArray(body) || !body.every(isItem)) throw new UnexpectedResponseError('ebird', endpoint);
-  saveTodaysCopy(url, body);
+  saveTodaysCopy(url, body, lifetimeMs);
   return body;
+}
+
+function fetchObservations(
+  endpoint: EbirdEndpoint,
+  url: string,
+  apiKey: string,
+  maxAgeMs: number | undefined
+): Promise<EbirdObservation[]> {
+  const readAgeMs = Math.min(maxAgeMs ?? OBSERVATION_LIFETIME_MS, OBSERVATION_LIFETIME_MS);
+  return fetchEbirdList(endpoint, url, apiKey, isObservation, readAgeMs, OBSERVATION_LIFETIME_MS);
 }
 
 function searchDistanceKm(radiusMiles: number): string {
@@ -148,7 +162,7 @@ export function recentNotableSightingsUrl(
   return `${recentObservationsUrl('recent/notable', lat, lng, radiusMiles, backDays)}&detail=simple&includeProvisional=true&fmt=json`;
 }
 
-/** @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used */
+/** @param maxAgeMs how old a saved copy may be, at most 6 hours; omitted, 6 hours */
 export async function fetchRecentSightingsInCircle(
   apiKey: string,
   lat: number,
@@ -158,13 +172,13 @@ export async function fetchRecentSightingsInCircle(
   maxAgeMs?: number
 ): Promise<EbirdObservation[]> {
   const url = recentSightingsUrl(lat, lng, radiusMiles, backDays);
-  return fetchEbirdList('sightings', url, apiKey, isObservation, maxAgeMs);
+  return fetchObservations('sightings', url, apiKey, maxAgeMs);
 }
 
 /**
  * Reports eBird marks as rare or out of season for the region. Unlike regular sightings, every report of a species
  * is returned, not only the latest.
- * @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used
+ * @param maxAgeMs how old a saved copy may be, at most 6 hours; omitted, 6 hours
  */
 export async function fetchRecentNotableSightingsInCircle(
   apiKey: string,
@@ -175,5 +189,5 @@ export async function fetchRecentNotableSightingsInCircle(
   maxAgeMs?: number
 ): Promise<EbirdObservation[]> {
   const url = recentNotableSightingsUrl(lat, lng, radiusMiles, backDays);
-  return fetchEbirdList('notable sightings', url, apiKey, isObservation, maxAgeMs);
+  return fetchObservations('notable sightings', url, apiKey, maxAgeMs);
 }

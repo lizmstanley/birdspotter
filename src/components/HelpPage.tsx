@@ -47,9 +47,9 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             directly from your browser to <code>api.ebird.org</code>.
           </li>
           <li>
-            This web app saves eBird results in this browser for the rest of the day, so the same circle
-            and day range calls eBird at most once a day. Circle Scout checks for new sightings more
-            often (see section 4). Bird data comes from{' '}
+            This web app saves eBird results in this browser: hotspots for the rest of the day and
+            sightings for up to 6 hours, as eBird&apos;s terms allow. Circle Scout checks for new sightings
+            more often (see section 4). Bird data comes from{' '}
             <a href="https://ebird.org" target="_blank" rel="noreferrer">eBird.org</a> under the{' '}
             <a href="https://www.birds.cornell.edu/home/ebird-api-terms-of-use/" target="_blank" rel="noreferrer">
               eBird API Terms of Use
