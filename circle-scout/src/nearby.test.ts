@@ -2,6 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildCirclePolygon } from '../../src/services/ebird.ts';
 import {
+  bearingDegrees,
+  compassPoint,
+  directionTo,
   distanceMiles,
   formatDistance,
   groupSightings,
@@ -136,4 +139,46 @@ test('an earlier query too small to cover half the radius around the person is r
   const small: NearbyQuery = { center: [-93.25, 44.95], radiusMiles: NEARBY_RADIUS_MILES / 2 };
 
   assert.notEqual(nearbyQuery(null, [-93.25, 44.951], small), small);
+});
+
+test('names the compass point a place lies toward', () => {
+  const center: [number, number] = [-93.25, 44.95];
+  assert.equal(compassPoint(bearingDegrees(center, [-93.25, 45.05])), 'N');
+  assert.equal(compassPoint(bearingDegrees(center, [-93.15, 44.95])), 'E');
+  assert.equal(compassPoint(bearingDegrees(center, [-93.25, 44.85])), 'S');
+  assert.equal(compassPoint(bearingDegrees(center, [-93.35, 44.95])), 'W');
+  assert.equal(compassPoint(bearingDegrees(center, [-93.15, 45.02])), 'NE');
+  assert.equal(compassPoint(bearingDegrees(center, [-93.35, 44.88])), 'SW');
+});
+
+test('wraps around north, so bearings just either side of it are both N', () => {
+  assert.equal(compassPoint(350), 'N');
+  assert.equal(compassPoint(10), 'N');
+  assert.equal(compassPoint(22.4), 'N');
+  assert.equal(compassPoint(22.6), 'NE');
+  assert.equal(compassPoint(337.6), 'N');
+  assert.equal(compassPoint(337.4), 'NW');
+});
+
+test('points east across the antimeridian rather than the long way round', () => {
+  assert.equal(compassPoint(bearingDegrees([179.95, 52], [-179.95, 52])), 'E');
+  assert.equal(compassPoint(bearingDegrees([-179.95, 52], [179.95, 52])), 'W');
+});
+
+test('points along the compass far north, where meridians crowd together', () => {
+  assert.equal(compassPoint(bearingDegrees([-156.79, 71.29], [-156.5, 71.29])), 'E');
+  assert.equal(compassPoint(bearingDegrees([-156.79, 71.29], [-156.79, 71.4])), 'N');
+});
+
+test('gives no direction when the place is too close to tell which way', () => {
+  assert.equal(directionTo([-93.25, 44.95], [-93.25, 44.9513], 0.09), null);
+  assert.equal(directionTo([-93.25, 44.95], [-93.25, 44.9515], 0.1), 'N');
+});
+
+test('gives each sorted row the direction from the person', () => {
+  const rows = sortNearby([nearOutside, farInside], here, null);
+  assert.deepEqual(
+    rows.map((row) => row.direction),
+    ['N', 'S']
+  );
 });

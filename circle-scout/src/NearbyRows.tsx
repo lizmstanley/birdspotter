@@ -1,5 +1,6 @@
 import { ebirdChecklistUrl, type EbirdHotspot, type EbirdObservation } from '../../src/services/ebird.ts';
-import { formatDistance, type NearbyRow } from './nearby.ts';
+import { directionsUrl } from './directions.ts';
+import { formatDistance, type NearbyRow, type Place } from './nearby.ts';
 
 interface SightingRowProps {
   readonly row: NearbyRow<EbirdObservation>;
@@ -11,18 +12,16 @@ export function SightingRow({ row, isNotable, reason }: SightingRowProps) {
   const { comName, howMany, locName, obsDt, subId } = row.item;
   const className = isNotable ? 'scout-nearby-row scout-nearby-row-notable' : 'scout-nearby-row';
   return (
-    <li>
-      <a className={className} href={ebirdChecklistUrl(subId)} target="_blank" rel="noreferrer">
-        <div>
-          {isNotable && <span className="scout-nearby-notable">Notable</span>}
-          <strong>{comName}</strong> <span className="scout-nearby-count">{howMany ?? 'X'}</span>
-          <div className="scout-nearby-detail">
-            {locName}, {obsDt}
-          </div>
-          {reason && <div className="scout-nearby-reason">{reason}</div>}
+    <li className={className}>
+      <a className="scout-nearby-place" href={ebirdChecklistUrl(subId)} target="_blank" rel="noreferrer">
+        {isNotable && <span className="scout-nearby-notable">Notable</span>}
+        <strong>{comName}</strong> <span className="scout-nearby-count">{howMany ?? 'X'}</span>
+        <div className="scout-nearby-detail">
+          {locName}, {obsDt}
         </div>
-        <span className="scout-nearby-distance">{formatDistance(row.miles)}</span>
+        {reason && <div className="scout-nearby-reason">{reason}</div>}
       </a>
+      <PlaceWhere row={row} placeName={locName} />
     </li>
   );
 }
@@ -35,11 +34,34 @@ interface HotspotRowProps {
 export function HotspotRow({ row, reason }: HotspotRowProps) {
   return (
     <li className="scout-nearby-row">
-      <div>
+      <div className="scout-nearby-place">
         <strong>{row.item.locName}</strong>
         {reason && <div className="scout-nearby-reason">{reason}</div>}
       </div>
-      <span className="scout-nearby-distance">{formatDistance(row.miles)}</span>
+      <PlaceWhere row={row} placeName={row.item.locName} />
     </li>
+  );
+}
+
+interface PlaceWhereProps {
+  readonly row: NearbyRow<Place>;
+  readonly placeName: string;
+}
+
+function PlaceWhere({ row, placeName }: PlaceWhereProps) {
+  const distance = formatDistance(row.miles);
+  return (
+    <div className="scout-nearby-where">
+      <span className="scout-nearby-distance">{row.direction ? `${distance} ${row.direction}` : distance}</span>
+      <a
+        className="scout-nearby-directions"
+        href={directionsUrl(row.item, navigator.userAgent, navigator.maxTouchPoints)}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Directions to ${placeName}`}
+      >
+        Directions
+      </a>
+    </div>
   );
 }

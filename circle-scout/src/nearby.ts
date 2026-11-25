@@ -14,8 +14,12 @@ export interface Place {
 export interface NearbyRow<T extends Place> {
   readonly item: T;
   readonly miles: number;
+  /** Which way the place lies from the person, or null when too close for one to mean anything. */
+  readonly direction: CompassPoint | null;
   readonly isInArea: boolean;
 }
+
+export type CompassPoint = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
 
 export interface Sighting extends Place {
   readonly speciesCode: string;
@@ -36,6 +40,10 @@ export const NEARBY_RADIUS_MILES = CBC_CIRCLE_RADIUS_MILES;
 
 const EARTH_RADIUS_MILES = 3958.8;
 const WHOLE_MILES_FROM = 10;
+// Closer than this, GPS error can put the person on either side of the place.
+const DIRECTION_MIN_MILES = 0.1;
+const COMPASS_POINTS: readonly CompassPoint[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+const DEGREES_PER_POINT = 360 / COMPASS_POINTS.length;
 
 function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
@@ -47,6 +55,26 @@ export function distanceMiles([fromLng, fromLat]: LngLat, [toLng, toLat]: LngLat
   const dLng = toRadians(toLng - fromLng);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(fromLat)) * Math.cos(toRadians(toLat)) * Math.sin(dLng / 2) ** 2;
   return 2 * EARTH_RADIUS_MILES * Math.asin(Math.sqrt(a));
+}
+
+/** @returns the initial great-circle bearing, in degrees clockwise from north, from 0 up to 360 */
+export function bearingDegrees([fromLng, fromLat]: LngLat, [toLng, toLat]: LngLat): number {
+  const fromPhi = toRadians(fromLat);
+  const toPhi = toRadians(toLat);
+  const dLng = toRadians(toLng - fromLng);
+  const y = Math.sin(dLng) * Math.cos(toPhi);
+  const x = Math.cos(fromPhi) * Math.sin(toPhi) - Math.sin(fromPhi) * Math.cos(toPhi) * Math.cos(dLng);
+  const degrees = (Math.atan2(y, x) * 180) / Math.PI;
+  return (degrees + 360) % 360;
+}
+
+export function compassPoint(bearing: number): CompassPoint {
+  return COMPASS_POINTS[Math.round(bearing / DEGREES_PER_POINT) % COMPASS_POINTS.length];
+}
+
+export function directionTo(from: LngLat, to: LngLat, miles: number): CompassPoint | null {
+  if (miles < DIRECTION_MIN_MILES) return null;
+  return compassPoint(bearingDegrees(from, to));
 }
 
 export function formatDistance(miles: number): string {
@@ -70,11 +98,11 @@ export function sortNearby<T extends Place>(
   position: LngLat,
   isInArea: ((place: Place) => boolean) | null
 ): NearbyRow<T>[] {
-  const rows = items.map((item) => ({
-    item,
-    miles: distanceMiles(position, [item.lng, item.lat]),
-    isInArea: isInArea?.(item) ?? false,
-  }));
+  const rows = items.map((item) => {
+    const placeAt: LngLat = [item.lng, item.lat];
+    const miles = distanceMiles(position, placeAt);
+    return { item, miles, direction: directionTo(position, placeAt, miles), isInArea: isInArea?.(item) ?? false };
+  });
   return rows.sort((a, b) => Number(b.isInArea) - Number(a.isInArea) || a.miles - b.miles);
 }
 
