@@ -277,6 +277,22 @@ a.scout-nearby-place {
   font-weight: 600;
 }
 
+.scout-nearby-row-confirmed {
+  border-left-color: #b45309;
+  background: #fde68a;
+}
+
+.scout-nearby-confirmed {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #b45309;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .scout-nearby-count,
 .scout-nearby-detail {
   color: #475569;

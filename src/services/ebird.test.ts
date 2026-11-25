@@ -5,6 +5,7 @@ import {
   fetchHotspotsInCircle,
   fetchRecentNotableSightingsInCircle,
   fetchRecentSightingsInCircle,
+  isConfirmedReport,
   recentNotableSightingsUrl,
   recentSightingsUrl,
 } from './ebird.ts';
@@ -103,13 +104,32 @@ test('well-formed hotspots and sightings come back as sent', async (t) => {
   assert.deepEqual(await fetchRecentSightingsInCircle('key', 44.8, -93.3), [SIGHTING]);
 });
 
-test('notable sightings come from the notable endpoint with simple detail and the same day limits', () => {
+test('notable sightings come from the notable endpoint with simple detail, unreviewed reports, and the same day limits', () => {
   const url = new URL(recentNotableSightingsUrl(44.8, -93.3, 15, 45));
   assert.equal(url.pathname, '/v2/data/obs/geo/recent/notable');
   assert.equal(url.searchParams.get('detail'), 'simple');
+  assert.equal(url.searchParams.get('includeProvisional'), 'true');
   assert.equal(url.searchParams.get('back'), '30');
   assert.equal(url.searchParams.get('dist'), new URL(recentSightingsUrl(44.8, -93.3, 15)).searchParams.get('dist'));
   assert.equal(new URL(recentNotableSightingsUrl(44.8, -93.3, 15, 0)).searchParams.get('back'), '1');
+});
+
+test('a report is confirmed only when eBird marks it valid', () => {
+  assert.equal(isConfirmedReport({ ...SIGHTING, obsValid: true }), true);
+  assert.equal(isConfirmedReport({ ...SIGHTING, obsValid: false }), false);
+  assert.equal(isConfirmedReport(SIGHTING), false);
+});
+
+test('a sighting with a review status comes back with it, and one with a status that is not true or false is rejected', async (t) => {
+  const confirmed = { ...SIGHTING, obsValid: true };
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([confirmed]));
+  assert.deepEqual(await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3), [confirmed]);
+
+  fetchMock.mock.mockImplementation(respondWith([{ ...SIGHTING, obsValid: 'true' }]));
+  await assert.rejects(
+    fetchRecentNotableSightingsInCircle('key', 44.9, -93.3),
+    (err) => err instanceof UnexpectedResponseError && err.endpoint === 'notable sightings'
+  );
 });
 
 test('a checklist link encodes the checklist id', () => {
