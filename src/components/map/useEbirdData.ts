@@ -39,7 +39,7 @@ export function useEbirdData({ ebirdApiKey, radiusMiles, setStatus }: EbirdDataO
       setHotspots(hs);
       setSightings(obs);
       setStatus(
-        `Found ${hs.length} hotspots and ${obs.length} recent species inside ${circleCode}. Hover any icon for details or click to open in eBird. Data from eBird.org, refreshed once a day.`
+        `Found ${hs.length} hotspots and ${obs.length} recent species inside ${circleCode}. Hover any icon for details or click to open in eBird. Data from eBird.org. Saved hotspots are kept for the day, sightings for 6 hours.`
       );
     } catch (err) {
       setStatus(describeError(err));
