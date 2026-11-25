@@ -67,6 +67,19 @@ test('repeated breaks with no fix between them leave one empty track', () => {
   );
 });
 
+test('gives each new count its own party ID', () => {
+  assert.notEqual(startSession(START_TIME, null).partyId, startSession(START_TIME, null).partyId);
+});
+
+test('keeps the area, area number, and circle that were active at start', () => {
+  const session = startSession(START_TIME, { name: 'Bloomington: Area 12, Richfield', code: '12', circleCode: 'MNBL' });
+  assert.equal(session.areaName, 'Bloomington: Area 12, Richfield');
+  assert.equal(session.areaCode, '12');
+  assert.equal(session.circleCode, 'MNBL');
+  const none = startSession(START_TIME, null);
+  assert.deepEqual([none.areaName, none.areaCode, none.circleCode], [null, null, null]);
+});
+
 test('takes a whole number of participants of at least 1 and feeder hours of at least 0', () => {
   const session = startSession(START_TIME, null);
   assert.equal(withParticipants(session, 4).participants, 4);
@@ -82,7 +95,7 @@ test('saves and restores a session with its area, party details, tracks, and cor
   const storage = new MemoryStorage();
   const withGap = withFix(withBreak(recorded(fixAt(0, 1), fixAt(100, 3))), fixAt(900, 20));
   const withParty = withFeederHours(
-    withParticipants({ ...withGap, areaName: 'Bloomington: Area 12, Richfield', areaCode: '12' }, 3),
+    withParticipants({ ...withGap, areaName: 'Bloomington: Area 12, Richfield', areaCode: '12', circleCode: 'MNBL' }, 3),
     1.5
   );
   const session = stopSession(withCorrection(withParty, { from: 1, to: 2, mode: 'car' }), START_TIME + 30 * MINUTE_MS);
@@ -92,7 +105,9 @@ test('saves and restores a session with its area, party details, tracks, and cor
   if (read.status !== 'found') return;
   assert.equal(read.session.stopTime, session.stopTime);
   assert.equal(read.session.areaName, session.areaName);
+  assert.equal(read.session.partyId, session.partyId);
   assert.equal(read.session.areaCode, '12');
+  assert.equal(read.session.circleCode, 'MNBL');
   assert.equal(read.session.participants, 3);
   assert.equal(read.session.feederHours, 1.5);
   assert.deepEqual(read.session.corrections, session.corrections);
@@ -103,27 +118,6 @@ test('saves and restores a session with its area, party details, tracks, and cor
   assert.ok(Math.abs(read.session.tracks[1][0].lat - session.tracks[1][0].lat) < 1e-6);
 });
 
-test('restores a count saved in the first format with its area name and the starting party details', () => {
-  const storage = new MemoryStorage();
-  const firstFormat = {
-    version: 1,
-    startTime: START_TIME,
-    stopTime: START_TIME + 30 * MINUTE_MS,
-    areaName: 'Bloomington: Area 12, Richfield',
-    tracks: [[[-93.3, 44.8, START_TIME + MINUTE_MS]]],
-    corrections: [{ from: 1, to: 2, mode: 'car' }],
-  };
-  storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(firstFormat));
-  const read = readCountSession(storage);
-  assert.equal(read.status, 'found');
-  if (read.status !== 'found') return;
-  assert.equal(read.session.areaName, 'Bloomington: Area 12, Richfield');
-  assert.equal(read.session.areaCode, null);
-  assert.equal(read.session.participants, 1);
-  assert.equal(read.session.feederHours, 0);
-  assert.equal(read.session.tracks[0][0].time, START_TIME + MINUTE_MS);
-});
-
 test('reports no session when nothing is saved', () => {
   assert.deepEqual(readCountSession(new MemoryStorage()), { status: 'none' });
 });
@@ -132,12 +126,16 @@ test('reports a saved session it cannot read', () => {
   const good = JSON.parse(writeAndRead(startSession(START_TIME, null)));
   const cases = [
     'not json',
-    JSON.stringify({ ...good, version: 3 }),
+    JSON.stringify({ ...good, version: 2 }),
     JSON.stringify({ ...good, participants: 0 }),
     JSON.stringify({ ...good, participants: 1.5 }),
     JSON.stringify({ ...good, feederHours: -1 }),
     JSON.stringify({ ...good, areaCode: 12 }),
-    JSON.stringify({ ...good, version: 1, areaName: 12 }),
+    JSON.stringify({ ...good, circleCode: 12 }),
+    JSON.stringify({ ...good, partyId: '' }),
+    JSON.stringify({ ...good, partyId: undefined }),
+    JSON.stringify({ ...good, partyId: 12 }),
+    JSON.stringify({ ...good, areaName: 12 }),
     JSON.stringify({ ...good, tracks: [[[1, 2]]] }),
     JSON.stringify({ ...good, corrections: [{ from: 1, to: 2, mode: 'boat' }] }),
     JSON.stringify({ ...good, stopTime: 'later' }),

@@ -154,7 +154,7 @@ export function ScoutMap({ area, storage, setError, setNotice }: ScoutMapProps) 
         stretches={stretches}
         isScreenLockable={count.isScreenLockable}
         isLocationOff={ready !== null && !live.isTracking && live.error === null}
-        onStart={() => count.start(area ? { name: areaName(area), code: area.areaCode } : null)}
+        onStart={() => count.start(area ? { name: areaName(area), code: area.areaCode, circleCode: area.circleCode } : null)}
         onStop={count.stop}
         onDiscard={count.discard}
         onSetMode={count.setStretchMode}

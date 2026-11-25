@@ -20,14 +20,18 @@ export interface ModeCorrection {
 export interface SessionArea {
   readonly name: string;
   readonly code: string;
+  readonly circleCode: string;
 }
 
 export interface CountSession {
+  /** Tells one party's count from another's, so the compiler can spot the same count shared twice. */
+  readonly partyId: string;
   readonly startTime: number;
   readonly stopTime: number | null;
   readonly areaName: string | null;
-  /** The area number on the count sheet; null when no area was active or the count was saved before it was kept. */
+  /** The area number on the count sheet; null when no area was active. */
   readonly areaCode: string | null;
+  readonly circleCode: string | null;
   /** People in the party, entered by the counter. */
   readonly participants: number;
   /** Entered by the counter; feeder watching is not part of the recorded route or its hours. */
@@ -44,8 +48,7 @@ export interface LocationFix extends RoutePoint {
 }
 
 export const SESSION_STORAGE_KEY = 'cbc_scout_session';
-const SESSION_FORMAT_VERSION = 2;
-const FIRST_SESSION_FORMAT_VERSION = 1;
+const SESSION_FORMAT_VERSION = 1;
 const MAX_ACCURACY_M = 50;
 const MIN_STEP_M = 20;
 const EARTH_RADIUS_M = 6_371_000;
@@ -59,12 +62,18 @@ export function isFeederHours(value: number): boolean {
   return Number.isFinite(value) && value >= 0;
 }
 
-export function startSession(startTime: number, area: SessionArea | null): CountSession {
+export function startSession(
+  startTime: number,
+  area: SessionArea | null,
+  partyId: string = crypto.randomUUID()
+): CountSession {
   return {
+    partyId,
     startTime,
     stopTime: null,
     areaName: area?.name ?? null,
     areaCode: area?.code ?? null,
+    circleCode: area?.circleCode ?? null,
     participants: 1,
     feederHours: 0,
     tracks: [[]],
@@ -140,10 +149,12 @@ type StoredPoint = readonly [lng: number, lat: number, time: number];
 
 interface StoredSession {
   readonly version: number;
+  readonly partyId: string;
   readonly startTime: number;
   readonly stopTime: number | null;
   readonly areaName: string | null;
   readonly areaCode: string | null;
+  readonly circleCode: string | null;
   readonly participants: number;
   readonly feederHours: number;
   readonly tracks: readonly (readonly StoredPoint[])[];
@@ -157,10 +168,12 @@ function roundCoordinate(value: number): number {
 function toStored(session: CountSession): StoredSession {
   return {
     version: SESSION_FORMAT_VERSION,
+    partyId: session.partyId,
     startTime: session.startTime,
     stopTime: session.stopTime,
     areaName: session.areaName,
     areaCode: session.areaCode,
+    circleCode: session.circleCode,
     participants: session.participants,
     feederHours: session.feederHours,
     tracks: session.tracks.map((track) =>
@@ -200,24 +213,24 @@ function isTextOrNull(value: unknown): value is string | null {
   return value === null || typeof value === 'string';
 }
 
-type PartyDetails = Pick<CountSession, 'areaName' | 'areaCode' | 'participants' | 'feederHours'>;
+type PartyDetails = Pick<
+  CountSession,
+  'partyId' | 'areaName' | 'areaCode' | 'circleCode' | 'participants' | 'feederHours'
+>;
 
-/** A version 1 session has no area code, participants, or feeder hours, so it gets the defaults a new count starts with. */
 function readPartyDetails(value: Record<string, unknown>): PartyDetails | null {
-  const { version, areaName } = value;
-  if (!isTextOrNull(areaName)) return null;
-  if (version === FIRST_SESSION_FORMAT_VERSION) return { areaName, areaCode: null, participants: 1, feederHours: 0 };
-  if (version !== SESSION_FORMAT_VERSION) return null;
-  const { areaCode, participants, feederHours } = value;
-  if (!isTextOrNull(areaCode) || !isFiniteNumber(participants) || !isFiniteNumber(feederHours)) return null;
+  const { partyId, areaName, areaCode, circleCode, participants, feederHours } = value;
+  if (typeof partyId !== 'string' || partyId === '') return null;
+  if (!isTextOrNull(areaName) || !isTextOrNull(areaCode) || !isTextOrNull(circleCode)) return null;
+  if (!isFiniteNumber(participants) || !isFiniteNumber(feederHours)) return null;
   if (!isParticipantCount(participants) || !isFeederHours(feederHours)) return null;
-  return { areaName, areaCode, participants, feederHours };
+  return { partyId, areaName, areaCode, circleCode, participants, feederHours };
 }
 
 function fromStored(value: unknown): CountSession | null {
-  if (!isRecord(value) || !isFiniteNumber(value.startTime)) return null;
-  const details = readPartyDetails(value);
+  if (!isRecord(value) || value.version !== SESSION_FORMAT_VERSION || !isFiniteNumber(value.startTime)) return null;
   const { startTime, stopTime } = value;
+  const details = readPartyDetails(value);
   if (!details || (stopTime !== null && !isFiniteNumber(stopTime))) return null;
   if (!Array.isArray(value.tracks) || !Array.isArray(value.corrections)) return null;
   const tracks = value.tracks.map(readTrack);

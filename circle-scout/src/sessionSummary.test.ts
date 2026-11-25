@@ -9,7 +9,7 @@ process.env.TZ = 'America/Chicago';
 const TOTALS = { totalHours: 9.5, footHours: 4.125, carHours: 5.375, footMiles: 3.2, carMiles: 41.856, gapMiles: 1.004 };
 
 test('writes the count sheet fields in the sheet order, with the area and a gap note', () => {
-  const started = startSession(START_TIME, { name: 'Bloomington: Area 12, Richfield', code: '12' });
+  const started = startSession(START_TIME, { name: 'Bloomington: Area 12, Richfield', code: '12', circleCode: 'MNBL' });
   const session = { ...withFeederHours(withParticipants(started, 3), 0.5), stopTime: START_TIME + 570 * MINUTE_MS };
   assert.equal(
     sessionSummaryText(session, TOTALS),
