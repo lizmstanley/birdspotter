@@ -12,22 +12,29 @@ const audubonProxy: Record<string, ProxyOptions> = {
   },
 };
 
-// CBC Scout builds in its own pass so it shares no chunks with the web app and the web app's bundles stay as they were.
-const CBC_SCOUT_MODE = 'cbc-scout';
-// Rooted at apps/ so apps/cbc-scout/index.html builds to dist/cbc-scout/index.html, CBC Scout's hosted address.
+// Each phone app builds in its own pass so it shares no chunks with the web app or the other phone app.
+// Rooted at apps/ so apps/<mode>/index.html builds to dist/<mode>/index.html, the app's hosted address.
+const PHONE_APP_MODES = ['cbc-scout', 'lets-go-birding'] as const;
+type PhoneAppMode = (typeof PHONE_APP_MODES)[number];
 const APPS_ROOT = fileURLToPath(new URL('./apps', import.meta.url));
 
-// The web app's pass copies public/, which holds CBC Scout's manifest, icons, and service worker.
-const cbcScoutConfig = {
-  root: APPS_ROOT,
-  publicDir: fileURLToPath(new URL('./public', import.meta.url)),
-  build: {
-    outDir: fileURLToPath(new URL('./dist', import.meta.url)),
-    emptyOutDir: false,
-    copyPublicDir: false,
-    rollupOptions: { input: fileURLToPath(new URL('./apps/cbc-scout/index.html', import.meta.url)) },
-  },
-};
+function isPhoneAppMode(mode: string): mode is PhoneAppMode {
+  return PHONE_APP_MODES.some((appMode) => appMode === mode);
+}
+
+// The web app's pass copies public/, which holds each phone app's manifest, icons, and service worker.
+function phoneAppConfig(mode: PhoneAppMode) {
+  return {
+    root: APPS_ROOT,
+    publicDir: fileURLToPath(new URL('./public', import.meta.url)),
+    build: {
+      outDir: fileURLToPath(new URL('./dist', import.meta.url)),
+      emptyOutDir: false,
+      copyPublicDir: false,
+      rollupOptions: { input: fileURLToPath(new URL(`./apps/${mode}/index.html`, import.meta.url)) },
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => ({
   // GitHub Pages serves this repo under /birdspotter/. Local dev and preview stay at /.
@@ -39,5 +46,5 @@ export default defineConfig(({ mode }) => ({
   },
   server: { proxy: audubonProxy },
   preview: { proxy: audubonProxy },
-  ...(mode === CBC_SCOUT_MODE ? cbcScoutConfig : {}),
+  ...(isPhoneAppMode(mode) ? phoneAppConfig(mode) : {}),
 }));

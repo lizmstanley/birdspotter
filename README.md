@@ -41,11 +41,12 @@ Hover over a recent sighting to see the species, count, place, and date, with a 
 - **Share an area:** on an area's page, **Share Area** makes a link and a QR code that open the area in CBC Scout. They carry the circle, the area outline, and the name, phone, and email of the area's leaders, and nothing else about people. The data sits after the `#` in the link, so it never reaches a server. See [CBC Scout](#cbc-scout).
 - **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key. Each hotspot and sighting is listed with the count area it falls in. The web app saves results in your browser. It fetches hotspots from eBird at most once a day and sightings at most every 6 hours for the same circle and day range. CBC Scout checks for new sightings more often. See [Settings](#settings).
 - **CBC Scout:** a phone app for your field counters. It shows a counter their area, where they are, and what's been seen nearby, and records the party's hours and miles. See [CBC Scout](#cbc-scout).
+- **Let's Go Birding:** a phone app for any birder, with no count to set up. It shows recent sightings and eBird hotspots around you. See [Let's Go Birding](#lets-go-birding).
 - **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) and match its columns, or import the participant list you export from your Audubon circle page, which needs no setup. You can also export the roster to Excel or CSV, and export or restore a full JSON backup.
 
 ## Set up your eBird key
 
-In the web app, you set the key once, on the **Help & API Keys** tab. It isn't on the map page, and it isn't per circle: one key works for every circle and for scouting. CBC Scout asks for the key on its own screen. See [Add an eBird key](#add-an-ebird-key).
+In the web app, you set the key once, on the **Help & API Keys** tab. It isn't on the map page, and it isn't per circle: one key works for every circle and for scouting. CBC Scout and Let's Go Birding ask for the key on their own screens. See [Add an eBird key](#add-an-ebird-key).
 
 1. Sign in to eBird and request a free key at [ebird.org/api/keygen](https://ebird.org/api/keygen). For the intended use, something like "Christmas Bird Count circle scouting" is fine. The key shows up right away.
 2. In the app, open the **Help & API Keys** tab.
@@ -75,7 +76,7 @@ CBC Scout needs an eBird API key before it shows anything, so its first screen a
 
 To change the key later, open the menu at the top and tap **eBird key**. If eBird rejects the key, the lists show a **Fix eBird key** button that opens the same screen.
 
-The web app and CBC Scout share one saved key, but only in the same browser on the same device. A counter's phone needs the key entered once.
+The web app, CBC Scout, and Let's Go Birding share one saved key, but only in the same browser on the same device. A counter's phone needs the key entered once.
 
 ### Send counters their area
 
@@ -124,6 +125,22 @@ It sends:
 
 Nothing goes to any other server. The area data sits after the `#` in the link, so it never reaches a server, and CBC Scout removes it from the address bar once it's read. **Directions** and checklist links open Apple Maps, Google Maps, or eBird only when tapped. **Share totals** goes wherever the counter sends it.
 
+## Let's Go Birding
+
+Let's Go Birding is a phone app for any birder. It's at https://lizstanley.com/birdspotter/lets-go-birding/. It shows a map of where you are and lists recent sightings and eBird hotspots around you. It has no count areas, no count sessions, and no hours or miles. Use eBird for checklists. There's no account to make.
+
+Install it the way you install [CBC Scout](#install-it): **Add to Home Screen** in Safari on iPhone and iPad, or **Install** on the bar at the top in Chrome on Android.
+
+Its first screen asks for an eBird API key. Get one as in [Set up your eBird key](#set-up-your-ebird-key). In a browser, and in installed apps on Android, a key saved in the web app or CBC Scout on the same device works here too. On iPhone, each home screen app keeps its own storage, so an installed Let's Go Birding asks for the key once. To change the key, open the menu at the top and tap **eBird key**.
+
+- **Map:** tap the location button on the map to show where you are. If you leave it on, it's on again the next time you open the app.
+- **Nearby:** notable sightings, then recent sightings, then eBird hotspots, nearest first, as in CBC Scout. Pick how many days back, from 1 to 30.
+- **Suggestions:** **Hotspots to visit**, the hotspots around you ranked by the species last reported there.
+- **Directions:** every place shows its distance and direction from you, and a **Directions** link.
+- **Settings:** open the menu and tap **Settings**. **Check eBird for new sightings** works as in CBC Scout. **Search around you** sets how far the lists look: 2, 5, 7.5, 10, 15, or 25 miles. The default is 7.5 miles. The search moves with you once you're half that distance from where it started.
+
+Like CBC Scout, it needs a signal to open and keeps the last eBird data for up to 6 hours when the signal drops. It keeps the eBird key, its settings, whether location tracking is on, and copies of the day's eBird results in the phone's browser storage. It sends the key, your location, and the days back to eBird, and map views to OpenFreeMap. Its settings and tracking are its own, apart from CBC Scout's.
+
 ## Import your roster
 
 You import people on the **Import / Export Participants** tab.
@@ -168,7 +185,9 @@ CBC Scout runs from its own dev server:
 npm run dev:cbc-scout
 ```
 
-Open the `/cbc-scout/` address it prints. With the web app's dev server also running, CBC Scout gets the next port, a different address, so in dev the two don't share the saved eBird key. The built site serves both from one address, so `npm run preview` and the hosted copy do.
+Open the `/cbc-scout/` address it prints. With the web app's dev server also running, CBC Scout gets the next port, a different address, so in dev the two don't share the saved eBird key. The built site serves all three apps from one address, so `npm run preview` and the hosted copy do.
+
+Let's Go Birding runs the same way, with `npm run dev:lets-go-birding`, at `/lets-go-birding/`.
 
 To build a static site:
 
@@ -209,7 +228,8 @@ Bird data comes from [eBird.org](https://ebird.org) and is subject to the [eBird
 ```text
 birdspotter/
 ├── apps/
-│   └── cbc-scout/                   # CBC Scout: its page (index.html) and its code (src/)
+│   ├── cbc-scout/                   # CBC Scout: its page (index.html) and its code (src/)
+│   └── lets-go-birding/             # Let's Go Birding: its page and its code, on the birding core only
 ├── packages/
 │   └── birding-core/                # eBird, nearby lists, location, map, and install code any birding app can use
 ├── db/

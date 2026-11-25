@@ -13,6 +13,7 @@ import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
 import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import { areaDisplayName } from '../../../src/components/map/mapText.ts';
 import type { AreaLinkData } from '../../../src/services/areaLink.ts';
+import { CBC_CIRCLE_RADIUS_MILES } from '../../../src/services/cbcCircle.ts';
 import { AreaPanel } from './AreaPanel.tsx';
 import { countCircle, countCircleQuery, isInAreaTest } from './areaRegion.ts';
 import type { AreaStartup } from './areaStartup.ts';
@@ -56,8 +57,15 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
   const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
   const circleQuery = useMemo(() => (area ? countCircleQuery(area) : null), [area]);
-  // Above both tabs, so Nearby and Suggestions share one load.
-  const nearby = useNearbyData(ebirdApiKey, circleQuery, live.position, backDays, settings.refreshMinutes * 60 * 1000);
+  // Above both tabs, so Nearby and Suggestions share one load. With no area, the search is the size of a count circle.
+  const nearby = useNearbyData(
+    ebirdApiKey,
+    circleQuery,
+    live.position,
+    CBC_CIRCLE_RADIUS_MILES,
+    backDays,
+    settings.refreshMinutes * 60 * 1000
+  );
   const isInArea = useMemo(() => (area ? isInAreaTest(area, countCircle(area)) : null), [area]);
   // A route's stand-in region is the whole circle, the same circle the sightings come from, so nothing is outside it.
   const birdsRegion = useMemo<BirdsRegion | null>(
@@ -152,6 +160,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
                   appName={CBC_SCOUT.name}
                   settings={settings}
                   isSaved={isSettingsSaved}
+                  isRadiusShown={false}
                   onChange={changeSettings}
                 />
               )}

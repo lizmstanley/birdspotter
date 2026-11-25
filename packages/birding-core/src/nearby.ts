@@ -33,7 +33,7 @@ export interface NearbyQuery {
   readonly radiusMiles: number;
 }
 
-/** How far around the person the lists look when the app pins no query of its own. */
+/** The default search radius around the person, in miles. */
 export const NEARBY_RADIUS_MILES = 7.5;
 
 const EARTH_RADIUS_MILES = 3958.8;
@@ -119,17 +119,21 @@ export function groupSightings<T extends Sighting>(
  * away, so places within half the radius of them are always listed.
  * @param pinnedQuery the search the app holds in place, or null to follow the person
  * @param lastQuery the query in use, or null before the first
+ * @param radiusMiles how far around the person to search when nothing is pinned; a change starts a new search
  * @returns the query to use now, or null when nothing is pinned and there is no position yet
  */
 export function nearbyQuery(
   pinnedQuery: NearbyQuery | null,
   position: LngLat | null,
-  lastQuery: NearbyQuery | null
+  lastQuery: NearbyQuery | null,
+  radiusMiles: number
 ): NearbyQuery | null {
   if (pinnedQuery) return pinnedQuery;
   if (!position) return null;
   const isStillCovered =
-    lastQuery !== null && distanceMiles(lastQuery.center, position) <= lastQuery.radiusMiles - NEARBY_RADIUS_MILES / 2;
+    lastQuery !== null &&
+    lastQuery.radiusMiles === radiusMiles &&
+    distanceMiles(lastQuery.center, position) <= radiusMiles / 2;
   if (isStillCovered) return lastQuery;
-  return { center: position, radiusMiles: NEARBY_RADIUS_MILES };
+  return { center: position, radiusMiles };
 }
