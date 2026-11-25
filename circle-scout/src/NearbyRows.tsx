@@ -4,9 +4,10 @@ import { formatDistance, type NearbyRow } from './nearby.ts';
 interface SightingRowProps {
   readonly row: NearbyRow<EbirdObservation>;
   readonly isNotable: boolean;
+  readonly reason?: string;
 }
 
-export function SightingRow({ row, isNotable }: SightingRowProps) {
+export function SightingRow({ row, isNotable, reason }: SightingRowProps) {
   const { comName, howMany, locName, obsDt, subId } = row.item;
   const className = isNotable ? 'scout-nearby-row scout-nearby-row-notable' : 'scout-nearby-row';
   return (
@@ -18,6 +19,7 @@ export function SightingRow({ row, isNotable }: SightingRowProps) {
           <div className="scout-nearby-detail">
             {locName}, {obsDt}
           </div>
+          {reason && <div className="scout-nearby-reason">{reason}</div>}
         </div>
         <span className="scout-nearby-distance">{formatDistance(row.miles)}</span>
       </a>
@@ -25,10 +27,18 @@ export function SightingRow({ row, isNotable }: SightingRowProps) {
   );
 }
 
-export function HotspotRow({ row }: { readonly row: NearbyRow<EbirdHotspot> }) {
+interface HotspotRowProps {
+  readonly row: NearbyRow<EbirdHotspot>;
+  readonly reason?: string;
+}
+
+export function HotspotRow({ row, reason }: HotspotRowProps) {
   return (
     <li className="scout-nearby-row">
-      <strong>{row.item.locName}</strong>
+      <div>
+        <strong>{row.item.locName}</strong>
+        {reason && <div className="scout-nearby-reason">{reason}</div>}
+      </div>
       <span className="scout-nearby-distance">{formatDistance(row.miles)}</span>
     </li>
   );

@@ -1,20 +1,23 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { areaDisplayName } from '../../src/components/map/mapText.ts';
 import type { AreaLinkData } from '../../src/services/areaLink.ts';
-import { buildCirclePolygon, EBIRD_SITE_URL, type EbirdObservation } from '../../src/services/ebird.ts';
+import type { EbirdObservation } from '../../src/services/ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
-import { refreshIntervalText, type RefreshMinutes } from './scoutSettings.ts';
-import { groupSightings, isInAreaTest, sortNearby, type NearbyRow, type Place } from './nearby.ts';
+import type { RefreshMinutes } from './scoutSettings.ts';
+import { groupSightings, sortNearby, type NearbyRow, type Place } from './nearby.ts';
 import { HotspotRow, SightingRow } from './NearbyRows.tsx';
-import { useNearbyData } from './useNearbyData.ts';
+import { EbirdCredit, NearbyStatus } from './NearbyStatus.tsx';
+import type { NearbyData } from './useNearbyData.ts';
 
-const DEFAULT_BACK_DAYS = 7;
 const BACK_DAY_CHOICES = Array.from({ length: 30 }, (_, index) => index + 1);
 
 interface NearbyPanelProps {
-  readonly apiKey: string;
   readonly area: AreaLinkData | null;
+  readonly isInArea: ((place: Place) => boolean) | null;
+  readonly data: NearbyData;
   readonly live: LiveLocation;
+  readonly backDays: number;
+  readonly onBackDaysChange: (backDays: number) => void;
   readonly refreshMinutes: RefreshMinutes;
   readonly onFixKey: () => void;
 }
@@ -53,21 +56,18 @@ function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean): R
   return <SightingRow key={`${row.item.subId}-${row.item.speciesCode}`} row={row} isNotable={isNotable} />;
 }
 
-function waitingText(live: LiveLocation): string {
-  if (live.error) return live.error;
-  if (live.isTracking) return 'Finding your location…';
-  return 'Turn on location with the location button on the map to see what is nearby.';
-}
-
 /** Notable sightings, then other recent sightings, then hotspots, each nearest first, with those in the person's area ahead of the rest. */
-export function NearbyPanel({ apiKey, area, live, refreshMinutes, onFixKey }: NearbyPanelProps) {
-  const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
+export function NearbyPanel({
+  area,
+  isInArea,
+  data,
+  live,
+  backDays,
+  onBackDaysChange,
+  refreshMinutes,
+  onFixKey,
+}: NearbyPanelProps) {
   const { position } = live;
-  const data = useNearbyData(apiKey, area, position, backDays, refreshMinutes * 60 * 1000);
-  const isInArea = useMemo(() => {
-    if (!area) return null;
-    return isInAreaTest(area, buildCirclePolygon(area.circleCenter[0], area.circleCenter[1]));
-  }, [area]);
   const sightings = useMemo(() => {
     if (!position) return groupSightings<EbirdObservation>([], []);
     return groupSightings(sortNearby(data.regular, position, isInArea), sortNearby(data.notable, position, isInArea));
@@ -82,7 +82,7 @@ export function NearbyPanel({ apiKey, area, live, refreshMinutes, onFixKey }: Ne
     <section className="scout-area scout-nearby" aria-label="Nearby">
       <label className="scout-nearby-days">
         Sightings from the last{' '}
-        <select value={backDays} onChange={(event) => setBackDays(Number(event.target.value))}>
+        <select value={backDays} onChange={(event) => onBackDaysChange(Number(event.target.value))}>
           {BACK_DAY_CHOICES.map((days) => (
             <option key={days} value={days}>
               {days === 1 ? '1 day' : `${days} days`}
@@ -90,21 +90,7 @@ export function NearbyPanel({ apiKey, area, live, refreshMinutes, onFixKey }: Ne
           ))}
         </select>
       </label>
-      {data.isKeyRejected && (
-        <div className="scout-nearby-error" role="alert">
-          <p>eBird rejected your API key. Fix it under eBird key in the menu.</p>
-          <button type="button" onClick={onFixKey}>
-            Fix eBird key
-          </button>
-        </div>
-      )}
-      {data.error && !data.isKeyRejected && (
-        <p className="scout-nearby-error" role="alert">
-          {data.error}
-        </p>
-      )}
-      {!position && <p role="status">{waitingText(live)}</p>}
-      {position && data.isLoading && <p role="status">Loading eBird data…</p>}
+      <NearbyStatus data={data} live={live} onFixKey={onFixKey} />
       {position && (
         <>
           {sightings.notable.length > 0 && (
@@ -123,13 +109,7 @@ export function NearbyPanel({ apiKey, area, live, refreshMinutes, onFixKey }: Ne
           <RowGroups rows={hotspots} titles={titles} renderRow={(row) => <HotspotRow key={row.item.locId} row={row} />} />
         </>
       )}
-      <p className="scout-nearby-credit">
-        Bird data from{' '}
-        <a href={EBIRD_SITE_URL} target="_blank" rel="noreferrer">
-          eBird.org
-        </a>
-        , checked {refreshIntervalText(refreshMinutes)}.
-      </p>
+      <EbirdCredit refreshMinutes={refreshMinutes} />
     </section>
   );
 }
