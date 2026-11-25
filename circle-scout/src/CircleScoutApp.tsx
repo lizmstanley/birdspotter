@@ -78,7 +78,14 @@ export function CircleScoutApp({ installPrompt, areaStartup, storage }: CircleSc
       )}
       {ebirdApiKey ? (
         <>
-          <ScoutMap area={area} live={live} onLocationControl={setLocationControl} />
+          <ScoutMap
+            area={area}
+            live={live}
+            onLocationControl={setLocationControl}
+            storage={storage}
+            setError={setError}
+            setNotice={setNotice}
+          />
           <div className="scout-tabs">
             <button type="button" aria-pressed={panel === 'nearby'} onClick={() => setPanel('nearby')}>
               Nearby

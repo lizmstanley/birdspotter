@@ -5,8 +5,14 @@ import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from '../../src/components/
 import { addCircleLayers, CIRCLE_SOURCE } from '../../src/components/map/mapLayers.ts';
 import type { AreaLinkData, AreaOutlineGeometry } from '../../src/services/areaLink.ts';
 import { buildCirclePolygon } from '../../src/services/ebird.ts';
+import { areaName } from './areaName.ts';
 import { areaStatusAt, areaStatusText } from './areaStatus.ts';
 import type { LiveLocation } from './locationTracking.ts';
+import { addRouteLayers, ROUTE_SOURCE, routeFeatures } from './routeLayers.ts';
+import type { AreaStorage } from './savedAreas.ts';
+import { SessionPanel } from './SessionPanel.tsx';
+import { sessionStretches } from './sessionStretches.ts';
+import { useCountSession } from './useCountSession.ts';
 
 const START_CENTER: [number, number] = [-96, 39];
 const START_ZOOM = 3;
@@ -68,6 +74,9 @@ interface ScoutMapProps {
   readonly live: LiveLocation;
   /** Receives the map's location control once the map has loaded, and null when the map is removed. */
   readonly onLocationControl: (control: maplibregl.GeolocateControl | null) => void;
+  readonly storage: AreaStorage | null;
+  readonly setError: (message: string | null) => void;
+  readonly setNotice: (message: string | null) => void;
 }
 
 /** @returns the location line's text and whether it is an error, or null when there is nothing to say */
@@ -84,14 +93,16 @@ function locationLine(
 }
 
 /**
- * Shows the area's circle and outline, zoomed to the outline, and the person's live location;
- * with no area, the start view and the location alone.
+ * Shows the area's circle and outline, zoomed to the outline, the person's live location, and the count's route;
+ * with no area, the start view, the location, and the route.
  */
-export function ScoutMap({ area, live, onLocationControl }: ScoutMapProps) {
+export function ScoutMap({ area, live, onLocationControl, storage, setError, setNotice }: ScoutMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [ready, setReady] = useState<ReadyMap | null>(null);
   const circle = useMemo(() => (area ? buildCirclePolygon(area.circleCenter[0], area.circleCenter[1]) : null), [area]);
   const line = locationLine(live, area, circle);
+  const count = useCountSession({ control: ready?.locationControl ?? null, storage, setError });
+  const stretches = useMemo(() => (count.session ? sessionStretches(count.session) : []), [count.session]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -109,6 +120,7 @@ export function ScoutMap({ area, live, onLocationControl }: ScoutMapProps) {
     map.once('load', () => {
       addCircleLayers(map);
       addAreaLayers(map);
+      addRouteLayers(map);
       setReady({ map, locationControl });
     });
     return () => {
@@ -132,6 +144,10 @@ export function ScoutMap({ area, live, onLocationControl }: ScoutMapProps) {
     else readyMap.jumpTo({ center: START_CENTER, zoom: START_ZOOM });
   }, [readyMap, area, circle]);
 
+  useEffect(() => {
+    if (readyMap) setSourceData(readyMap, ROUTE_SOURCE, routeFeatures(stretches));
+  }, [readyMap, stretches]);
+
   return (
     <>
       {line && (
@@ -140,6 +156,20 @@ export function ScoutMap({ area, live, onLocationControl }: ScoutMapProps) {
         </p>
       )}
       <div ref={containerRef} className="scout-map" />
+      <SessionPanel
+        session={count.session}
+        stretches={stretches}
+        isScreenLockable={count.isScreenLockable}
+        isLocationOff={ready !== null && !live.isTracking && live.error === null}
+        onStart={() => count.start(area ? { name: areaName(area), code: area.areaCode, circleCode: area.circleCode } : null)}
+        onStop={count.stop}
+        onDiscard={count.discard}
+        onSetMode={count.setStretchMode}
+        onSetParticipants={count.setParticipants}
+        onSetFeederHours={count.setFeederHours}
+        setError={setError}
+        setNotice={setNotice}
+      />
     </>
   );
 }

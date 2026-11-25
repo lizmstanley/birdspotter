@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import type { AreaLeader, AreaLinkData } from '../../src/services/areaLink.ts';
+import type { AreaLeader } from '../../src/services/areaLink.ts';
+import { areaName } from './areaName.ts';
 import { AreaScanner } from './AreaScanner.tsx';
 import { emailHref, phoneHref } from './leaderContact.ts';
 import type { SavedArea } from './savedAreas.ts';
@@ -13,13 +14,6 @@ interface AreaPanelProps {
   readonly onLoadText: (text: string, source: AreaLinkSource) => boolean;
   readonly onPick: (key: string) => void;
   readonly onRemove: (key: string) => void;
-}
-
-function areaName(data: AreaLinkData): string {
-  const { circleName, areaCode, areaLabel } = data;
-  if (!areaLabel) return `${circleName}: Area ${areaCode}`;
-  if (areaLabel.startsWith(areaCode)) return `${circleName}: ${areaLabel}`;
-  return `${circleName}: Area ${areaCode}, ${areaLabel}`;
 }
 
 function ContactLink({ href, text }: { readonly href: string | null; readonly text: string }) {
