@@ -1,9 +1,11 @@
+export type EbirdEndpoint = 'hotspots' | 'sightings' | 'notable sightings';
+
 export class EbirdRequestError extends Error {
-  readonly endpoint: 'hotspots' | 'sightings';
+  readonly endpoint: EbirdEndpoint;
   readonly status: number;
   readonly responseText: string;
 
-  constructor(endpoint: 'hotspots' | 'sightings', status: number, responseText: string) {
+  constructor(endpoint: EbirdEndpoint, status: number, responseText: string) {
     super(`ebird: the ${endpoint} request failed.`);
     this.endpoint = endpoint;
     this.status = status;
@@ -13,9 +15,9 @@ export class EbirdRequestError extends Error {
 }
 
 export class EbirdKeyRejectedError extends Error {
-  readonly endpoint: 'hotspots' | 'sightings';
+  readonly endpoint: EbirdEndpoint;
 
-  constructor(endpoint: 'hotspots' | 'sightings') {
+  constructor(endpoint: EbirdEndpoint) {
     super('ebird: eBird rejected the API key. Check the key on the Help & API Keys tab.');
     this.endpoint = endpoint;
     this.name = 'EbirdKeyRejectedError';

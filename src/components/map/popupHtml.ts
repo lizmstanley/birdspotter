@@ -1,4 +1,4 @@
-import { EBIRD_SITE_URL, type EbirdHotspot, type EbirdObservation } from '../../services/ebird.ts';
+import { EBIRD_SITE_URL, ebirdChecklistUrl, type EbirdHotspot, type EbirdObservation } from '../../services/ebird.ts';
 import { escapeHtml } from './mapText.ts';
 
 const EBIRD_SOURCE_TEXT_HTML = '<div class="tooltip-source">Data: eBird.org</div>';
@@ -30,7 +30,7 @@ export function sightingHtml(s: EbirdObservation): string {
         <div>Count: <strong>${escapeHtml(countText)}</strong></div>
         <div>Location: ${escapeHtml(s.locName)}</div>
         <div>Date: ${escapeHtml(s.obsDt)}</div>
-        <div><a href="https://ebird.org/checklist/${encodeURIComponent(s.subId)}" target="_blank" rel="noreferrer">View Checklist &rarr;</a></div>
+        <div><a href="${ebirdChecklistUrl(s.subId)}" target="_blank" rel="noreferrer">View Checklist &rarr;</a></div>
         ${EBIRD_SOURCE_LINK_HTML}
       </div>`;
 }

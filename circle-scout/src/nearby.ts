@@ -17,6 +17,15 @@ export interface NearbyRow<T extends Place> {
   readonly isInArea: boolean;
 }
 
+export interface Sighting extends Place {
+  readonly speciesCode: string;
+}
+
+export interface SightingGroups<T extends Sighting> {
+  readonly notable: readonly NearbyRow<T>[];
+  readonly regular: readonly NearbyRow<T>[];
+}
+
 export interface NearbyQuery {
   readonly center: LngLat;
   readonly radiusMiles: number;
@@ -67,6 +76,24 @@ export function sortNearby<T extends Place>(
     isInArea: isInArea?.(item) ?? false,
   }));
   return rows.sort((a, b) => Number(b.isInArea) - Number(a.isInArea) || a.miles - b.miles);
+}
+
+/**
+ * Shows each species once. eBird returns every report of a notable species, so only the first is kept, and a species
+ * shown as notable is left out of the regular rows.
+ * @param notable rows as sortNearby orders them, so the report kept is in the area if one is, else the nearest
+ */
+export function groupSightings<T extends Sighting>(
+  regular: readonly NearbyRow<T>[],
+  notable: readonly NearbyRow<T>[]
+): SightingGroups<T> {
+  const notableSpecies = new Set<string>();
+  const firstNotable = notable.filter((row) => {
+    if (notableSpecies.has(row.item.speciesCode)) return false;
+    notableSpecies.add(row.item.speciesCode);
+    return true;
+  });
+  return { notable: firstNotable, regular: regular.filter((row) => !notableSpecies.has(row.item.speciesCode)) };
 }
 
 /**
