@@ -24,6 +24,16 @@ export class EbirdKeyRejectedError extends Error {
   }
 }
 
+export class EbirdUnreachableError extends Error {
+  readonly endpoint: EbirdEndpoint;
+
+  constructor(endpoint: EbirdEndpoint, cause: unknown) {
+    super('ebird: eBird could not be reached.', { cause });
+    this.endpoint = endpoint;
+    this.name = 'EbirdUnreachableError';
+  }
+}
+
 export class AudubonProxyUnavailableError extends Error {
   readonly hostname: string;
 

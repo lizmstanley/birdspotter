@@ -100,11 +100,11 @@ Circle Scout keeps every area it loads, with one active at a time. With more tha
 
 ### Settings
 
-Open the menu and tap **Settings**. **Check eBird for new sightings** sets how often the Nearby and Suggestions lists check eBird: every 15 minutes, every half hour, every hour, or every 2 hours. The default is every half hour. Checking less often uses less data and battery. Hotspots change rarely, so they don't follow this setting. Circle Scout uses the copy it saved that day, and fetches them again only for a new search place or key, or after a failed fetch.
+Open the menu and tap **Settings**. **Check eBird for new sightings** sets how often the Nearby and Suggestions lists check eBird: every 15 minutes, every half hour, every hour, or every 2 hours. The default is every half hour. Checking less often uses less data and battery. Hotspots change rarely, so they don't follow this setting. Circle Scout uses a copy it saved in the last 6 hours, and fetches them again only for a new search place or key, after a failed fetch, or once the copy is 6 hours old.
 
 ### It needs a signal
 
-Circle Scout needs a signal to open, to draw the map, and to check eBird. It doesn't save itself for offline use. If the signal drops, the lists keep what they last loaded.
+Circle Scout needs a signal to open, to draw the map, and to check eBird. It doesn't save itself for offline use. If the signal drops, the lists keep the eBird data they last loaded, and say when it was fetched and that there is no signal. Closing and reopening the app with no signal shows the same data for the active area. Once the data is 6 hours old, eBird's terms no longer allow it, so it leaves the screen until a signal returns. With no active area, a reopened app usually finds nothing saved, because the search follows your location.
 
 ### What stays on the phone
 

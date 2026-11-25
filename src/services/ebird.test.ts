@@ -9,8 +9,8 @@ import {
   recentNotableSightingsUrl,
   recentSightingsUrl,
 } from './ebird.ts';
-import { forgetTodaysCopy } from './ebirdCache.ts';
-import { EbirdKeyRejectedError, EbirdRequestError, UnexpectedResponseError } from './errors.ts';
+import { forgetRecentCopies } from './ebirdCache.ts';
+import { EbirdKeyRejectedError, EbirdRequestError, EbirdUnreachableError, UnexpectedResponseError } from './errors.ts';
 import { FETCH_TIMEOUT_MS } from './http.ts';
 
 class MemoryStorage implements Storage {
@@ -100,8 +100,8 @@ test('well-formed hotspots and sightings come back as sent', async (t) => {
     Response.json(url.includes('/hotspot/') ? [HOTSPOT] : [SIGHTING])
   );
 
-  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
-  assert.deepEqual(await fetchRecentSightingsInCircle('key', 44.8, -93.3), [SIGHTING]);
+  assert.deepEqual((await fetchHotspotsInCircle('key', 44.8, -93.3)).items, [HOTSPOT]);
+  assert.deepEqual((await fetchRecentSightingsInCircle('key', 44.8, -93.3)).items, [SIGHTING]);
 });
 
 test('notable sightings come from the notable endpoint with simple detail, unreviewed reports, and the same day limits', () => {
@@ -123,7 +123,7 @@ test('a report is confirmed only when eBird marks it valid', () => {
 test('a sighting with a review status comes back with it, and one with a status that is not true or false is rejected', async (t) => {
   const confirmed = { ...SIGHTING, obsValid: true };
   const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([confirmed]));
-  assert.deepEqual(await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3), [confirmed]);
+  assert.deepEqual((await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3)).items, [confirmed]);
 
   fetchMock.mock.mockImplementation(respondWith([{ ...SIGHTING, obsValid: 'true' }]));
   await assert.rejects(
@@ -139,7 +139,7 @@ test('a checklist link encodes the checklist id', () => {
 
 test('notable sightings are checked like regular sightings and name their request on failure', async (t) => {
   const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
-  assert.deepEqual(await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3), [SIGHTING]);
+  assert.deepEqual((await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3)).items, [SIGHTING]);
   assert.match(String(fetchMock.mock.calls[0]?.arguments[0]), /\/recent\/notable\?/);
 
   fetchMock.mock.mockImplementation(respondWith([{ ...SIGHTING, subId: undefined }]));
@@ -184,12 +184,139 @@ test('both requests give up after the shared fetch timeout', async (t) => {
     return Response.json([]);
   });
 
-  await assert.rejects(fetchHotspotsInCircle('key', 44.8, -93.3), { name: 'TimeoutError' });
-  await assert.rejects(fetchRecentSightingsInCircle('key', 44.8, -93.3), { name: 'TimeoutError' });
+  const timedOut = (err: unknown) =>
+    err instanceof EbirdUnreachableError && err.cause instanceof DOMException && err.cause.name === 'TimeoutError';
+  await assert.rejects(fetchHotspotsInCircle('key', 44.8, -93.3), timedOut);
+  await assert.rejects(fetchRecentSightingsInCircle('key', 44.8, -93.3), timedOut);
   assert.deepEqual(
     timeout.mock.calls.map((call) => call.arguments[0]),
     [FETCH_TIMEOUT_MS, FETCH_TIMEOUT_MS]
   );
+});
+
+function noSignal(): Promise<Response> {
+  return Promise.reject(new TypeError('Failed to fetch'));
+}
+
+test('with no signal, a saved copy older than the caller allows is used, up to 6 hours old, with its fetch time', async (t) => {
+  const halfHour = 30 * 60 * 1000;
+  const savedAt = new Date(2026, 10, 20, 9, 0).getTime();
+  t.mock.timers.enable({ apis: ['Date'], now: savedAt });
+  const fetchMock = t.mock.method(globalThis, 'fetch', async (url: string) =>
+    Response.json(url.includes('/hotspot/') ? [HOTSPOT] : [SIGHTING])
+  );
+  await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3, 15, 7, halfHour);
+  await fetchHotspotsInCircle('key', 44.8, -93.3, 15, halfHour);
+
+  fetchMock.mock.mockImplementation(noSignal);
+  t.mock.timers.setTime(new Date(2026, 10, 20, 14, 59).getTime());
+  assert.deepEqual(await fetchRecentNotableSightingsInCircle('key', 44.8, -93.3, 15, 7, halfHour), {
+    items: [SIGHTING],
+    fetchedAt: savedAt,
+    isNoSignalCopy: true,
+  });
+  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3, 15, halfHour), {
+    items: [HOTSPOT],
+    fetchedAt: savedAt,
+    isNoSignalCopy: true,
+  });
+});
+
+test('with no signal, a saved sightings or hotspots copy 6 hours old is not used', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', async (url: string) =>
+    Response.json(url.includes('/hotspot/') ? [HOTSPOT] : [SIGHTING])
+  );
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+  await fetchHotspotsInCircle('key', 44.8, -93.3);
+
+  fetchMock.mock.mockImplementation(noSignal);
+  t.mock.timers.setTime(new Date(2026, 10, 20, 15, 0).getTime());
+  const sixHours = 6 * 60 * 60 * 1000;
+  await assert.rejects(
+    fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000),
+    (err) => err instanceof EbirdUnreachableError && err.endpoint === 'sightings' && err.cause instanceof TypeError
+  );
+  await assert.rejects(fetchHotspotsInCircle('key', 44.8, -93.3, 15, sixHours), EbirdUnreachableError);
+});
+
+test('with no signal after midnight, a copy saved late the evening before is used, up to 6 hours old', async (t) => {
+  const savedAt = new Date(2026, 11, 19, 23, 0).getTime();
+  t.mock.timers.enable({ apis: ['Date'], now: savedAt });
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+
+  fetchMock.mock.mockImplementation(noSignal);
+  t.mock.timers.setTime(new Date(2026, 11, 20, 0, 30).getTime());
+  const reopened = await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+  assert.deepEqual(reopened, { items: [SIGHTING], fetchedAt: savedAt, isNoSignalCopy: true });
+
+  t.mock.timers.setTime(new Date(2026, 11, 20, 5, 0).getTime());
+  await assert.rejects(fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000), EbirdUnreachableError);
+});
+
+test('with no signal while the response body arrives, a saved copy is used', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+
+  const stalledBody = {
+    status: 200,
+    ok: true,
+    json: () => Promise.reject(new DOMException('timed out', 'TimeoutError')),
+  } as unknown as Response;
+  fetchMock.mock.mockImplementation(async () => stalledBody);
+  t.mock.timers.setTime(new Date(2026, 10, 20, 10, 0).getTime());
+  const result = await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+  assert.equal(result.isNoSignalCopy, true);
+});
+
+test('after eBird rejects the key, no signal does not bring back a copy saved under the earlier key', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+  await fetchRecentSightingsInCircle('good-key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+
+  t.mock.timers.setTime(new Date(2026, 10, 20, 10, 0).getTime());
+  fetchMock.mock.mockImplementation(async () => new Response('Forbidden', { status: 403 }));
+  await assert.rejects(fetchRecentSightingsInCircle('bad-key', 44.8, -93.3, 15, 7, 30 * 60 * 1000), EbirdKeyRejectedError);
+  fetchMock.mock.mockImplementation(noSignal);
+  await assert.rejects(fetchRecentSightingsInCircle('bad-key', 44.8, -93.3, 15, 7, 30 * 60 * 1000), EbirdUnreachableError);
+});
+
+test('after eBird rejects the key past midnight, no signal does not bring back the evening copy', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 11, 19, 23, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+  await fetchRecentSightingsInCircle('good-key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+
+  t.mock.timers.setTime(new Date(2026, 11, 20, 0, 30).getTime());
+  fetchMock.mock.mockImplementation(async () => new Response('Forbidden', { status: 403 }));
+  await assert.rejects(fetchRecentSightingsInCircle('bad-key', 44.8, -93.3, 15, 7, 30 * 60 * 1000), EbirdKeyRejectedError);
+  fetchMock.mock.mockImplementation(noSignal);
+  await assert.rejects(fetchRecentSightingsInCircle('bad-key', 44.8, -93.3, 15, 7, 30 * 60 * 1000), EbirdUnreachableError);
+});
+
+test('an eBird error response does not fall back to a saved copy', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 20, 9, 0) });
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
+
+  fetchMock.mock.mockImplementation(async () => new Response('down', { status: 503 }));
+  t.mock.timers.setTime(new Date(2026, 10, 20, 10, 0).getTime());
+  await assert.rejects(fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000), EbirdRequestError);
+});
+
+test('a fresh response and a saved copy each carry when eBird sent them', async (t) => {
+  const firstFetch = new Date(2026, 10, 20, 9, 0).getTime();
+  t.mock.timers.enable({ apis: ['Date'], now: firstFetch });
+  t.mock.method(globalThis, 'fetch', respondWith([HOTSPOT]));
+
+  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), {
+    items: [HOTSPOT],
+    fetchedAt: firstFetch,
+    isNoSignalCopy: false,
+  });
+  t.mock.timers.setTime(new Date(2026, 10, 20, 10, 0).getTime());
+  assert.equal((await fetchHotspotsInCircle('key', 44.8, -93.3)).fetchedAt, firstFetch);
 });
 
 test('the same hotspot request is fetched once per local day and again the next day', async (t) => {
@@ -207,7 +334,7 @@ test('the same hotspot request is fetched once per local day and again the next 
 
   await fetchHotspotsInCircle('key', 44.8, -93.3);
   t.mock.timers.setTime(new Date(2026, 10, 20, 23, 59).getTime());
-  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
+  assert.deepEqual((await fetchHotspotsInCircle('key', 44.8, -93.3)).items, [HOTSPOT]);
   assert.equal(fetchMock.mock.callCount(), 1);
 
   t.mock.timers.setTime(new Date(2026, 10, 21, 0, 1).getTime());
@@ -235,7 +362,7 @@ test('forgetting a saved copy fetches that request again and keeps the others', 
 
   await fetchRecentSightingsInCircle('key', 44.8, -93.3);
   await fetchHotspotsInCircle('key', 44.8, -93.3);
-  forgetTodaysCopy(recentSightingsUrl(44.8, -93.3));
+  forgetRecentCopies(recentSightingsUrl(44.8, -93.3));
   await fetchRecentSightingsInCircle('key', 44.8, -93.3);
   await fetchHotspotsInCircle('key', 44.8, -93.3);
   assert.equal(fetchMock.mock.callCount(), 3);
@@ -256,7 +383,7 @@ test('a saved copy that no longer validates is fetched again', async (t) => {
   await fetchHotspotsInCircle('key', 44.8, -93.3);
   storage.setItem(storage.key(0) ?? '', '[{"locId":1}]');
 
-  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
+  assert.deepEqual((await fetchHotspotsInCircle('key', 44.8, -93.3)).items, [HOTSPOT]);
   assert.equal(fetchMock.mock.callCount(), 2);
 });
 
@@ -269,8 +396,8 @@ test('requests still work when the browser blocks storage', async (t) => {
   });
   const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([HOTSPOT]));
 
-  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
-  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
+  assert.deepEqual((await fetchHotspotsInCircle('key', 44.8, -93.3)).items, [HOTSPOT]);
+  assert.deepEqual((await fetchHotspotsInCircle('key', 44.8, -93.3)).items, [HOTSPOT]);
   assert.equal(fetchMock.mock.callCount(), 2);
 });
 
@@ -302,7 +429,7 @@ test('a copy too old for one caller is still used by a caller with no age limit'
   t.mock.timers.setTime(new Date(2026, 10, 20, 10, 0).getTime());
   await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, 30 * 60 * 1000);
   t.mock.timers.setTime(new Date(2026, 10, 20, 10, 30).getTime());
-  assert.deepEqual(await fetchRecentSightingsInCircle('key', 44.8, -93.3), [SIGHTING]);
+  assert.deepEqual((await fetchRecentSightingsInCircle('key', 44.8, -93.3)).items, [SIGHTING]);
   assert.equal(fetchMock.mock.callCount(), 2);
 });
 
@@ -357,6 +484,6 @@ test('a copy saved as a bare list, with no saved time, is fetched again', async 
   await fetchHotspotsInCircle('key', 44.8, -93.3);
   storage.setItem(storage.key(0) ?? '', JSON.stringify([HOTSPOT]));
 
-  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3), [HOTSPOT]);
+  assert.deepEqual((await fetchHotspotsInCircle('key', 44.8, -93.3)).items, [HOTSPOT]);
   assert.equal(fetchMock.mock.callCount(), 2);
 });

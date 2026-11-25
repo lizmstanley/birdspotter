@@ -32,7 +32,7 @@ export function useEbirdData({ ebirdApiKey, radiusMiles, setStatus }: EbirdDataO
     setIsBusy(true);
     setStatus(null);
     try {
-      const [hs, obs] = await Promise.all([
+      const [{ items: hs }, { items: obs }] = await Promise.all([
         fetchHotspotsInCircle(ebirdApiKey, lat, lng, radiusMiles),
         fetchRecentSightingsInCircle(ebirdApiKey, lat, lng, radiusMiles, backDays),
       ]);

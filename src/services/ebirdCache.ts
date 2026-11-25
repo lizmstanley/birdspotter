@@ -47,6 +47,31 @@ function hasExpired(copy: SavedCopy, now: number): boolean {
   return copy.expiresAt !== undefined && now >= copy.expiresAt;
 }
 
+export interface SavedItems<T> {
+  readonly items: T[];
+  /** When the copy was saved, in epoch milliseconds. */
+  readonly savedAt: number;
+}
+
+function previousDay(now: Date): Date {
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+}
+
+function readCopy<T>(
+  storageKey: string,
+  isItem: (value: unknown) => value is T,
+  now: number,
+  maxAgeMs: number | undefined
+): SavedItems<T> | null {
+  const raw = browserStorage()?.getItem(storageKey) ?? null;
+  if (raw === null) return null;
+  const saved = parseJson(raw);
+  if (!isSavedCopy(saved) || !Array.isArray(saved.items) || !saved.items.every(isItem)) return null;
+  if (hasExpired(saved, now)) return null;
+  if (maxAgeMs !== undefined && now - saved.savedAt >= maxAgeMs) return null;
+  return { items: saved.items, savedAt: saved.savedAt };
+}
+
 /**
  * Returns today's saved copy of a request, or null when there is none, it no longer validates, it has expired, or it
  * is too old.
@@ -56,15 +81,25 @@ export function readTodaysCopy<T>(
   requestKey: string,
   isItem: (value: unknown) => value is T,
   maxAgeMs?: number
-): T[] | null {
-  const raw = browserStorage()?.getItem(dayPrefix(new Date()) + requestKey) ?? null;
-  if (raw === null) return null;
-  const saved = parseJson(raw);
-  if (!isSavedCopy(saved) || !Array.isArray(saved.items) || !saved.items.every(isItem)) return null;
-  const now = Date.now();
-  if (hasExpired(saved, now)) return null;
-  if (maxAgeMs !== undefined && now - saved.savedAt >= maxAgeMs) return null;
-  return saved.items;
+): SavedItems<T> | null {
+  const now = new Date();
+  return readCopy(dayPrefix(now) + requestKey, isItem, now.getTime(), maxAgeMs);
+}
+
+/**
+ * Like `readTodaysCopy`, and also takes a copy saved the day before, so a copy from late evening still counts after
+ * midnight.
+ */
+export function readRecentCopy<T>(
+  requestKey: string,
+  isItem: (value: unknown) => value is T,
+  maxAgeMs: number
+): SavedItems<T> | null {
+  const now = new Date();
+  return (
+    readCopy(dayPrefix(now) + requestKey, isItem, now.getTime(), maxAgeMs) ??
+    readCopy(dayPrefix(previousDay(now)) + requestKey, isItem, now.getTime(), maxAgeMs)
+  );
 }
 
 function isStale(store: Storage, key: string, todayPrefix: string, now: number): boolean {
@@ -104,10 +139,12 @@ export function saveTodaysCopy(requestKey: string, items: readonly unknown[], li
   }
 }
 
-/** Drops today's saved copy of a request so the next fetch goes to the network. */
-export function forgetTodaysCopy(requestKey: string): void {
+/** Drops the copies of a request that `readRecentCopy` reads, so the next fetch goes to the network. */
+export function forgetRecentCopies(requestKey: string): void {
+  const now = new Date();
   try {
-    browserStorage()?.removeItem(dayPrefix(new Date()) + requestKey);
+    browserStorage()?.removeItem(dayPrefix(now) + requestKey);
+    browserStorage()?.removeItem(dayPrefix(previousDay(now)) + requestKey);
   } catch {
     // Blocked storage holds no saved copy to drop.
   }

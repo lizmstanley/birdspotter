@@ -186,11 +186,13 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           <li>
             <strong>Settings:</strong> in the menu, choose how often to check eBird for new sightings:
             every 15 minutes, half hour, hour, or 2 hours. Hotspots don&apos;t follow this setting: Circle
-            Scout uses the copy saved that day.
+            Scout uses a copy saved in the last 6 hours.
           </li>
           <li>
             <strong>Needs a signal:</strong> Circle Scout needs a signal to open, to draw the map, and to
-            check eBird. If the signal drops, the lists keep what they last loaded.
+            check eBird. With no signal, the lists show the eBird data last loaded for the active area,
+            with the time it was fetched, until it is 6 hours old, as eBird&apos;s terms allow. Older data
+            is not shown.
           </li>
           <li>
             <strong>Privacy:</strong> the phone keeps the eBird key, saved areas, settings, whether

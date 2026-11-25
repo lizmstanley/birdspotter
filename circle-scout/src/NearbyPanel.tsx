@@ -100,16 +100,16 @@ export function NearbyPanel({
             </>
           )}
           <h2>Recent sightings</h2>
-          {sightings.regular.length === 0 && !data.isLoading && (
+          {sightings.regular.length === 0 && !data.isLoading && data.sightingsFetchedAt !== null && (
             <p>{sightings.notable.length > 0 ? 'No other' : 'No'} sightings reported here in that time.</p>
           )}
           <RowGroups rows={sightings.regular} titles={titles} renderRow={(row) => renderSighting(row, false)} />
           <h2>Hotspots</h2>
-          {hotspots.length === 0 && !data.isLoading && <p>No eBird hotspots here.</p>}
+          {hotspots.length === 0 && !data.isLoading && data.hotspotsFetchedAt !== null && <p>No eBird hotspots here.</p>}
           <RowGroups rows={hotspots} titles={titles} renderRow={(row) => <HotspotRow key={row.item.locId} row={row} />} />
         </>
       )}
-      <EbirdCredit refreshMinutes={refreshMinutes} />
+      <EbirdCredit refreshMinutes={refreshMinutes} hasNoSignal={data.hasNoSignal} />
     </section>
   );
 }

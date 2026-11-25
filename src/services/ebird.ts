@@ -1,8 +1,14 @@
 import { circle } from '@turf/circle';
 import { CBC_CIRCLE_RADIUS_MILES } from './cbcCircle.ts';
-import { readTodaysCopy, saveTodaysCopy } from './ebirdCache.ts';
+import { forgetRecentCopies, readRecentCopy, readTodaysCopy, saveTodaysCopy, type SavedItems } from './ebirdCache.ts';
 import { isLatitude, isLongitude } from './coordinates.ts';
-import { EbirdKeyRejectedError, EbirdRequestError, UnexpectedResponseError, type EbirdEndpoint } from './errors.ts';
+import {
+  EbirdKeyRejectedError,
+  EbirdRequestError,
+  EbirdUnreachableError,
+  UnexpectedResponseError,
+  type EbirdEndpoint,
+} from './errors.ts';
 import { FETCH_TIMEOUT_MS, isRecord } from './http.ts';
 
 export const EBIRD_SITE_URL = 'https://ebird.org';
@@ -11,7 +17,7 @@ export const EBIRD_KEY_REQUEST_URL = 'https://ebird.org/api/keygen';
 const EBIRD_KEY_REJECTED_STATUS = 403;
 
 /** eBird's API terms allow observations only a short-term cache, of 1 to 6 hours. */
-const OBSERVATION_LIFETIME_MS = 6 * 60 * 60 * 1000;
+export const EBIRD_DATA_LIFETIME_MS = 6 * 60 * 60 * 1000;
 
 export interface EbirdHotspot {
   locId: string;
@@ -78,6 +84,49 @@ export function isConfirmedReport(observation: EbirdObservation): boolean {
   return observation.obsValid === true;
 }
 
+export interface EbirdList<T> {
+  readonly items: T[];
+  /** When eBird sent the items, in epoch milliseconds. */
+  readonly fetchedAt: number;
+  /** True when eBird could not be reached, so the items are a saved copy. */
+  readonly isNoSignalCopy: boolean;
+}
+
+/** A dropped or weak signal: `fetch` fails to connect, or the response does not arrive in time. */
+function isNoSignal(err: unknown): boolean {
+  return err instanceof TypeError || (err instanceof DOMException && err.name === 'TimeoutError');
+}
+
+function savedList<T>(saved: SavedItems<T>, isNoSignalCopy: boolean): EbirdList<T> {
+  return { items: saved.items, fetchedAt: saved.savedAt, isNoSignalCopy };
+}
+
+async function requestEbirdList<T>(
+  endpoint: EbirdEndpoint,
+  url: string,
+  apiKey: string,
+  isItem: (value: unknown) => value is T
+): Promise<T[]> {
+  const res = await fetch(url, {
+    headers: { 'X-eBirdApiToken': apiKey.trim() },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (res.status === EBIRD_KEY_REJECTED_STATUS) {
+    // A copy saved under the earlier key must not stand in for this one when the signal drops.
+    forgetRecentCopies(url);
+    throw new EbirdKeyRejectedError(endpoint);
+  }
+  if (!res.ok) throw new EbirdRequestError(endpoint, res.status, await res.text());
+  const body: unknown = await res.json();
+  if (!Array.isArray(body) || !body.every(isItem)) throw new UnexpectedResponseError('ebird', endpoint);
+  return body;
+}
+
+/**
+ * With no signal, falls back to a saved copy up to 6 hours old, whatever `maxAgeMs` is, including one saved before
+ * midnight. An eBird error response does not fall back.
+ * @throws EbirdUnreachableError with no signal and no such copy
+ */
 async function fetchEbirdList<T>(
   endpoint: EbirdEndpoint,
   url: string,
@@ -85,19 +134,20 @@ async function fetchEbirdList<T>(
   isItem: (value: unknown) => value is T,
   maxAgeMs: number | undefined,
   lifetimeMs?: number
-): Promise<T[]> {
+): Promise<EbirdList<T>> {
   const saved = readTodaysCopy(url, isItem, maxAgeMs);
-  if (saved) return saved;
-  const res = await fetch(url, {
-    headers: { 'X-eBirdApiToken': apiKey.trim() },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (res.status === EBIRD_KEY_REJECTED_STATUS) throw new EbirdKeyRejectedError(endpoint);
-  if (!res.ok) throw new EbirdRequestError(endpoint, res.status, await res.text());
-  const body: unknown = await res.json();
-  if (!Array.isArray(body) || !body.every(isItem)) throw new UnexpectedResponseError('ebird', endpoint);
-  saveTodaysCopy(url, body, lifetimeMs);
-  return body;
+  if (saved) return savedList(saved, false);
+  let items: T[];
+  try {
+    items = await requestEbirdList(endpoint, url, apiKey, isItem);
+  } catch (err) {
+    if (!isNoSignal(err)) throw err;
+    const fallback = readRecentCopy(url, isItem, EBIRD_DATA_LIFETIME_MS);
+    if (fallback) return savedList(fallback, true);
+    throw new EbirdUnreachableError(endpoint, err);
+  }
+  saveTodaysCopy(url, items, lifetimeMs);
+  return { items, fetchedAt: Date.now(), isNoSignalCopy: false };
 }
 
 function fetchObservations(
@@ -105,9 +155,9 @@ function fetchObservations(
   url: string,
   apiKey: string,
   maxAgeMs: number | undefined
-): Promise<EbirdObservation[]> {
-  const readAgeMs = Math.min(maxAgeMs ?? OBSERVATION_LIFETIME_MS, OBSERVATION_LIFETIME_MS);
-  return fetchEbirdList(endpoint, url, apiKey, isObservation, readAgeMs, OBSERVATION_LIFETIME_MS);
+): Promise<EbirdList<EbirdObservation>> {
+  const readAgeMs = Math.min(maxAgeMs ?? EBIRD_DATA_LIFETIME_MS, EBIRD_DATA_LIFETIME_MS);
+  return fetchEbirdList(endpoint, url, apiKey, isObservation, readAgeMs, EBIRD_DATA_LIFETIME_MS);
 }
 
 function searchDistanceKm(radiusMiles: number): string {
@@ -121,7 +171,7 @@ export async function fetchHotspotsInCircle(
   lng: number,
   radiusMiles = CBC_CIRCLE_RADIUS_MILES,
   maxAgeMs?: number
-): Promise<EbirdHotspot[]> {
+): Promise<EbirdList<EbirdHotspot>> {
   const url =
     `https://api.ebird.org/v2/ref/hotspot/geo?lat=${encodeURIComponent(lat)}` +
     `&lng=${encodeURIComponent(lng)}&dist=${searchDistanceKm(radiusMiles)}&fmt=json`;
@@ -170,7 +220,7 @@ export async function fetchRecentSightingsInCircle(
   radiusMiles = CBC_CIRCLE_RADIUS_MILES,
   backDays = 7,
   maxAgeMs?: number
-): Promise<EbirdObservation[]> {
+): Promise<EbirdList<EbirdObservation>> {
   const url = recentSightingsUrl(lat, lng, radiusMiles, backDays);
   return fetchObservations('sightings', url, apiKey, maxAgeMs);
 }
@@ -187,7 +237,7 @@ export async function fetchRecentNotableSightingsInCircle(
   radiusMiles = CBC_CIRCLE_RADIUS_MILES,
   backDays = 7,
   maxAgeMs?: number
-): Promise<EbirdObservation[]> {
+): Promise<EbirdList<EbirdObservation>> {
   const url = recentNotableSightingsUrl(lat, lng, radiusMiles, backDays);
   return fetchObservations('notable sightings', url, apiKey, maxAgeMs);
 }
