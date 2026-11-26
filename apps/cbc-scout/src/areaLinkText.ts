@@ -1,4 +1,4 @@
-import { decodeAreaLink, InvalidAreaLinkError, UnsupportedAreaLinkVersionError, type AreaLinkData } from '../../../src/services/areaLink.ts';
+import { decodeAreaLink, InvalidAreaLinkError, UnsupportedAreaLinkVersionError, type AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
 import { describeError } from '@birdspotter/birding-core/describeError.ts';
 
 export type AreaLinkRead =

@@ -1,5 +1,5 @@
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
-import { decodeAreaLink, type AreaLinkData } from '../../../src/services/areaLink.ts';
+import { decodeAreaLink, type AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
 
 export interface SavedArea {
   readonly key: string;

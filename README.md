@@ -228,33 +228,35 @@ Bird data comes from [eBird.org](https://ebird.org) and is subject to the [eBird
 ```text
 birdspotter/
 ├── apps/
+│   ├── cbc-manager/                 # The circle manager: its page, code, schema, and favicon (public/)
+│   │   ├── db/
+│   │   │   ├── migrations/          # Versioned, applied once each, recorded in schema_version
+│   │   │   │   ├── 001_initial_schema.sql   # Tables, enums, and indexes, all scoped by circle_code
+│   │   │   │   ├── 002_catch_up_unversioned_databases.sql
+│   │   │   │   └── 003_area_results_by_season.sql
+│   │   │   └── views.sql            # Assignments, open areas, reminders, outreach (re-applied on every start)
+│   │   ├── src/
+│   │   │   ├── db/
+│   │   │   │   ├── migrations.ts    # Migration runner and file parsing
+│   │   │   │   ├── cbcDb.ts         # Database class the app uses
+│   │   │   │   ├── circles.ts, areas.ts, roster.ts, seasons.ts, readModels.ts, backup.ts   # Queries by concern
+│   │   │   │   ├── legacySingleCircle.ts    # One-time move from the first single-circle format
+│   │   │   │   ├── pgliteDb.ts      # Browser setup: IndexedDB storage and bundled migrations
+│   │   │   │   └── *.integration.test.ts    # Real PGlite, in memory
+│   │   │   ├── services/            # eBird, Audubon, KML parsing, import checks
+│   │   │   ├── hooks/               # App state and actions
+│   │   │   ├── components/          # Tabs, dialogs, the map (components/map/), and roster import (components/import/)
+│   │   │   ├── App.tsx
+│   │   │   └── main.tsx
+│   │   ├── index.html
+│   │   └── package.json
 │   ├── birdspotter/                 # Birdspotter: its page, its code, and its manifest, icons, and service worker (public/), on the birding core only
 │   └── cbc-scout/                   # CBC Scout: its page (index.html), its code (src/), and its public/ files
 ├── site/                            # The home page and the CBC page: plain HTML, no script
 ├── packages/
 │   └── birding-core/                # eBird, nearby lists, location, map, and install code any birding app can use
-├── db/
-│   ├── migrations/                  # Versioned, applied once each, recorded in schema_version
-│   │   ├── 001_initial_schema.sql   # Tables, enums, and indexes, all scoped by circle_code
-│   │   ├── 002_catch_up_unversioned_databases.sql
-│   │   └── 003_area_results_by_season.sql
-│   └── views.sql                    # Assignments, open areas, reminders, outreach (re-applied on every start)
-├── src/
-│   ├── db/
-│   │   ├── migrations.ts            # Migration runner and file parsing
-│   │   ├── cbcDb.ts                 # Database class the app uses
-│   │   ├── circles.ts, areas.ts, roster.ts, seasons.ts, readModels.ts, backup.ts   # Queries by concern
-│   │   ├── legacySingleCircle.ts    # One-time move from the first single-circle format
-│   │   ├── pgliteDb.ts              # Browser setup: IndexedDB storage and bundled migrations
-│   │   └── *.integration.test.ts    # Real PGlite, in memory
-│   ├── services/                    # eBird, Audubon, KML parsing, import checks
-│   ├── hooks/                       # App state and actions
-│   ├── components/                  # Tabs, dialogs, the map (components/map/), and roster import (components/import/)
-│   ├── App.tsx
-│   └── main.tsx
 ├── DESIGN.md
 ├── LICENSE.md
-├── index.html
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts

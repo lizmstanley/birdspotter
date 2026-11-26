@@ -53,6 +53,28 @@ export default tseslint.config(
     },
   },
   {
+    // Replaces the apps rule above, so the circle manager may use PGlite and its own database.
+    // Its files reach its own db/ and services/ with two or three steps up, so a depth test cannot find another app.
+    files: ['apps/cbc-manager/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^(\\./)?(\\.\\./)+(apps/)?(cbc-scout|birdspotter)(/|$)',
+              message: 'Apps import from the circle manager, never the reverse.',
+            },
+            {
+              group: ['@birdspotter/*', '!@birdspotter/birding-core'],
+              message: 'Apps import from the circle manager, never the reverse.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Replaces the apps rule above for these files, so it repeats PGLITE.
     files: ['apps/birdspotter/**/*.{ts,tsx}'],
     rules: {
@@ -78,21 +100,5 @@ export default tseslint.config(
   {
     files: ['apps/*/public/sw.js'],
     languageOptions: { globals: { self: 'readonly', URL: 'readonly', fetch: 'readonly' } },
-  },
-  {
-    files: ['src/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['**/apps/**', '@birdspotter/*', '!@birdspotter/birding-core'],
-              message: 'Apps import from the web app, never the reverse.',
-            },
-          ],
-        },
-      ],
-    },
   },
 );

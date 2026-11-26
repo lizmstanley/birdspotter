@@ -35,11 +35,11 @@ Trade-off: data lives in one browser. Export Backup and Auto-Save cover that. Cl
 
 Why: one definition of "open area" or "needs a reminder", tested once, used by every screen. The integration tests assert these rules against real Postgres.
 
-Cost: changing a view's columns needs a drop and recreate. Views are re-applied on every start (`db/views.sql`).
+Cost: changing a view's columns needs a drop and recreate. Views are re-applied on every start (`apps/cbc-manager/db/views.sql`).
 
 ### Versioned migrations
 
-`db/migrations/NNN_name.sql` files run once each, in order, each in a transaction with its `schema_version` row. A failure rolls back that step. A database newer than the app is refused (`SchemaTooNewError`) instead of being altered.
+`apps/cbc-manager/db/migrations/NNN_name.sql` files run once each, in order, each in a transaction with its `schema_version` row. A failure rolls back that step. A database newer than the app is refused (`SchemaTooNewError`) instead of being altered.
 
 Databases from before versioning are detected and adopted: migration 001 is recorded as applied, then the idempotent catch-up migration 002 runs. The first single-circle format is moved into a circle named `LEGACY` in one transaction.
 
@@ -85,11 +85,12 @@ The site is static files on GitHub Pages. The home page at the site root leads w
 
 ## Code layout
 
-- `src/db`: migrations, one module per concern, `CbcDb` as the single class the UI uses. `pgliteDb.ts` is the only file that knows about IndexedDB and Vite. Tests give `CbcDb` an in-memory PGlite and read the same SQL files from disk.
-- `src/services`: pure functions and network clients.
-- `src/hooks` and `src/components`: state and UI, one component per tab.
+- `apps/cbc-manager`: the circle manager, laid out like the phone apps.
+  - `src/db`: migrations, one module per concern, `CbcDb` as the single class the UI uses. `pgliteDb.ts` is the only file that knows about IndexedDB and Vite. Tests give `CbcDb` an in-memory PGlite and read the same SQL files from disk.
+  - `src/services`: pure functions and network clients.
+  - `src/hooks` and `src/components`: state and UI, one component per tab.
 - `packages/birding-core`: the birding features with no Christmas Bird Count in them: the eBird client and its cache, nearby lists and suggestions, live location, the base map, install prompts, and the screens built on them. Each app passes in its name and its own storage keys, because apps on one origin share `localStorage`.
-- `apps/cbc-scout`: CBC Scout. It adds count areas, the count circle, and the count session to the core. It also imports the web app's area link and circle code from `src/`.
+- `apps/cbc-scout`: CBC Scout. It adds count areas, the count circle, and the count session to the core. It also imports the circle manager's area link, circle, and map text code through the `@birdspotter/cbc-manager` package, whose `exports` lists only those files, so the database code cannot be imported by package path.
 - `apps/birdspotter`: Birdspotter, for any birder. It uses the core alone, with no region and no pinned search: the lists follow the person, with a search radius from its settings. It has no effort tracking, because birders record checklists and effort in eBird. It is a separate app rather than a mode of CBC Scout, so neither carries the other's screens. It is served from the same origin as the others, so the saved eBird key and eBird cache carry over; a separate domain would lose them and need its own DNS and Pages site.
 
 The repo is one npm workspace, so the core changes with its apps in one pull request and needs no release. Lint stops the core from importing an app, stops a phone app from importing the web app's database, and stops Birdspotter from importing anything but the core.

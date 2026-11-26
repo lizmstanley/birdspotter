@@ -1,7 +1,7 @@
 import { booleanPointInPolygon } from '@turf/boolean-point-in-polygon';
 import type { Feature, Polygon } from 'geojson';
-import { areaDisplayName } from '../../../src/components/map/mapText.ts';
-import type { AreaLinkData } from '../../../src/services/areaLink.ts';
+import { areaDisplayName } from '@birdspotter/cbc-manager/components/map/mapText.ts';
+import type { AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
 
 export type AreaStatus =
   | { readonly kind: 'outside-circle' }

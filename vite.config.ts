@@ -32,8 +32,8 @@ function isPhoneAppMode(mode: string): mode is PhoneAppMode {
   return Object.hasOwn(APP_PATHS, mode);
 }
 
-// Vite writes an HTML entry at its path relative to root, so root is the app's own folder.
-// Each app copies its own public/ folder, which holds its manifest, icons, and service worker.
+// Vite writes an HTML entry at its path relative to root, so each app's root is its own folder,
+// and each app copies only its own public/ folder. A phone app's holds its manifest, icons, and service worker.
 function phoneAppConfig(mode: PhoneAppMode): UserConfig {
   return {
     root: repoPath(`./apps/${mode}`),
@@ -59,6 +59,7 @@ function siteConfig(): UserConfig {
 
 function circleManagerConfig(): UserConfig {
   return {
+    root: repoPath('./apps/cbc-manager'),
     base: `${SITE_BASE}${CIRCLE_MANAGER_PATH}`,
     build: { outDir: repoPath(`./dist/${CIRCLE_MANAGER_PATH}`), emptyOutDir: true },
   };

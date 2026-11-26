@@ -1,4 +1,4 @@
-import type { AreaLinkData } from '../../../src/services/areaLink.ts';
+import type { AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
 
 export function areaName(data: AreaLinkData): string {
   const { circleName, areaCode, areaLabel } = data;

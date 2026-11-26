@@ -2,8 +2,8 @@ import { booleanPointInPolygon } from '@turf/boolean-point-in-polygon';
 import type { Feature, Polygon } from 'geojson';
 import { buildCirclePolygon } from '@birdspotter/birding-core/ebird.ts';
 import type { NearbyQuery, RegionTest } from '@birdspotter/birding-core/nearby.ts';
-import type { AreaLinkData } from '../../../src/services/areaLink.ts';
-import { CBC_CIRCLE_RADIUS_MILES } from '../../../src/services/cbcCircle.ts';
+import type { AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
+import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCircle.ts';
 
 export function countCircle(area: AreaLinkData): Feature<Polygon> {
   const [lng, lat] = area.circleCenter;

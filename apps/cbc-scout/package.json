@@ -6,6 +6,7 @@
   "type": "module",
   "dependencies": {
     "@birdspotter/birding-core": "*",
+    "@birdspotter/cbc-manager": "*",
     "@turf/boolean-point-in-polygon": "^7.2.0",
     "jsqr": "^1.4.0",
     "maplibre-gl": "^5.1.0",

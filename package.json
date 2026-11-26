@@ -14,22 +14,9 @@
     "dev:birdspotter": "vite --mode birdspotter",
     "build": "tsc -b && vite build --mode site && vite build && vite build --mode cbc-scout && vite build --mode birdspotter",
     "preview": "vite preview --mode site",
-    "test": "node --test \"src/**/*.test.ts\" \"packages/*/src/**/*.test.ts\" \"apps/*/src/**/*.test.ts\"",
+    "test": "node --test \"packages/*/src/**/*.test.ts\" \"apps/*/src/**/*.test.ts\"",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
-    "lint": "eslint src packages apps"
-  },
-  "dependencies": {
-    "@birdspotter/birding-core": "*",
-    "@electric-sql/pglite": "^0.3.14",
-    "@turf/boolean-point-in-polygon": "^7.2.0",
-    "@turf/helpers": "^7.2.0",
-    "@turf/simplify": "^7.2.0",
-    "fflate": "^0.8.2",
-    "maplibre-gl": "^5.1.0",
-    "qrcode-generator": "^2.0.4",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "xlsx": "^0.18.5"
+    "lint": "eslint packages apps"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
