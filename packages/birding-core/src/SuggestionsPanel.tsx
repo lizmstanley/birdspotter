@@ -31,7 +31,7 @@ function hotspotReason(speciesCount: number): string {
   return `${speciesCount} species last reported here`;
 }
 
-/** Hotspots worth a stop and birds to watch for, from the sightings and hotspots the Nearby tab loaded. */
+/** Hotspots worth a stop and birds to watch for, from the sightings and hotspots the Sightings tab loaded. */
 export function SuggestionsPanel({
   isInRegion,
   birdsRegion,
@@ -53,9 +53,9 @@ export function SuggestionsPanel({
   );
 
   return (
-    <section className="birding-panel birding-nearby" aria-label="Suggestions">
+    <section className="birding-panel birding-nearby" aria-label="Hotspots">
       <p className="birding-nearby-detail">
-        From sightings in the last {backDays === 1 ? 'day' : `${backDays} days`}. Change that on the Nearby tab.
+        From sightings in the last {backDays === 1 ? 'day' : `${backDays} days`}. Change that on the Sightings tab.
       </p>
       <NearbyStatus data={data} live={live} onFixKey={onFixKey} />
       {position && (
