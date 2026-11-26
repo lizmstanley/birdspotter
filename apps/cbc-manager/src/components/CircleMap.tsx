@@ -2,11 +2,13 @@ import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { findAreaAt } from '../services/areaLookup';
 import { CBC_CIRCLE_RADIUS_MILES } from '../services/cbcCircle';
+import { isoDay } from '../services/countDay';
 import type { ParsedAreaBoundary } from '../services/kmlParser';
 import { AreaImportBar } from './map/AreaImportBar';
 import { excludeNotCounted } from './map/areaFeatures';
 import { EbirdControls } from './map/EbirdControls';
 import { HotspotsTable, SightingsTable } from './map/EbirdTables';
+import { buildMapKml } from './map/kmlExport';
 import { LayerLegend } from './map/LayerLegend';
 import { ScoutPanel } from './map/ScoutPanel';
 import type { AreaBoundaryItem, ScoutedCircleDraft } from './map/types';
@@ -84,6 +86,25 @@ export function CircleMap({
     [ebird.sightings, areaOutlines]
   );
 
+  const isCircleShown = isScouting || showCircleOverlay;
+
+  function exportKml() {
+    const kml = buildMapKml({
+      title: `${effectiveCode} — ${effectiveName}`,
+      circle: isCircleShown ? { lat: effectiveLat, lng: effectiveLng, radiusMiles } : null,
+      areas: isScouting || !showAreas ? [] : areaBoundaries,
+      notCountedAreaCodes,
+      hotspots: showHotspots ? hotspotRows : [],
+      sightings: showSightings ? sightingRows : [],
+    });
+    const url = URL.createObjectURL(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${effectiveCode.replace(/[^A-Za-z0-9_-]+/g, '-')}-map-${isoDay(new Date())}.kml`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   const exitScouting = useEffectEvent(() => scouting.exit());
   useEffect(() => {
     exitScouting();
@@ -103,7 +124,7 @@ export function CircleMap({
     lat: effectiveLat,
     lng: effectiveLng,
     radiusMiles,
-    isCircleShown: isScouting || showCircleOverlay,
+    isCircleShown,
   });
 
   const hoveredArea = useAreaLayer({
@@ -153,26 +174,40 @@ export function CircleMap({
                 </span>
               )}
             </p>
+            {!isScouting && areaBoundaries.length > 0 && (
+              <p className="muted">Hover an area to highlight it. Click one to see its assigned counters.</p>
+            )}
           </div>
         </div>
 
-        <EbirdControls
-          hasKey={Boolean(ebirdApiKey)}
-          backDays={ebird.backDays}
-          isBusy={ebird.isBusy}
-          onBackDaysChange={ebird.setBackDays}
-          onLoad={() => void ebird.load(effectiveCode, effectiveLat, effectiveLng)}
-        />
-
-        {!isScouting && (
-          <AreaImportBar
-            activeCode={activeCode}
-            areaCount={areaBoundaries.length}
-            setStatus={setStatus}
-            onImportBoundaries={onImportBoundaries}
-            onClearBoundaries={onClearBoundaries}
+        <div className="map-toolbar">
+          <EbirdControls
+            hasKey={Boolean(ebirdApiKey)}
+            backDays={ebird.backDays}
+            isBusy={ebird.isBusy}
+            onBackDaysChange={ebird.setBackDays}
+            onLoad={() => void ebird.load(effectiveCode, effectiveLat, effectiveLng)}
           />
-        )}
+
+          {!isScouting && (
+            <AreaImportBar
+              activeCode={activeCode}
+              areaCount={areaBoundaries.length}
+              setStatus={setStatus}
+              onImportBoundaries={onImportBoundaries}
+              onClearBoundaries={onClearBoundaries}
+            />
+          )}
+
+          <button
+            type="button"
+            className="toolbar-end"
+            title="Download the layers turned on below, with eBird hotspots and sightings, as a KML file for Google Earth or My Maps"
+            onClick={exportKml}
+          >
+            Export Map as KML
+          </button>
+        </div>
 
         <LayerLegend
           isScouting={isScouting}

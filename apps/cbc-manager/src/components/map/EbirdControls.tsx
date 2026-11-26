@@ -10,7 +10,8 @@ interface EbirdControlsProps {
 
 export function EbirdControls({ hasKey, backDays, isBusy, onBackDaysChange, onLoad }: EbirdControlsProps) {
   return (
-    <div className="ebird-bar">
+    <div className="toolbar-group" role="group" aria-label="eBird">
+      <span className="toolbar-label">eBird</span>
       <NeedsEbirdKey hasKey={hasKey}>
         <select
           value={backDays}

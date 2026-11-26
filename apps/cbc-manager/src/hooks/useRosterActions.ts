@@ -1,5 +1,6 @@
 import { useRef, type ChangeEvent } from 'react';
 import type { ImportedParticipantRow, ImportOptions } from '../db/pgliteDb';
+import { isoDay } from '../services/countDay';
 import { describeError } from '../services/describeError';
 import { failuresToError, type ActionContext } from './actionContext';
 
@@ -41,7 +42,7 @@ export function useRosterActions({ db, activeCircle, reload, flash, setError, co
     const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `cbc-circle-manager-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `cbc-circle-manager-backup-${isoDay(new Date())}.json`;
     link.click();
     URL.revokeObjectURL(url);
     return true;

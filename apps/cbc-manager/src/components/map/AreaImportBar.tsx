@@ -41,7 +41,8 @@ export function AreaImportBar({
   }
 
   return (
-    <div className="kml-bar">
+    <div className="toolbar-group" role="group" aria-label="Areas">
+      <span className="toolbar-label">Areas</span>
       <input
         ref={fileInputRef}
         type="file"
@@ -54,7 +55,7 @@ export function AreaImportBar({
         title="Add area outlines from a KML, KMZ, or GeoJSON file, for example one exported from Google My Maps. The app can't draw areas itself."
         onClick={() => fileInputRef.current?.click()}
       >
-        Import KML / KMZ / GeoJSON Areas
+        Import KML / KMZ / GeoJSON
       </button>
       {areaCount > 0 && onClearBoundaries && (
         <button
@@ -65,9 +66,6 @@ export function AreaImportBar({
           Clear Areas ({areaCount})
         </button>
       )}
-      <span className="muted">
-        Hover any area to highlight; click an area to view its assigned counters.
-      </span>
     </div>
   );
 }

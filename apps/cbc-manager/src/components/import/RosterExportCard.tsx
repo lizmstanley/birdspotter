@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { AssignmentRow } from '../../db/pgliteDb';
+import { isoDay } from '../../services/countDay';
 import { writeParticipantsSheet, type SheetFormat } from './workbook';
 
 interface Props {
@@ -22,7 +23,7 @@ export function RosterExportCard({ circleCode, assignments, onExported }: Props)
       Companions: row.companions ?? '',
       Notes: row.active_notes ?? '',
     }));
-    const dateStamp = new Date().toISOString().slice(0, 10);
+    const dateStamp = isoDay(new Date());
     const baseName = `${circleCode.toLowerCase()}-participants-${dateStamp}`;
     writeParticipantsSheet(XLSX.utils.json_to_sheet(exportRows), baseName, format);
     onExported(`Exported ${exportRows.length} participants to ${baseName}.${format}`);
