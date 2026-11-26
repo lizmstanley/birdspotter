@@ -101,14 +101,14 @@ function fetchAndSave(url) {
   return save;
 }
 
-// Full storage must not cost the page a good network answer. Any other failure, such as a download that breaks
-// partway, still rejects, so the caller falls back to the saved copy.
+// A cache failure (full storage, a blocked Cache API) must not cost the page a good network answer. A download that
+// breaks partway rejects with a TypeError and still rejects here, so the caller falls back to the saved copy.
 async function saveResponse(url, response) {
   try {
     const cache = await caches.open(CACHE_NAME);
     await cache.put(url, response);
   } catch (error) {
-    if (error?.name !== 'QuotaExceededError') throw error;
+    if (error instanceof TypeError) throw error;
   }
 }
 
