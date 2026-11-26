@@ -102,32 +102,50 @@ export function readRecentCopy<T>(
   );
 }
 
-function isStale(store: Storage, key: string, todayPrefix: string, now: number): boolean {
-  if (!key.startsWith(todayPrefix)) return true;
-  const saved = parseJson(store.getItem(key) ?? '');
-  return isSavedCopy(saved) && hasExpired(saved, now);
+interface KeepRule {
+  readonly todayPrefix: string;
+  readonly yesterdayPrefix: string;
+  readonly now: number;
+  readonly recentAgeMs: number;
 }
 
-function dropStaleCopies(store: Storage, todayPrefix: string, now: number): void {
+function isStale(store: Storage, key: string, rule: KeepRule): boolean {
+  const isToday = key.startsWith(rule.todayPrefix);
+  if (!isToday && !key.startsWith(rule.yesterdayPrefix)) return true;
+  const saved = parseJson(store.getItem(key) ?? '');
+  if (!isSavedCopy(saved)) return !isToday;
+  if (hasExpired(saved, rule.now)) return true;
+  return !isToday && rule.now - saved.savedAt >= rule.recentAgeMs;
+}
+
+function dropStaleCopies(store: Storage, rule: KeepRule): void {
   const stale: string[] = [];
   for (let i = 0; i < store.length; i++) {
     const key = store.key(i);
-    if (key?.startsWith(CACHE_PREFIX) && isStale(store, key, todayPrefix, now)) stale.push(key);
+    if (key?.startsWith(CACHE_PREFIX) && isStale(store, key, rule)) stale.push(key);
   }
   for (const key of stale) store.removeItem(key);
 }
 
 /**
- * Saves a request's result for the rest of the local day, and drops copies from earlier days and expired copies.
+ * Saves a request's result for the rest of the local day. Drops expired copies, copies from the day before once
+ * `recentAgeMs` old, and every copy from earlier days.
+ * @param recentAgeMs how old a copy from the day before may be and still be kept for `readRecentCopy`
  * @param lifetimeMs how long the copy may be used; omitted, until the end of the local day
  */
-export function saveTodaysCopy(requestKey: string, items: readonly unknown[], lifetimeMs?: number): void {
+export function saveTodaysCopy(
+  requestKey: string,
+  items: readonly unknown[],
+  recentAgeMs: number,
+  lifetimeMs?: number
+): void {
   const store = browserStorage();
   if (!store) return;
   const now = Date.now();
-  const todayPrefix = dayPrefix(new Date(now));
+  const today = new Date(now);
+  const todayPrefix = dayPrefix(today);
   try {
-    dropStaleCopies(store, todayPrefix, now);
+    dropStaleCopies(store, { todayPrefix, yesterdayPrefix: dayPrefix(previousDay(today)), now, recentAgeMs });
     const copy: SavedCopy = {
       savedAt: now,
       items,

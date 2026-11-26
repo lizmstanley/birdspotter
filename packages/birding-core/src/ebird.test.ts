@@ -513,6 +513,52 @@ test('saving any request removes expired sightings copies and keeps hotspots for
   assert.ok(saved.every((key) => key.includes('/hotspot/')));
 });
 
+test('a save just past midnight keeps the evening hotspots for a restart with no signal', async (t) => {
+  const halfHour = 30 * 60 * 1000;
+  const sixHours = 6 * 60 * 60 * 1000;
+  const eveningFetch = new Date(2026, 11, 19, 22, 0).getTime();
+  t.mock.timers.enable({ apis: ['Date'], now: eveningFetch });
+  const fetchMock = t.mock.method(globalThis, 'fetch', async (url: string) =>
+    Response.json(url.includes('/hotspot/') ? [HOTSPOT] : [SIGHTING])
+  );
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, halfHour);
+  await fetchHotspotsInCircle('key', 44.8, -93.3, 15, sixHours);
+
+  const midnightFetch = new Date(2026, 11, 20, 0, 10).getTime();
+  t.mock.timers.setTime(midnightFetch);
+  await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, halfHour);
+
+  fetchMock.mock.mockImplementation(noSignal);
+  t.mock.timers.setTime(new Date(2026, 11, 20, 0, 30).getTime());
+  assert.deepEqual(await fetchHotspotsInCircle('key', 44.8, -93.3, 15, sixHours), {
+    items: [HOTSPOT],
+    fetchedAt: eveningFetch,
+    isNoSignalCopy: true,
+  });
+  assert.equal((await fetchRecentSightingsInCircle('key', 44.8, -93.3, 15, 7, halfHour)).fetchedAt, midnightFetch);
+});
+
+test('saving drops copies from the day before once 6 hours old or invalid, and every copy from earlier days', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 11, 18, 23, 0) });
+  t.mock.method(globalThis, 'fetch', respondWith([HOTSPOT]));
+  await fetchHotspotsInCircle('key', 44.7, -93.3, RADIUS_MILES);
+  t.mock.timers.setTime(new Date(2026, 11, 19, 21, 0).getTime());
+  await fetchHotspotsInCircle('key', 44.8, -93.3, RADIUS_MILES);
+  t.mock.timers.setTime(new Date(2026, 11, 19, 22, 0).getTime());
+  await fetchHotspotsInCircle('key', 44.9, -93.3, RADIUS_MILES);
+
+  const recentCopy = JSON.stringify({ savedAt: new Date(2026, 11, 20, 3, 0).getTime(), items: [HOTSPOT] });
+  storage.setItem('cbc_ebird_cache:2026-12-18:moved-clock', recentCopy);
+  storage.setItem('cbc_ebird_cache:2026-12-19:bare-list', JSON.stringify([HOTSPOT]));
+
+  t.mock.timers.setTime(new Date(2026, 11, 20, 3, 30).getTime());
+  await fetchHotspotsInCircle('key', 45.0, -93.3, RADIUS_MILES);
+  const saved = Array.from({ length: storage.length }, (_, i) => storage.key(i) ?? '').sort();
+  assert.equal(saved.length, 2);
+  assert.match(saved[0] ?? '', /^cbc_ebird_cache:2026-12-19:.*lat=44\.9/);
+  assert.match(saved[1] ?? '', /^cbc_ebird_cache:2026-12-20:.*lat=45/);
+});
+
 test('a copy saved as a bare list, with no saved time, is fetched again', async (t) => {
   const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([HOTSPOT]));
   await fetchHotspotsInCircle('key', 44.8, -93.3, RADIUS_MILES);

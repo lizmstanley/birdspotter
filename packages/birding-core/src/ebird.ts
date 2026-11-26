@@ -176,7 +176,7 @@ async function fetchEbirdList<T>(
     if (fallback) return savedList(fallback, true);
     throw new EbirdUnreachableError(endpoint, err);
   }
-  saveTodaysCopy(url, items, lifetimeMs);
+  saveTodaysCopy(url, items, EBIRD_DATA_LIFETIME_MS, lifetimeMs);
   return { items, fetchedAt: Date.now(), isNoSignalCopy: false };
 }
 
