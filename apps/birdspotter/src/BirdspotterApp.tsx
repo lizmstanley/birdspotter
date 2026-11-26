@@ -1,7 +1,11 @@
 import { useCallback, useState } from 'react';
 import type { GeolocateControl } from 'maplibre-gl';
+import { About } from '@birdspotter/birding-core/About.tsx';
+import { BirdingBar, BirdingScreen, type Screen } from '@birdspotter/birding-core/BirdingBar.tsx';
 import { BirdingMap, type ReadyMap } from '@birdspotter/birding-core/BirdingMap.tsx';
 import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
+import { FirstRunScreen } from '@birdspotter/birding-core/FirstRunScreen.tsx';
+import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
 import { NearbyPanel } from '@birdspotter/birding-core/NearbyPanel.tsx';
@@ -12,7 +16,6 @@ import { SuggestionsPanel } from '@birdspotter/birding-core/SuggestionsPanel.tsx
 import { useEbirdKey } from '@birdspotter/birding-core/useEbirdKey.ts';
 import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
 import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
-import { AppBar, AppScreen, type Screen } from './AppBar.tsx';
 import { BIRDSPOTTER } from './appIdentity.ts';
 
 type Panel = 'nearby' | 'suggestions';
@@ -59,7 +62,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
 
   return (
     <div className="birdspotter">
-      {ebirdApiKey && <AppBar onOpen={setScreen} />}
+      {ebirdApiKey && <BirdingBar title={BIRDSPOTTER.name} onOpen={setScreen} />}
       <InstallBanner appName={BIRDSPOTTER.name} installPrompt={installPrompt} />
       {error && (
         <p className="birdspotter-error" role="alert">
@@ -105,28 +108,27 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               onFixKey={() => setScreen('ebird-key')}
             />
           )}
-          {screen && (
-            <AppScreen screen={screen} onClose={() => setScreen(null)}>
-              {screen === 'ebird-key' && (
-                <EbirdKeyForm appName={BIRDSPOTTER.name} savedKey={ebirdApiKey} onSave={changeKey} />
-              )}
-              {screen === 'settings' && (
-                <SettingsForm
-                  appName={BIRDSPOTTER.name}
-                  settings={settings}
-                  isSaved={isSettingsSaved}
-                  isRadiusShown
-                  onChange={changeSettings}
-                />
-              )}
-            </AppScreen>
-          )}
         </>
       ) : (
-        <div className="birdspotter-first-run">
-          <h1>{BIRDSPOTTER.name}</h1>
-          <EbirdKeyForm appName={BIRDSPOTTER.name} savedKey="" onSave={saveEbirdKey} />
-        </div>
+        <FirstRunScreen appName={BIRDSPOTTER.name} onSave={saveEbirdKey} onHelp={() => setScreen('help')} />
+      )}
+      {screen && (
+        <BirdingScreen screen={screen} closeText={ebirdApiKey ? 'Back to map' : 'Back'} onClose={() => setScreen(null)}>
+          {screen === 'ebird-key' && (
+            <EbirdKeyForm appName={BIRDSPOTTER.name} savedKey={ebirdApiKey} onSave={changeKey} />
+          )}
+          {screen === 'settings' && (
+            <SettingsForm
+              appName={BIRDSPOTTER.name}
+              settings={settings}
+              isSaved={isSettingsSaved}
+              isRadiusShown
+              onChange={changeSettings}
+            />
+          )}
+          {screen === 'help' && <Help appName={BIRDSPOTTER.name} />}
+          {screen === 'about' && <About />}
+        </BirdingScreen>
       )}
     </div>
   );

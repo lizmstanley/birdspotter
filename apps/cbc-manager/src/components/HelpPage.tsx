@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { About } from '@birdspotter/birding-core/About.tsx';
 import { EBIRD_KEY_REQUEST_URL } from '@birdspotter/birding-core/ebird.ts';
 import { CBC_SCOUT_URL, BIRDSPOTTER_URL } from '../services/shareApp.ts';
 
@@ -232,6 +233,11 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           . You need a free GitHub account to post. Please don&apos;t post volunteer names, emails, or backup
           files there: it&apos;s public.
         </p>
+      </div>
+
+      <div className="card">
+        <h3>7. About</h3>
+        <About />
       </div>
     </div>
   );

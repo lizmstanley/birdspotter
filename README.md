@@ -76,6 +76,8 @@ CBC Scout needs an eBird API key before it shows anything, so its first screen a
 
 To change the key later, open the menu at the top and tap **eBird key**. If eBird rejects the key, the lists show a **Fix eBird key** button that opens the same screen.
 
+The menu also has **Help**, how CBC Scout works in plain words, and **About**, who made it and why. The first screen links to Help too, before a key is saved.
+
 The web app, CBC Scout, and Birdspotter share one saved key, but only in the same browser on the same device. A counter's phone needs the key entered once.
 
 ### Send counters their area
@@ -139,7 +141,7 @@ Its first screen asks for an eBird API key. Get one as in [Set up your eBird key
 - **Directions:** every place shows its distance and direction from you, and a **Directions** link.
 - **Settings:** open the menu and tap **Settings**. **Check eBird for new sightings** works as in CBC Scout. **Search around you** sets how far the lists look: 2, 5, 7.5, 10, 15, or 25 miles. The default is 7.5 miles. The search moves with you once you're half that distance from where it started.
 
-Like CBC Scout, it needs a signal to open and keeps the last eBird data for up to 6 hours when the signal drops. It keeps the eBird key, its settings, whether location tracking is on, and copies of the day's eBird results in the phone's browser storage. It sends the key, your location, and the days back to eBird, and map views to OpenFreeMap. Its settings and tracking are its own, apart from CBC Scout's.
+Like CBC Scout, it needs a signal to open and keeps the last eBird data for up to 6 hours when the signal drops. It keeps the eBird key, its settings, whether location tracking is on, and copies of the day's eBird results in the phone's browser storage. It sends the key, your location, and the days back to eBird, and map views to OpenFreeMap. Its settings and tracking are its own, apart from CBC Scout's. Its menu has **Help** and **About** as in CBC Scout, and its first screen links to Help.
 
 ## Import your roster
 
