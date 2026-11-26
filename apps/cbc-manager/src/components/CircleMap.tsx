@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { findAreaAt } from '../services/areaLookup';
 import { CBC_CIRCLE_RADIUS_MILES } from '../services/cbcCircle';
+import { isoDay } from '../services/countDay';
 import type { ParsedAreaBoundary } from '../services/kmlParser';
 import { AreaImportBar } from './map/AreaImportBar';
 import { excludeNotCounted } from './map/areaFeatures';
@@ -99,7 +100,7 @@ export function CircleMap({
     const url = URL.createObjectURL(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${effectiveCode.replace(/[^A-Za-z0-9_-]+/g, '-')}-map-${new Date().toISOString().slice(0, 10)}.kml`;
+    link.download = `${effectiveCode.replace(/[^A-Za-z0-9_-]+/g, '-')}-map-${isoDay(new Date())}.kml`;
     link.click();
     URL.revokeObjectURL(url);
   }
