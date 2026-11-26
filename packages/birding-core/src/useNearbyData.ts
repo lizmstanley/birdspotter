@@ -1,6 +1,6 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { describeError } from './describeError.ts';
-import { EbirdKeyRejectedError, EbirdUnreachableError } from './errors.ts';
+import { EbirdKeyRejectedError, EbirdKeyUnsendableError, EbirdUnreachableError } from './errors.ts';
 import {
   EBIRD_DATA_LIFETIME_MS,
   fetchHotspotsInCircle,
@@ -17,6 +17,7 @@ import {
   hotspotsDelayMs,
   sightingsDelayMs,
   type FetchOutcome,
+  type KeyProblem,
 } from './nearbyRefresh.ts';
 
 interface ListRequest {
@@ -37,7 +38,7 @@ interface Sightings {
 export interface NearbyData extends Sightings {
   readonly hotspots: readonly EbirdHotspot[];
   readonly error: string | null;
-  readonly isKeyRejected: boolean;
+  readonly keyProblem: KeyProblem | null;
   readonly isLoading: boolean;
   /** eBird could not be reached at the last fetch of either list. */
   readonly hasNoSignal: boolean;
@@ -59,7 +60,7 @@ interface Loaded<Request, Data> extends FetchOutcome {
   readonly fetchedAt: number | null;
 }
 
-const NO_OUTCOME: FetchOutcome = { error: null, isKeyRejected: false, hasNoSignal: false };
+const NO_OUTCOME: FetchOutcome = { error: null, keyProblem: null, hasNoSignal: false };
 const NO_SIGHTINGS: Sightings = { regular: [], notable: [] };
 const NO_HOTSPOTS: readonly EbirdHotspot[] = [];
 
@@ -130,7 +131,7 @@ export function useNearbyData(
     hotspots: hotspots?.data ?? NO_HOTSPOTS,
     ...(sightings?.data ?? NO_SIGHTINGS),
     error: shownError(sightingsOutcome) ?? shownError(hotspotsOutcome),
-    isKeyRejected: sightingsOutcome.isKeyRejected || hotspotsOutcome.isKeyRejected,
+    keyProblem: sightingsOutcome.keyProblem ?? hotspotsOutcome.keyProblem,
     isLoading: query !== null && !(isSightingsLoaded && isHotspotsLoaded),
     hasNoSignal: sightingsOutcome.hasNoSignal || hotspotsOutcome.hasNoSignal,
     sightingsFetchedAt: sightings?.fetchedAt ?? null,
@@ -140,6 +141,12 @@ export function useNearbyData(
 
 function fromList<T>(list: EbirdList<T>): Fetched<readonly T[]> {
   return { data: list.items, fetchedAt: list.fetchedAt, hasNoSignal: list.isNoSignalCopy };
+}
+
+function keyProblemOf(err: unknown): KeyProblem | null {
+  if (err instanceof EbirdKeyRejectedError) return 'rejected';
+  if (err instanceof EbirdKeyUnsendableError) return 'unsendable';
+  return null;
 }
 
 /** No signal has its own notice, so its error text is not shown. */
@@ -160,17 +167,17 @@ function loadInto<Request, Data>(
   let isCurrent = true;
   fetched
     .then(({ data, fetchedAt, hasNoSignal }) => {
-      if (isCurrent) setLoaded({ request, data, fetchedAt, hasNoSignal, error: null, isKeyRejected: false });
+      if (isCurrent) setLoaded({ request, data, fetchedAt, hasNoSignal, error: null, keyProblem: null });
     })
     .catch((err: unknown) => {
       if (!isCurrent) return;
       const failedAt = Date.now();
-      const isKeyRejected = err instanceof EbirdKeyRejectedError;
+      const keyProblem = keyProblemOf(err);
       setLoaded((last) => ({
         request,
-        ...(heldAfterFailure(last, failedAt, isKeyRejected) ?? { data: empty, fetchedAt: null }),
+        ...(heldAfterFailure(last, failedAt, keyProblem !== null) ?? { data: empty, fetchedAt: null }),
         error: describeError(err),
-        isKeyRejected,
+        keyProblem,
         hasNoSignal: err instanceof EbirdUnreachableError,
       }));
     });

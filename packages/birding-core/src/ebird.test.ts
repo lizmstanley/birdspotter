@@ -6,11 +6,18 @@ import {
   fetchRecentNotableSightingsInCircle,
   fetchRecentSightingsInCircle,
   isConfirmedReport,
+  isSendableEbirdKey,
   recentNotableSightingsUrl,
   recentSightingsUrl,
 } from './ebird.ts';
 import { forgetRecentCopies } from './ebirdCache.ts';
-import { EbirdKeyRejectedError, EbirdRequestError, EbirdUnreachableError, UnexpectedResponseError } from './errors.ts';
+import {
+  EbirdKeyRejectedError,
+  EbirdKeyUnsendableError,
+  EbirdRequestError,
+  EbirdUnreachableError,
+  UnexpectedResponseError,
+} from './errors.ts';
 import { FETCH_TIMEOUT_MS } from './http.ts';
 
 const RADIUS_MILES = 7.5;
@@ -61,6 +68,31 @@ test('a rejected key is reported as a key problem for both requests', async (t) 
     fetchRecentSightingsInCircle('bad-key', 44.8, -93.3, RADIUS_MILES),
     (err) => err instanceof EbirdKeyRejectedError && err.endpoint === 'sightings'
   );
+});
+
+test('a key with a character a header cannot carry fails as a key problem before any request, even with a saved copy', async (t) => {
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([HOTSPOT]));
+  await fetchHotspotsInCircle('good-key', 44.8, -93.3, RADIUS_MILES);
+  fetchMock.mock.resetCalls();
+
+  await assert.rejects(fetchHotspotsInCircle('bad\u2019key', 44.8, -93.3, RADIUS_MILES), EbirdKeyUnsendableError);
+  await assert.rejects(fetchRecentSightingsInCircle('bad\nkey', 44.8, -93.3, RADIUS_MILES), EbirdKeyUnsendableError);
+  assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test('a key is sent trimmed, and a Latin-1 character such as é is sent as is', async (t) => {
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING]));
+  await fetchRecentSightingsInCircle('  cl\u00e9 \n', 44.8, -93.3, RADIUS_MILES);
+  const init = fetchMock.mock.calls[0]?.arguments[1] as RequestInit | undefined;
+  assert.equal(new Headers(init?.headers).get('X-eBirdApiToken'), 'cl\u00e9');
+});
+
+test('the key check accepts what a header can carry and refuses the rest', () => {
+  assert.equal(isSendableEbirdKey('abc123'), true);
+  assert.equal(isSendableEbirdKey(' cl\u00e9\t'), true);
+  assert.equal(isSendableEbirdKey('abc\u2019'), false);
+  assert.equal(isSendableEbirdKey('ab\0c'), false);
+  assert.equal(isSendableEbirdKey('ab\rc'), false);
 });
 
 test('any other failed request keeps its status and response text', async (t) => {

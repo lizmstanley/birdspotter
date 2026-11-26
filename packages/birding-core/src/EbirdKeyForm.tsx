@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { EBIRD_KEY_REQUEST_URL } from './ebird.ts';
+import { EBIRD_KEY_REQUEST_URL, isSendableEbirdKey, UNSENDABLE_KEY_TEXT } from './ebird.ts';
 
 interface EbirdKeyFormProps {
   readonly appName: string;
@@ -21,10 +21,15 @@ function EyeIcon({ isCrossed }: { isCrossed: boolean }) {
 export function EbirdKeyForm({ appName, savedKey, onSave }: EbirdKeyFormProps) {
   const [draft, setDraft] = useState(savedKey);
   const [isShown, setIsShown] = useState(false);
+  const [isUnsendable, setIsUnsendable] = useState(false);
   const isChanged = draft.trim() !== savedKey;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!isSendableEbirdKey(draft)) {
+      setIsUnsendable(true);
+      return;
+    }
     onSave(draft);
   }
 
@@ -44,7 +49,12 @@ export function EbirdKeyForm({ appName, savedKey, onSave }: EbirdKeyFormProps) {
           autoCorrect="off"
           spellCheck={false}
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          aria-invalid={isUnsendable}
+          aria-describedby={isUnsendable ? 'ebird-key-error' : undefined}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setIsUnsendable(false);
+          }}
         />
         <button
           type="button"
@@ -56,6 +66,11 @@ export function EbirdKeyForm({ appName, savedKey, onSave }: EbirdKeyFormProps) {
           <EyeIcon isCrossed={isShown} />
         </button>
       </div>
+      {isUnsendable && (
+        <p id="ebird-key-error" className="birding-key-error" role="alert">
+          {UNSENDABLE_KEY_TEXT}
+        </p>
+      )}
       <button type="submit" disabled={!isChanged || !draft.trim()}>
         Save key
       </button>
