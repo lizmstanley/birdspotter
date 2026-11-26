@@ -174,27 +174,40 @@ export function CircleMap({
                 </span>
               )}
             </p>
+            {!isScouting && areaBoundaries.length > 0 && (
+              <p className="muted">Hover an area to highlight it. Click one to see its assigned counters.</p>
+            )}
           </div>
         </div>
 
-        <EbirdControls
-          hasKey={Boolean(ebirdApiKey)}
-          backDays={ebird.backDays}
-          isBusy={ebird.isBusy}
-          onBackDaysChange={ebird.setBackDays}
-          onLoad={() => void ebird.load(effectiveCode, effectiveLat, effectiveLng)}
-          onExportKml={exportKml}
-        />
-
-        {!isScouting && (
-          <AreaImportBar
-            activeCode={activeCode}
-            areaCount={areaBoundaries.length}
-            setStatus={setStatus}
-            onImportBoundaries={onImportBoundaries}
-            onClearBoundaries={onClearBoundaries}
+        <div className="map-toolbar">
+          <EbirdControls
+            hasKey={Boolean(ebirdApiKey)}
+            backDays={ebird.backDays}
+            isBusy={ebird.isBusy}
+            onBackDaysChange={ebird.setBackDays}
+            onLoad={() => void ebird.load(effectiveCode, effectiveLat, effectiveLng)}
           />
-        )}
+
+          {!isScouting && (
+            <AreaImportBar
+              activeCode={activeCode}
+              areaCount={areaBoundaries.length}
+              setStatus={setStatus}
+              onImportBoundaries={onImportBoundaries}
+              onClearBoundaries={onClearBoundaries}
+            />
+          )}
+
+          <button
+            type="button"
+            className="toolbar-end"
+            title="Download the layers turned on below, with eBird hotspots and sightings, as a KML file for Google Earth or My Maps"
+            onClick={exportKml}
+          >
+            Export Map as KML
+          </button>
+        </div>
 
         <LayerLegend
           isScouting={isScouting}
