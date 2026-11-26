@@ -213,10 +213,11 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             Scout uses a copy saved in the last 6 hours.
           </li>
           <li>
-            <strong>Needs a signal:</strong> CBC Scout needs a signal to open, to draw the map, and to
-            check eBird. With no signal, the lists show the eBird data last loaded for the active area,
-            with the time it was fetched, until it is 6 hours old, as eBird&apos;s terms allow. Older data
-            is not shown.
+            <strong>No signal:</strong> CBC Scout opens with no signal once it has opened with a signal
+            since its last update. It shows the active area, your location, and the count session. The
+            street map may be blank, and checking eBird needs a signal. With no signal, the lists show
+            the eBird data last loaded for the active area, with the time it was fetched, until it is 6
+            hours old, as eBird&apos;s terms allow. Older data is not shown.
           </li>
           <li>
             <strong>Privacy:</strong> the phone keeps the eBird key, saved areas, settings, whether

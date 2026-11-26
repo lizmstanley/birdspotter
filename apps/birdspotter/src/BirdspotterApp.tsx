@@ -127,7 +127,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               onChange={changeSettings}
             />
           )}
-          {screen === 'help' && <Help appName={BIRDSPOTTER.name} />}
+          {screen === 'help' && <Help appName={BIRDSPOTTER.name} opensWithoutSignal={false} />}
           {screen === 'about' && <About />}
         </BirdingScreen>
       )}

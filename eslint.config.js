@@ -99,6 +99,15 @@ export default tseslint.config(
   },
   {
     files: ['apps/*/public/sw.js'],
-    languageOptions: { globals: { self: 'readonly', URL: 'readonly', fetch: 'readonly' } },
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        URL: 'readonly',
+        fetch: 'readonly',
+        caches: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+      },
+    },
   },
 );

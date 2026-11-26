@@ -109,9 +109,9 @@ CBC Scout keeps every area it loads, with one active at a time. With more than o
 
 Open the menu and tap **Settings**. **Check eBird for new sightings** sets how often the Nearby and Suggestions lists check eBird: every 15 minutes, every half hour, every hour, or every 2 hours. The default is every half hour. Checking less often uses less data and battery. Hotspots change rarely, so they don't follow this setting. CBC Scout uses a copy it saved in the last 6 hours, and fetches them again only for a new search place or key, after a failed fetch, or once the copy is 6 hours old.
 
-### It needs a signal
+### With no signal
 
-CBC Scout needs a signal to open, to draw the map, and to check eBird. It doesn't save itself for offline use. If the signal drops, the lists keep the eBird data they last loaded, and say when it was fetched and that there is no signal. Closing and reopening the app with no signal shows the same data for the active area. Once the data is 6 hours old, eBird's terms no longer allow it, so it leaves the screen until a signal returns. With no active area, a reopened app usually finds nothing saved, because the search follows your location.
+CBC Scout saves its own files on the phone, so it opens with no signal once it has opened with a signal since its last update. Open it online once before heading into the area. With no signal it shows the active area, your location, and the count session, which starts, runs, and stops as usual. The street map may be blank, because the map tiles aren't saved. On a weak signal that doesn't answer, it opens from the saved copy within about 4 seconds, which may be the previous release; the next open with a signal loads the newest one. If the signal drops, the lists keep the eBird data they last loaded, and say when it was fetched and that there is no signal. Closing and reopening the app with no signal shows the same data for the active area. Once the data is 6 hours old, eBird's terms no longer allow it, so it leaves the screen until a signal returns. With no active area, a reopened app usually finds nothing saved, because the search follows your location.
 
 ### What stays on the phone
 
@@ -145,7 +145,7 @@ Its first screen asks for an eBird API key. Get one as in [Set up your eBird key
 - **Directions:** every place shows its distance and direction from you, and a **Directions** link.
 - **Settings:** open the menu and tap **Settings**. **Check eBird for new sightings** works as in CBC Scout. **Search around you** sets how far the lists look: 2, 5, 7.5, 10, 15, or 25 miles. The default is 7.5 miles. The search moves with you once you're half that distance from where it started.
 
-Like CBC Scout, it needs a signal to open and keeps the last eBird data for up to 6 hours when the signal drops. It keeps the eBird key, its settings, whether location tracking is on, and copies of the day's eBird results in the phone's browser storage. It sends the key, your location, and the days back to eBird, and map views to OpenFreeMap. Its settings and tracking are its own, apart from CBC Scout's. Its menu has **Help** and **About** as in CBC Scout, and its first screen links to Help.
+Unlike CBC Scout, it needs a signal to open. Like CBC Scout, it keeps the last eBird data for up to 6 hours when the signal drops. It keeps the eBird key, its settings, whether location tracking is on, and copies of the day's eBird results in the phone's browser storage. It sends the key, your location, and the days back to eBird, and map views to OpenFreeMap. Its settings and tracking are its own, apart from CBC Scout's. Its menu has **Help** and **About** as in CBC Scout, and its first screen links to Help.
 
 ## Import your roster
 

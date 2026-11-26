@@ -83,6 +83,14 @@ Awaiting Results starts tracking on count day. If no count date is set yet, it s
 
 The site is static files on GitHub Pages. The home page at the site root leads with Birdspotter at `app/`; the CBC page at `cbc/` links to the circle manager at `cbc/manager/` and CBC Scout at `cbc/scout/`. An installed app's scope covers every path under it, so no app sits at the root or at `cbc/`: Birdspotter installed at the root would cover CBC Scout, and an area link could open in Birdspotter's window on Android. The two pages are plain HTML with no manifest, so neither installs. Each app builds into its own folder with its own base, so `import.meta.env.BASE_URL` is the app's address and each service worker's scope is that folder. Audubon's circle page sends no CORS headers, so circle details need the dev or preview proxy and fall back to ArcGIS search on a static host.
 
+### CBC Scout opens with no signal
+
+Count areas often have no signal, so CBC Scout's service worker saves the app's own files with the Cache API. It answers only GET requests under its scope; eBird and OpenFreeMap pass through, so the street map may be blank offline. Each request goes to the network first, and a good response (status 200, same origin, no redirect) is saved. The page is revalidated, so a saved page never holds back a release when the network answers. If the network fails, or has not answered in 4 seconds, the saved copy is served, page and built files alike. A page served from the save loads its built files from the save at once, so a weak signal costs one 4-second wait, not one per file, and the app opens as the previous release at worst. With no saved copy it waits for the network. The open that installs the worker loads before the worker controls it, so installing fetches and saves the current release.
+
+The saved page is replaced only once every built file it loads is saved, and the previous release's built files are removed only after that, so a signal lost mid-update leaves the previous release able to open. The worker reads the asset list from the new page itself, so the app code takes no part. The cache has one name with a `cbc-scout-` prefix; a change to what it stores renames it, and activation removes the other `cbc-scout-` caches. It never touches other names, since the apps share the origin's caches.
+
+Rejected: `vite-plugin-pwa` or Workbox precaching, a dependency and build plugin for a few lines of worker code; a build step that writes a precache list, since network first saves the same files on the first online open; cache first for built files, safe with hashed names but a second rule where one works; dropping the whole cache when a new page arrives, simpler, but a signal drop mid-update leaves nothing to open. Birdspotter's worker saves nothing, since nothing asks for it offline yet.
+
 ## Code layout
 
 - `apps/cbc-manager`: the circle manager, laid out like the phone apps.

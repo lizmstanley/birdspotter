@@ -205,7 +205,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
             />
           )}
           {screen === 'help' && (
-            <Help appName={CBC_SCOUT.name}>
+            <Help appName={CBC_SCOUT.name} opensWithoutSignal>
               <ScoutHelp />
             </Help>
           )}
