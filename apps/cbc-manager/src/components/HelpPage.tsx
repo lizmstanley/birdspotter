@@ -178,8 +178,8 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           </li>
           <li>
             <strong>Send an area:</strong> open an area and click <strong>Share Area</strong>. Send the
-            link, or print or show its QR code. The counter opens the link, or on the{' '}
-            <strong>Your area</strong> tab taps <strong>Paste link</strong> or{' '}
+            link, or print or show its QR code. The counter opens the link, or opens{' '}
+            <strong>Your areas</strong> from the menu and taps <strong>Paste link</strong> or{' '}
             <strong>Scan area code</strong>. CBC Scout keeps every area it loads, one active at a time.
           </li>
           <li>

@@ -1,14 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-
-const SCREENS = ['ebird-key', 'settings', 'help', 'about'] as const;
-export type Screen = (typeof SCREENS)[number];
-
-const SCREEN_TITLES: Readonly<Record<Screen, string>> = {
-  'ebird-key': 'eBird key',
-  settings: 'Settings',
-  help: 'Help',
-  about: 'About',
-};
+import { menuScreens, screenTitle, type AppScreen, type Screen } from './screens.ts';
 
 const MENU_ID = 'birding-menu';
 
@@ -20,13 +11,19 @@ function MenuIcon() {
   );
 }
 
-interface BirdingBarProps {
+interface BirdingBarProps<AppScreenId extends string> {
   readonly title: string;
-  readonly onOpen: (screen: Screen) => void;
+  /** Shown in the menu before the core's screens. */
+  readonly appScreens?: readonly AppScreen<AppScreenId>[];
+  readonly onOpen: (screen: Screen | NoInfer<AppScreenId>) => void;
 }
 
 /** The top bar, with a menu that opens each screen. */
-export function BirdingBar({ title, onOpen }: BirdingBarProps) {
+export function BirdingBar<AppScreenId extends string = never>({
+  title,
+  appScreens = [],
+  onOpen,
+}: BirdingBarProps<AppScreenId>) {
   const [isOpen, setIsOpen] = useState(false);
   const barRef = useRef<HTMLElement | null>(null);
 
@@ -46,7 +43,7 @@ export function BirdingBar({ title, onOpen }: BirdingBarProps) {
     };
   }, [isOpen]);
 
-  function open(screen: Screen): void {
+  function open(screen: Screen | AppScreenId): void {
     setIsOpen(false);
     onOpen(screen);
   }
@@ -66,10 +63,10 @@ export function BirdingBar({ title, onOpen }: BirdingBarProps) {
       <span className="birding-bar-title">{title}</span>
       <nav id={MENU_ID} className="birding-menu" hidden={!isOpen} aria-label="Menu">
         <ul>
-          {SCREENS.map((screen) => (
-            <li key={screen}>
-              <button type="button" onClick={() => open(screen)}>
-                {SCREEN_TITLES[screen]}
+          {menuScreens(appScreens).map((screen) => (
+            <li key={screen.id}>
+              <button type="button" onClick={() => open(screen.id)}>
+                {screen.title}
               </button>
             </li>
           ))}
@@ -79,8 +76,10 @@ export function BirdingBar({ title, onOpen }: BirdingBarProps) {
   );
 }
 
-interface BirdingScreenProps {
-  readonly screen: Screen;
+interface BirdingScreenProps<AppScreenId extends string> {
+  readonly screen: Screen | NoInfer<AppScreenId>;
+  /** The same list the menu bar takes, for the screen's title. */
+  readonly appScreens?: readonly AppScreen<AppScreenId>[];
   /** Names what closing returns to, such as the map. */
   readonly closeText: string;
   readonly onClose: () => void;
@@ -88,7 +87,13 @@ interface BirdingScreenProps {
 }
 
 /** A full screen over what opened it, which stays mounted beneath it. */
-export function BirdingScreen({ screen, closeText, onClose, children }: BirdingScreenProps) {
+export function BirdingScreen<AppScreenId extends string = never>({
+  screen,
+  appScreens = [],
+  closeText,
+  onClose,
+  children,
+}: BirdingScreenProps<AppScreenId>) {
   const backRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -111,7 +116,7 @@ export function BirdingScreen({ screen, closeText, onClose, children }: BirdingS
           {closeText}
         </button>
         <h1 id="birding-screen-title" className="birding-bar-title">
-          {SCREEN_TITLES[screen]}
+          {screenTitle(screen, appScreens)}
         </h1>
       </header>
       <div className="birding-screen-body">{children}</div>

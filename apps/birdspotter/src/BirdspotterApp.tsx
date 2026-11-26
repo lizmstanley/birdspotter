@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { GeolocateControl } from 'maplibre-gl';
 import { About } from '@birdspotter/birding-core/About.tsx';
-import { BirdingBar, BirdingScreen, type Screen } from '@birdspotter/birding-core/BirdingBar.tsx';
+import { BirdingBar, BirdingScreen } from '@birdspotter/birding-core/BirdingBar.tsx';
 import { BirdingMap, type ReadyMap } from '@birdspotter/birding-core/BirdingMap.tsx';
 import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
 import { FirstRunScreen } from '@birdspotter/birding-core/FirstRunScreen.tsx';
@@ -9,6 +9,7 @@ import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
 import { NearbyPanel } from '@birdspotter/birding-core/NearbyPanel.tsx';
+import type { Screen } from '@birdspotter/birding-core/screens.ts';
 import { readSettings, writeSettings, type BirdingSettings } from '@birdspotter/birding-core/settings.ts';
 import { SettingsForm } from '@birdspotter/birding-core/SettingsForm.tsx';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';

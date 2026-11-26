@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import type { GeolocateControl } from 'maplibre-gl';
 import { About } from '@birdspotter/birding-core/About.tsx';
-import { BirdingBar, BirdingScreen, type Screen } from '@birdspotter/birding-core/BirdingBar.tsx';
+import { BirdingBar, BirdingScreen } from '@birdspotter/birding-core/BirdingBar.tsx';
 import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
 import { FirstRunScreen } from '@birdspotter/birding-core/FirstRunScreen.tsx';
 import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
 import { NearbyPanel, type GroupTitles } from '@birdspotter/birding-core/NearbyPanel.tsx';
+import type { AppScreen, Screen } from '@birdspotter/birding-core/screens.ts';
 import { readSettings, writeSettings, type BirdingSettings } from '@birdspotter/birding-core/settings.ts';
 import { SettingsForm } from '@birdspotter/birding-core/SettingsForm.tsx';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
@@ -21,12 +22,16 @@ import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCi
 import { AreaPanel } from './AreaPanel.tsx';
 import { countCircle, countCircleQuery, isInAreaTest } from './areaRegion.ts';
 import type { AreaStartup } from './areaStartup.ts';
+import { activeSavedArea } from './savedAreas.ts';
 import { CBC_SCOUT } from './scoutIdentity.ts';
 import { ScoutHelp } from './ScoutHelp.tsx';
 import { ScoutMap } from './ScoutMap.tsx';
 import { useSavedAreas } from './useSavedAreas.ts';
 
-type Panel = 'nearby' | 'suggestions' | 'area';
+type Panel = 'nearby' | 'suggestions';
+type ScoutScreen = Screen | 'areas';
+
+const SCOUT_SCREENS: readonly AppScreen<'areas'>[] = [{ id: 'areas', title: 'Your areas' }];
 
 const DEFAULT_BACK_DAYS = 7;
 
@@ -41,22 +46,42 @@ function groupTitles(area: AreaLinkData): GroupTitles {
   return { inRegion: `In ${areaDisplayName(area.areaCode)}`, elsewhere: 'Outside your area' };
 }
 
+function Messages({ error, notice }: { readonly error: string | null; readonly notice: string | null }) {
+  return (
+    <>
+      {error && (
+        <p className="scout-error" role="alert">
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p className="scout-notice" role="status">
+          {notice}
+        </p>
+      )}
+    </>
+  );
+}
+
 export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutAppProps) {
   const [error, setError] = useState<string | null>(areaStartup.error);
   const [notice, setNotice] = useState<string | null>(areaStartup.notice);
   const { ebirdApiKey, saveEbirdKey } = useEbirdKey(setError);
+  // With no area yet, the counter's first job is loading one.
+  const [screen, setScreen] = useState<ScoutScreen | null>(() =>
+    ebirdApiKey && !activeSavedArea(areaStartup.saved) ? 'areas' : null
+  );
   const { areas, activeArea, loadAreaText, pickArea, removeArea } = useSavedAreas({
     startup: areaStartup,
     storage,
     setError,
     setNotice,
+    onLoad: () => setScreen(null),
   });
   const [locationControl, setLocationControl] = useState<GeolocateControl | null>(null);
   const live = useLiveLocation(locationControl, storage, CBC_SCOUT);
-  // With no area yet, the counter's first job is loading one.
-  const [panel, setPanel] = useState<Panel>(activeArea ? 'nearby' : 'area');
+  const [panel, setPanel] = useState<Panel>('nearby');
   const area = activeArea?.data ?? null;
-  const [screen, setScreen] = useState<Screen | null>(null);
   const [settings, setSettings] = useState(() => readSettings(storage, CBC_SCOUT.settingsStorageKey));
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
   const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
@@ -87,20 +112,22 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
     setScreen(null);
   }
 
+  function saveFirstKey(key: string): void {
+    saveEbirdKey(key);
+    if (!activeArea) setScreen('areas');
+  }
+
+  function pickActiveArea(key: string): void {
+    pickArea(key);
+    setScreen(null);
+  }
+
   return (
     <div className="scout">
-      {ebirdApiKey && <BirdingBar title={CBC_SCOUT.name} onOpen={setScreen} />}
+      {ebirdApiKey && <BirdingBar title={CBC_SCOUT.name} appScreens={SCOUT_SCREENS} onOpen={setScreen} />}
       <InstallBanner appName={CBC_SCOUT.name} installPrompt={installPrompt} />
-      {error && (
-        <p className="scout-error" role="alert">
-          {error}
-        </p>
-      )}
-      {notice && (
-        <p className="scout-notice" role="status">
-          {notice}
-        </p>
-      )}
+      {/* The Your areas screen covers these, so it shows them itself. */}
+      {screen !== 'areas' && <Messages error={error} notice={notice} />}
       {ebirdApiKey ? (
         <>
           <ScoutMap
@@ -117,9 +144,6 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
             </button>
             <button type="button" aria-pressed={panel === 'suggestions'} onClick={() => setPanel('suggestions')}>
               Suggestions
-            </button>
-            <button type="button" aria-pressed={panel === 'area'} onClick={() => setPanel('area')}>
-              Your area
             </button>
           </div>
           {panel === 'nearby' && (
@@ -145,21 +169,29 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
               onFixKey={() => setScreen('ebird-key')}
             />
           )}
-          {panel === 'area' && (
-            <AreaPanel
-              areas={areas}
-              activeArea={activeArea}
-              onLoadText={loadAreaText}
-              onPick={pickArea}
-              onRemove={removeArea}
-            />
-          )}
         </>
       ) : (
-        <FirstRunScreen appName={CBC_SCOUT.name} onSave={saveEbirdKey} onHelp={() => setScreen('help')} />
+        <FirstRunScreen appName={CBC_SCOUT.name} onSave={saveFirstKey} onHelp={() => setScreen('help')} />
       )}
       {screen && (
-        <BirdingScreen screen={screen} closeText={ebirdApiKey ? 'Back to map' : 'Back'} onClose={() => setScreen(null)}>
+        <BirdingScreen
+          screen={screen}
+          appScreens={SCOUT_SCREENS}
+          closeText={ebirdApiKey ? 'Back to map' : 'Back'}
+          onClose={() => setScreen(null)}
+        >
+          {screen === 'areas' && (
+            <>
+              <Messages error={error} notice={notice} />
+              <AreaPanel
+                areas={areas}
+                activeArea={activeArea}
+                onLoadText={loadAreaText}
+                onPick={pickActiveArea}
+                onRemove={removeArea}
+              />
+            </>
+          )}
           {screen === 'ebird-key' && (
             <EbirdKeyForm appName={CBC_SCOUT.name} savedKey={ebirdApiKey} onSave={changeKey} />
           )}

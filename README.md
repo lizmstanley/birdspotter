@@ -86,11 +86,13 @@ In the web app, open an area and click **Share Area**. It makes a link and a QR 
 
 The counter loads the area in CBC Scout one of three ways:
 
-- Open the link. CBC Scout opens with the area.
-- On the **Your area** tab, tap **Paste link**, paste the link, and tap **Load**. **Paste from clipboard** does both in one tap, where the phone allows it.
-- On the **Your area** tab, tap **Scan area code** and point the camera at the QR code.
+- Open the link. CBC Scout opens with the area on the map.
+- Open **Your areas** from the menu, tap **Paste link**, paste the link, and tap **Load**. **Paste from clipboard** does both in one tap, where the phone allows it.
+- Open **Your areas** from the menu, tap **Scan area code**, and point the camera at the QR code.
 
-CBC Scout keeps every area it loads, with one active at a time. With more than one, pick the active area from the list on **Your area**. **Remove area** takes the active area off the phone.
+With no area loaded, CBC Scout opens on **Your areas**. A good load or a pick returns to the map.
+
+CBC Scout keeps every area it loads, with one active at a time. With more than one, pick the active area from the list on **Your areas**. **Remove area** takes the active area off the phone.
 
 ### What it shows
 
@@ -98,7 +100,7 @@ CBC Scout keeps every area it loads, with one active at a time. With more than o
 - **Nearby:** notable sightings, then recent sightings, then eBird hotspots. The lists show once location is on. Each list puts places in your area first, then the rest, nearest first. Pick how many days back, from 1 to 30. With an area loaded, the lists cover the whole circle. With none, they cover 7.5 miles around you. Each sighting links to its eBird checklist. Notable sightings include reports still waiting for review; one an eBird reviewer has confirmed is marked **Confirmed**, here and in Birds to look for.
 - **Suggestions:** **Hotspots to visit**, the hotspots in your area (or every hotspot, with no area loaded) ranked by the species last reported there. With an area loaded whose outline is a shape, not a route line, it also shows **Birds to look for**, species whose latest report is outside your area.
 - **Directions:** every place shows its distance from you, its direction once it's more than a tenth of a mile away, and a **Directions** link. It opens Apple Maps on iPhone and iPad, and Google Maps everywhere else.
-- **Your area:** the area's name and its leaders, with their phone and email as tap-to-call and tap-to-email links.
+- **Your areas:** in the menu, the active area's name and its leaders, with their phone and email as tap-to-call and tap-to-email links.
 - **Start count:** a counter taps **Start count** in CBC Scout, and while it stays open on screen it keeps the screen on, draws the route, and sorts each stretch by speed into travel by vehicle or by foot. The counter can change any stretch's mode, and enters the number of participants in the party and any feeder watching hours. Time in other apps counts toward hours. A break in recording, such as switching apps, shows as a dashed straight line whose distance counts toward the miles. After **Stop count**, **Share totals** sends the party's line of the count sheet as text: area number, participants, one party, hours by vehicle, by foot, and feeder watching, and miles by vehicle and by foot. The compiler adds up the parties for each area. Recording pauses while location is off. The route stays on the phone.
 
 ### Settings

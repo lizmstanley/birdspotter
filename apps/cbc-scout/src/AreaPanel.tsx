@@ -123,10 +123,10 @@ export function AreaPanel({ areas, activeArea, onLoadText, onPick, onRemove }: A
   const closeEntry = () => setEntry('none');
 
   return (
-    <section className="birding-panel" aria-label="Your area">
+    <div className="scout-areas">
       {activeArea ? (
         <>
-          <h1>{areaName(activeArea.data)}</h1>
+          <h2>{areaName(activeArea.data)}</h2>
           <LeaderList leaders={activeArea.data.leaders} />
         </>
       ) : (
@@ -153,6 +153,6 @@ export function AreaPanel({ areas, activeArea, onLoadText, onPick, onRemove }: A
           onClose={closeEntry}
         />
       )}
-    </section>
+    </div>
   );
 }

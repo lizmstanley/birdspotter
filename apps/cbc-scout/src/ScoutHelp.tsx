@@ -2,15 +2,15 @@
 export function ScoutHelp() {
   return (
     <>
-      <h2>Your area</h2>
+      <h2>Your areas</h2>
       <p>
-        Your compiler sends your count area as a link or a QR code. Open the link, or on the{' '}
-        <strong>Your area</strong> tab tap <strong>Paste link</strong> and paste it, or tap{' '}
+        Your compiler sends your count area as a link or a QR code. Open the link, or open{' '}
+        <strong>Your areas</strong> from the menu and tap <strong>Paste link</strong> and paste it, or tap{' '}
         <strong>Scan area code</strong> and point the camera at the QR code.
       </p>
       <p>
         CBC Scout keeps every area it loads, with one active at a time. With more than one, pick the active area from
-        the list on <strong>Your area</strong>. <strong>Remove area</strong> takes the active area off the phone.
+        the list on <strong>Your areas</strong>. <strong>Remove area</strong> takes the active area off the phone.
       </p>
       <p>
         With an area loaded, the map shows the count circle and the area&apos;s outline. <strong>Nearby</strong>{' '}
