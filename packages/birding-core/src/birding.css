@@ -247,3 +247,109 @@ a.birding-nearby-place {
 .birding-settings .birding-settings-error {
   color: #991b1b;
 }
+
+.birding-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: var(--birding-bar-color);
+  color: #fff;
+}
+
+.birding-bar button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.birding-bar-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+}
+
+.birding-bar-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.birding-menu {
+  position: absolute;
+  top: 100%;
+  left: 8px;
+  z-index: 3;
+  min-width: 12rem;
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.2);
+}
+
+.birding-menu ul {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.birding-bar .birding-menu button {
+  width: 100%;
+  text-align: left;
+}
+
+.birding-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  padding: inherit;
+  background: #f8fafc;
+}
+
+.birding-screen-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.birding-first-run h1 {
+  max-width: 32rem;
+  margin: 16px auto 0;
+  padding: 0 16px;
+  font-size: 1.4rem;
+}
+
+.birding-first-run-help {
+  max-width: 32rem;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.birding-first-run-help button {
+  padding-left: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+}
+
+.birding-help,
+.birding-about {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.birding-help h2 {
+  margin: 20px 0 4px;
+  font-size: 1.05rem;
+}
+
+.birding-help h2:first-child {
+  margin-top: 0;
+}

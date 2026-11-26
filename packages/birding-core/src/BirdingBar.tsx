@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { BIRDSPOTTER } from './appIdentity.ts';
 
-const SCREENS = ['ebird-key', 'settings'] as const;
+const SCREENS = ['ebird-key', 'settings', 'help', 'about'] as const;
 export type Screen = (typeof SCREENS)[number];
 
 const SCREEN_TITLES: Readonly<Record<Screen, string>> = {
   'ebird-key': 'eBird key',
   settings: 'Settings',
+  help: 'Help',
+  about: 'About',
 };
 
-const MENU_ID = 'birdspotter-menu';
+const MENU_ID = 'birding-menu';
 
 function MenuIcon() {
   return (
@@ -19,8 +20,13 @@ function MenuIcon() {
   );
 }
 
+interface BirdingBarProps {
+  readonly title: string;
+  readonly onOpen: (screen: Screen) => void;
+}
+
 /** The top bar, with a menu that opens each screen. */
-export function AppBar({ onOpen }: { onOpen: (screen: Screen) => void }) {
+export function BirdingBar({ title, onOpen }: BirdingBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const barRef = useRef<HTMLElement | null>(null);
 
@@ -46,10 +52,10 @@ export function AppBar({ onOpen }: { onOpen: (screen: Screen) => void }) {
   }
 
   return (
-    <header ref={barRef} className="birdspotter-bar">
+    <header ref={barRef} className="birding-bar">
       <button
         type="button"
-        className="birdspotter-bar-menu"
+        className="birding-bar-menu"
         aria-label="Menu"
         aria-expanded={isOpen}
         aria-controls={MENU_ID}
@@ -57,8 +63,8 @@ export function AppBar({ onOpen }: { onOpen: (screen: Screen) => void }) {
       >
         <MenuIcon />
       </button>
-      <span className="birdspotter-bar-title">{BIRDSPOTTER.name}</span>
-      <nav id={MENU_ID} className="birdspotter-menu" hidden={!isOpen} aria-label="Menu">
+      <span className="birding-bar-title">{title}</span>
+      <nav id={MENU_ID} className="birding-menu" hidden={!isOpen} aria-label="Menu">
         <ul>
           {SCREENS.map((screen) => (
             <li key={screen}>
@@ -73,18 +79,20 @@ export function AppBar({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
-interface AppScreenProps {
+interface BirdingScreenProps {
   readonly screen: Screen;
+  /** Names what closing returns to, such as the map. */
+  readonly closeText: string;
   readonly onClose: () => void;
   readonly children: ReactNode;
 }
 
-/** A full screen over the map, which stays mounted beneath it. */
-export function AppScreen({ screen, onClose, children }: AppScreenProps) {
+/** A full screen over what opened it, which stays mounted beneath it. */
+export function BirdingScreen({ screen, closeText, onClose, children }: BirdingScreenProps) {
   const backRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    // The menu item that opened the screen is hidden now, so focus would otherwise fall to the page.
+    // The control that opened the screen is covered now, so focus would otherwise fall to the page.
     backRef.current?.focus();
   }, []);
 
@@ -97,16 +105,16 @@ export function AppScreen({ screen, onClose, children }: AppScreenProps) {
   }, [onClose]);
 
   return (
-    <section className="birdspotter-screen" aria-labelledby="birdspotter-screen-title">
-      <header className="birdspotter-bar">
+    <section className="birding-screen" aria-labelledby="birding-screen-title">
+      <header className="birding-bar">
         <button ref={backRef} type="button" onClick={onClose}>
-          Back to map
+          {closeText}
         </button>
-        <h1 id="birdspotter-screen-title" className="birdspotter-bar-title">
+        <h1 id="birding-screen-title" className="birding-bar-title">
           {SCREEN_TITLES[screen]}
         </h1>
       </header>
-      <div className="birdspotter-screen-body">{children}</div>
+      <div className="birding-screen-body">{children}</div>
     </section>
   );
 }

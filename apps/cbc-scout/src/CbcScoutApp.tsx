@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 import type { GeolocateControl } from 'maplibre-gl';
+import { About } from '@birdspotter/birding-core/About.tsx';
+import { BirdingBar, BirdingScreen, type Screen } from '@birdspotter/birding-core/BirdingBar.tsx';
 import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
+import { FirstRunScreen } from '@birdspotter/birding-core/FirstRunScreen.tsx';
+import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
 import { NearbyPanel, type GroupTitles } from '@birdspotter/birding-core/NearbyPanel.tsx';
@@ -17,8 +21,8 @@ import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCi
 import { AreaPanel } from './AreaPanel.tsx';
 import { countCircle, countCircleQuery, isInAreaTest } from './areaRegion.ts';
 import type { AreaStartup } from './areaStartup.ts';
-import { ScoutBar, ScoutScreen, type Screen } from './ScoutBar.tsx';
 import { CBC_SCOUT } from './scoutIdentity.ts';
+import { ScoutHelp } from './ScoutHelp.tsx';
 import { ScoutMap } from './ScoutMap.tsx';
 import { useSavedAreas } from './useSavedAreas.ts';
 
@@ -85,7 +89,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
 
   return (
     <div className="scout">
-      {ebirdApiKey && <ScoutBar onOpen={setScreen} />}
+      {ebirdApiKey && <BirdingBar title={CBC_SCOUT.name} onOpen={setScreen} />}
       <InstallBanner appName={CBC_SCOUT.name} installPrompt={installPrompt} />
       {error && (
         <p className="scout-error" role="alert">
@@ -150,28 +154,31 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
               onRemove={removeArea}
             />
           )}
-          {screen && (
-            <ScoutScreen screen={screen} onClose={() => setScreen(null)}>
-              {screen === 'ebird-key' && (
-                <EbirdKeyForm appName={CBC_SCOUT.name} savedKey={ebirdApiKey} onSave={changeKey} />
-              )}
-              {screen === 'settings' && (
-                <SettingsForm
-                  appName={CBC_SCOUT.name}
-                  settings={settings}
-                  isSaved={isSettingsSaved}
-                  isRadiusShown={false}
-                  onChange={changeSettings}
-                />
-              )}
-            </ScoutScreen>
-          )}
         </>
       ) : (
-        <div className="scout-first-run">
-          <h1>{CBC_SCOUT.name}</h1>
-          <EbirdKeyForm appName={CBC_SCOUT.name} savedKey="" onSave={saveEbirdKey} />
-        </div>
+        <FirstRunScreen appName={CBC_SCOUT.name} onSave={saveEbirdKey} onHelp={() => setScreen('help')} />
+      )}
+      {screen && (
+        <BirdingScreen screen={screen} closeText={ebirdApiKey ? 'Back to map' : 'Back'} onClose={() => setScreen(null)}>
+          {screen === 'ebird-key' && (
+            <EbirdKeyForm appName={CBC_SCOUT.name} savedKey={ebirdApiKey} onSave={changeKey} />
+          )}
+          {screen === 'settings' && (
+            <SettingsForm
+              appName={CBC_SCOUT.name}
+              settings={settings}
+              isSaved={isSettingsSaved}
+              isRadiusShown={false}
+              onChange={changeSettings}
+            />
+          )}
+          {screen === 'help' && (
+            <Help appName={CBC_SCOUT.name}>
+              <ScoutHelp />
+            </Help>
+          )}
+          {screen === 'about' && <About />}
+        </BirdingScreen>
       )}
     </div>
   );

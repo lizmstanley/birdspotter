@@ -13,6 +13,7 @@ body,
 }
 
 .scout {
+  --birding-bar-color: #15803d;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -125,81 +126,6 @@ body,
 .scout-tabs button[aria-pressed='true'] {
   border-bottom-color: #15803d;
   background: #f8fafc;
-}
-
-.scout-bar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-  background: #15803d;
-  color: #fff;
-}
-
-.scout-bar button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-}
-
-.scout-bar-menu {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-}
-
-.scout-bar-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.scout-menu {
-  position: absolute;
-  top: 100%;
-  left: 8px;
-  z-index: 3;
-  min-width: 12rem;
-  background: #fff;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgb(15 23 42 / 0.2);
-}
-
-.scout-menu ul {
-  margin: 0;
-  padding: 4px 0;
-  list-style: none;
-}
-
-.scout-bar .scout-menu button {
-  width: 100%;
-  text-align: left;
-}
-
-.scout-screen {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  padding: inherit;
-  background: #f8fafc;
-}
-
-.scout-screen-body {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.scout-first-run h1 {
-  max-width: 32rem;
-  margin: 16px auto 0;
-  padding: 0 16px;
-  font-size: 1.4rem;
 }
 
 .scout-session {

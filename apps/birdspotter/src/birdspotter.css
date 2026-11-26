@@ -13,6 +13,7 @@ body,
 }
 
 .birdspotter {
+  --birding-bar-color: #4d7c0f;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -44,79 +45,4 @@ body,
 .birdspotter-tabs button[aria-pressed='true'] {
   border-bottom-color: #4d7c0f;
   background: #f8fafc;
-}
-
-.birdspotter-bar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-  background: #4d7c0f;
-  color: #fff;
-}
-
-.birdspotter-bar button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-}
-
-.birdspotter-bar-menu {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-}
-
-.birdspotter-bar-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.birdspotter-menu {
-  position: absolute;
-  top: 100%;
-  left: 8px;
-  z-index: 3;
-  min-width: 12rem;
-  background: #fff;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgb(15 23 42 / 0.2);
-}
-
-.birdspotter-menu ul {
-  margin: 0;
-  padding: 4px 0;
-  list-style: none;
-}
-
-.birdspotter-bar .birdspotter-menu button {
-  width: 100%;
-  text-align: left;
-}
-
-.birdspotter-screen {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  padding: inherit;
-  background: #f8fafc;
-}
-
-.birdspotter-screen-body {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.birdspotter-first-run h1 {
-  max-width: 32rem;
-  margin: 16px auto 0;
-  padding: 0 16px;
-  font-size: 1.4rem;
 }
