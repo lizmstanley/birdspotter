@@ -1,4 +1,4 @@
-import { encodeAreaLink, type AreaLinkData } from '../../../../src/services/areaLink.ts';
+import { encodeAreaLink, type AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
 
 export const SCOUT_URL = 'https://example.test/cbc/scout/';
 

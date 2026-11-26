@@ -11,9 +11,9 @@ import { SuggestionsPanel, type BirdsRegion } from '@birdspotter/birding-core/Su
 import { useEbirdKey } from '@birdspotter/birding-core/useEbirdKey.ts';
 import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
 import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
-import { areaDisplayName } from '../../../src/components/map/mapText.ts';
-import type { AreaLinkData } from '../../../src/services/areaLink.ts';
-import { CBC_CIRCLE_RADIUS_MILES } from '../../../src/services/cbcCircle.ts';
+import { areaDisplayName } from '@birdspotter/cbc-manager/components/map/mapText.ts';
+import type { AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
+import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCircle.ts';
 import { AreaPanel } from './AreaPanel.tsx';
 import { countCircle, countCircleQuery, isInAreaTest } from './areaRegion.ts';
 import type { AreaStartup } from './areaStartup.ts';

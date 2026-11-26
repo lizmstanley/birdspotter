@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import type { AreaLeader } from '../../../src/services/areaLink.ts';
+import type { AreaLeader } from '@birdspotter/cbc-manager/services/areaLink.ts';
 import { areaName } from './areaName.ts';
 import { AreaScanner } from './AreaScanner.tsx';
 import { emailHref, phoneHref } from './leaderContact.ts';

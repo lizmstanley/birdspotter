@@ -4,8 +4,8 @@ import type { Feature, FeatureCollection, GeoJSON, Polygon, Position } from 'geo
 import { BirdingMap, showStartView, type ReadyMap } from '@birdspotter/birding-core/BirdingMap.tsx';
 import type { LiveLocation } from '@birdspotter/birding-core/locationTracking.ts';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
-import { addCircleLayers, CIRCLE_SOURCE } from '../../../src/components/map/mapLayers.ts';
-import type { AreaLinkData, AreaOutlineGeometry } from '../../../src/services/areaLink.ts';
+import { addCircleLayers, CIRCLE_SOURCE } from '@birdspotter/cbc-manager/components/map/mapLayers.ts';
+import type { AreaLinkData, AreaOutlineGeometry } from '@birdspotter/cbc-manager/services/areaLink.ts';
 import { areaName } from './areaName.ts';
 import { countCircle } from './areaRegion.ts';
 import { areaStatusAt, areaStatusText } from './areaStatus.ts';

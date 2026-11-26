@@ -20,7 +20,6 @@
     "noUnusedParameters": true
   },
   "include": [
-    "src",
     "packages",
     "apps"
   ],
