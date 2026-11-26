@@ -117,6 +117,10 @@ export class CbcDb {
     return areas.setAreaCounted(this.db, circleCode, areaCode, isCounted);
   }
 
+  setAreaCounterNote(circleCode: string, areaCode: string, note: string): Promise<void> {
+    return areas.setAreaCounterNote(this.db, circleCode, areaCode, note);
+  }
+
   setAreaResultsReceived(circleCode: string, areaCode: string, received: boolean): Promise<void> {
     return areas.setAreaResultsReceived(this.db, circleCode, areaCode, received);
   }

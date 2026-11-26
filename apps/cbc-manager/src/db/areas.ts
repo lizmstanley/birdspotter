@@ -9,7 +9,7 @@ export function computeSortOrder(code: string): number {
 export async function getAreas(db: PGlite, circleCode: string): Promise<AreaOption[]> {
   return (
     await db.query<AreaOption>(
-      `SELECT a.code, a.cities, a.notable_spots, a.active_restrictions, a.is_counted,
+      `SELECT a.code, a.cities, a.notable_spots, a.active_restrictions, a.counter_note, a.is_counted,
               EXISTS (
                 SELECT 1 FROM public.area_results r
                 JOIN public.count_years cy
@@ -70,6 +70,16 @@ export async function setAreaCounted(db: PGlite, circleCode: string, areaCode: s
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (circle_code, code) DO UPDATE SET is_counted = EXCLUDED.is_counted`,
     [circleCode, areaCode, computeSortOrder(areaCode), isCounted]
+  );
+}
+
+/** Saves the area's note for counters, trimmed; a blank note is stored as null. */
+export async function setAreaCounterNote(db: PGlite, circleCode: string, areaCode: string, note: string): Promise<void> {
+  await db.query(
+    `INSERT INTO public.areas (circle_code, code, sort_order, counter_note)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (circle_code, code) DO UPDATE SET counter_note = EXCLUDED.counter_note`,
+    [circleCode, areaCode, computeSortOrder(areaCode), note.trim() || null]
   );
 }
 

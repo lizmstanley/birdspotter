@@ -21,17 +21,26 @@ export interface AreaLinkData {
   readonly areaLabel?: string;
   readonly outline: AreaOutlineGeometry;
   readonly leaders: readonly AreaLeader[];
+  /** The compiler's free-text note for the area's counters. Anyone with the link can read it. */
+  readonly note?: string;
 }
 
 export interface AreaLink {
   readonly url: string;
+  /** The URL's length in UTF-8 bytes, the count a QR code holds. */
+  readonly bytes: number;
   readonly pointsIn: number;
   readonly pointsKept: number;
 }
 
 /** Byte-mode capacity of the largest QR code (version 40) at medium error correction. */
 export const QR_MAX_BYTES_MEDIUM = 2331;
-export const AREA_LINK_FORMAT_VERSION = 1;
+export const AREA_LINK_FORMAT_VERSION = 2;
+/** Counted in UTF-16 code units, as a textarea's `maxLength` and `String.length` count. */
+export const AREA_NOTE_MAX_LENGTH = 300;
+// Saved areas on counters' phones are stored as version 1 payloads, so the reader keeps it.
+const FORMAT_VERSION_WITHOUT_NOTE = 1;
+const READABLE_FORMAT_VERSIONS: readonly unknown[] = [FORMAT_VERSION_WITHOUT_NOTE, AREA_LINK_FORMAT_VERSION];
 
 // 1e-5 degrees is about 1 m, finer than a phone's location fix.
 const COORDINATE_SCALE = 1e5;
@@ -59,6 +68,7 @@ interface PackedAreaLink {
   readonly t: TypeCode;
   readonly p: readonly (readonly (readonly number[])[])[];
   readonly l?: readonly PackedLeader[];
+  readonly m?: string;
 }
 
 export class InvalidAreaLinkError extends Error {
@@ -78,6 +88,16 @@ export class UnsupportedAreaLinkVersionError extends Error {
     super('areaLink: the link was made by a newer or unknown version of the app');
     this.name = 'UnsupportedAreaLinkVersionError';
     this.version = version;
+  }
+}
+
+export class AreaNoteTooLongError extends Error {
+  readonly length: number;
+
+  constructor(length: number) {
+    super(`areaLink: the area note is longer than ${AREA_NOTE_MAX_LENGTH} characters`);
+    this.name = 'AreaNoteTooLongError';
+    this.length = length;
   }
 }
 
@@ -178,8 +198,13 @@ function packLeader(leader: AreaLeader): PackedLeader {
   };
 }
 
-/** @returns the base64url text that goes after `#` in an area link */
+/**
+ * @returns the base64url text that goes after `#` in an area link
+ * @throws AreaNoteTooLongError when the note is over `AREA_NOTE_MAX_LENGTH`, since the reader would reject it
+ */
 export function encodeAreaLink(data: AreaLinkData): string {
+  const note = data.note?.trim() ? data.note : undefined;
+  if (note && note.length > AREA_NOTE_MAX_LENGTH) throw new AreaNoteTooLongError(note.length);
   const packed: PackedAreaLink = {
     v: AREA_LINK_FORMAT_VERSION,
     c: data.circleCode,
@@ -190,6 +215,7 @@ export function encodeAreaLink(data: AreaLinkData): string {
     t: TYPE_CODES[data.outline.type],
     p: geometryParts(data.outline).map((part) => part.map(packLine)),
     ...(data.leaders.length > 0 ? { l: data.leaders.map(packLeader) } : {}),
+    ...(note ? { m: note } : {}),
   };
   return toBase64Url(deflateSync(strToU8(JSON.stringify(packed)), { level: 9 }));
 }
@@ -244,6 +270,12 @@ function readLeaders(value: unknown): AreaLeader[] {
   return value.map(readLeader);
 }
 
+function readNote(version: unknown, value: unknown): string | undefined {
+  if (version === FORMAT_VERSION_WITHOUT_NOTE || value === undefined) return undefined;
+  if (!isText(value) || value.length > AREA_NOTE_MAX_LENGTH) throw new InvalidAreaLinkError('malformed note');
+  return value;
+}
+
 function partsToGeometry(type: TypeCode, parts: Position[][][]): AreaOutlineGeometry | null {
   if (type === 'M') return toAreaOutlineGeometry({ type: 'MultiPolygon', coordinates: parts });
   if (parts.length !== 1) return null;
@@ -271,12 +303,13 @@ function readOutline(type: unknown, parts: unknown): AreaOutlineGeometry {
 export function decodeAreaLink(payload: string): AreaLinkData {
   const packed = readPacked(payload);
   if (!isRecord(packed)) throw new InvalidAreaLinkError('not an object');
-  if (packed.v !== AREA_LINK_FORMAT_VERSION) throw new UnsupportedAreaLinkVersionError(packed.v);
+  if (!READABLE_FORMAT_VERSIONS.includes(packed.v)) throw new UnsupportedAreaLinkVersionError(packed.v);
   if (!isText(packed.c) || !isText(packed.n) || !isText(packed.a) || !isOptionalText(packed.b)) {
     throw new InvalidAreaLinkError('missing circle or area');
   }
   if (!isDeltaList(packed.o) || packed.o.length !== 2) throw new InvalidAreaLinkError('missing circle center');
   const [lng, lat] = unpackLine(packed.o)[0];
+  const note = readNote(packed.v, packed.m);
   return {
     circleCode: packed.c,
     circleName: packed.n,
@@ -285,6 +318,7 @@ export function decodeAreaLink(payload: string): AreaLinkData {
     ...(packed.b !== undefined ? { areaLabel: packed.b } : {}),
     outline: readOutline(packed.t, packed.p),
     leaders: readLeaders(packed.l),
+    ...(note !== undefined ? { note } : {}),
   };
 }
 
@@ -297,6 +331,7 @@ function simplified(geometry: AreaOutlineGeometry, toleranceDegrees: number): Ar
  * Simplifies the outline step by step until the link fits one QR code at medium error correction.
  * @param baseUrl the CBC Scout page the link opens
  * @throws AreaLinkTooLargeError when even the coarsest step does not fit
+ * @throws AreaNoteTooLongError when the note is over `AREA_NOTE_MAX_LENGTH`
  */
 export function buildAreaLink(baseUrl: string, data: AreaLinkData): AreaLink {
   const encoder = new TextEncoder();
@@ -306,7 +341,7 @@ export function buildAreaLink(baseUrl: string, data: AreaLinkData): AreaLink {
     const url = `${baseUrl}#${encodeAreaLink({ ...data, outline })}`;
     lastBytes = encoder.encode(url).length;
     if (lastBytes <= QR_MAX_BYTES_MEDIUM) {
-      return { url, pointsIn: countPoints(data.outline), pointsKept: countPoints(outline) };
+      return { url, bytes: lastBytes, pointsIn: countPoints(data.outline), pointsKept: countPoints(outline) };
     }
   }
   throw new AreaLinkTooLargeError(lastBytes);

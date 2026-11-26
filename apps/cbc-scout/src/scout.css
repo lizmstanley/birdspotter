@@ -87,6 +87,12 @@ body,
   min-height: 44px;
 }
 
+.scout-area-note {
+  margin: 0 0 8px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 .scout-actions {
   display: flex;
   flex-wrap: wrap;
