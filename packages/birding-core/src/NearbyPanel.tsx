@@ -73,7 +73,7 @@ export function NearbyPanel({
   );
 
   return (
-    <section className="birding-panel birding-nearby" aria-label="Nearby">
+    <section className="birding-panel birding-nearby" aria-label="Sightings">
       <label className="birding-nearby-days">
         Sightings from the last{' '}
         <select value={backDays} onChange={(event) => onBackDaysChange(Number(event.target.value))}>

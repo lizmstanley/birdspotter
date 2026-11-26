@@ -93,6 +93,28 @@ body,
   overflow-wrap: anywhere;
 }
 
+.scout-area-list {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.scout-area-card {
+  padding: 12px 0;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.scout-area-active {
+  align-self: center;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.scout-notes h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
 .scout-actions {
   display: flex;
   flex-wrap: wrap;
@@ -165,7 +187,29 @@ body,
   margin: 0 0 8px;
 }
 
-.scout-session .scout-actions {
+.scout-session .scout-area-list {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.scout-area-card {
+  padding: 12px 0;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.scout-area-active {
+  align-self: center;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.scout-notes h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.scout-actions {
   align-items: center;
 }
 

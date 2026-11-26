@@ -6,17 +6,17 @@ export function ScoutHelp() {
       <p>
         Your compiler sends your count area as a link or a QR code. Open the link, or open{' '}
         <strong>Your areas</strong> from the menu and tap <strong>Paste link</strong> and paste it, or tap{' '}
-        <strong>Scan area code</strong> and point the camera at the QR code. The area can come with a note from your
-        compiler, such as where to meet or which feeders you may visit. It shows on <strong>Your areas</strong>, under the area&apos;s name and leader.
+        <strong>Scan QR code</strong> and point the camera at the QR code. The area can come with a note from your
+        compiler, such as where to meet or which feeders you may visit. It shows on the <strong>Notes</strong> tab under the map, and on <strong>Your areas</strong>.
       </p>
       <p>
-        CBC Scout keeps every area it loads, with one active at a time. With more than one, pick the active area from
-        the list on <strong>Your areas</strong>. <strong>Remove area</strong> takes the active area off the phone.
+        CBC Scout keeps every area it loads, with one active at a time. With more than one, tap <strong>Make active</strong> on
+        <strong>Your areas</strong>. <strong>Remove area</strong> takes that area off the phone.
       </p>
       <p>
-        With an area loaded, the map shows the count circle and the area&apos;s outline. <strong>Nearby</strong>{' '}
+        With an area loaded, the map shows the count circle and the area&apos;s outline. <strong>Sightings</strong>{' '}
         covers the whole circle, with places in your area first. <strong>Hotspots to visit</strong> lists only the
-        hotspots in your area. When the outline is a shape, not a route line, <strong>Suggestions</strong> also shows{' '}
+        hotspots in your area. When the outline is a shape, not a route line, <strong>Hotspots</strong> also shows{' '}
         <strong>Birds to look for</strong>, species whose latest report is outside your area.
       </p>
 

@@ -19,7 +19,7 @@ import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import { areaDisplayName } from '@birdspotter/cbc-manager/components/map/mapText.ts';
 import type { AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
 import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCircle.ts';
-import { AreaPanel } from './AreaPanel.tsx';
+import { AreaDetails, AreaPanel } from './AreaPanel.tsx';
 import { countCircle, countCircleQuery, isInAreaTest } from './areaRegion.ts';
 import type { AreaStartup } from './areaStartup.ts';
 import { activeSavedArea } from './savedAreas.ts';
@@ -28,7 +28,7 @@ import { ScoutHelp } from './ScoutHelp.tsx';
 import { ScoutMap } from './ScoutMap.tsx';
 import { useSavedAreas } from './useSavedAreas.ts';
 
-type Panel = 'nearby' | 'suggestions';
+type Panel = 'sightings' | 'hotspots' | 'notes';
 type ScoutScreen = Screen | 'areas';
 
 const SCOUT_SCREENS: readonly AppScreen<'areas'>[] = [{ id: 'areas', title: 'Your areas' }];
@@ -80,13 +80,15 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   });
   const [locationControl, setLocationControl] = useState<GeolocateControl | null>(null);
   const live = useLiveLocation(locationControl, storage, CBC_SCOUT);
-  const [panel, setPanel] = useState<Panel>('nearby');
+  const [chosenPanel, setPanel] = useState<Panel>('sightings');
   const area = activeArea?.data ?? null;
+  // Notes belong to an area, so with none loaded the tab is gone and Sightings shows.
+  const panel = chosenPanel === 'notes' && !area ? 'sightings' : chosenPanel;
   const [settings, setSettings] = useState(() => readSettings(storage, CBC_SCOUT.settingsStorageKey));
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
   const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
   const circleQuery = useMemo(() => (area ? countCircleQuery(area) : null), [area]);
-  // Above both tabs, so Nearby and Suggestions share one load. With no area, the search is the size of a count circle.
+  // Above the tabs, so Sightings and Hotspots share one load. With no area, the search is the size of a count circle.
   const nearby = useNearbyData(
     ebirdApiKey,
     circleQuery,
@@ -139,14 +141,19 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
             setNotice={setNotice}
           />
           <div className="scout-tabs">
-            <button type="button" aria-pressed={panel === 'nearby'} onClick={() => setPanel('nearby')}>
-              Nearby
+            <button type="button" aria-pressed={panel === 'sightings'} onClick={() => setPanel('sightings')}>
+              Sightings
             </button>
-            <button type="button" aria-pressed={panel === 'suggestions'} onClick={() => setPanel('suggestions')}>
-              Suggestions
+            <button type="button" aria-pressed={panel === 'hotspots'} onClick={() => setPanel('hotspots')}>
+              Hotspots
             </button>
+            {area && (
+              <button type="button" aria-pressed={panel === 'notes'} onClick={() => setPanel('notes')}>
+                Notes
+              </button>
+            )}
           </div>
-          {panel === 'nearby' && (
+          {panel === 'sightings' && (
             <NearbyPanel
               isInRegion={isInArea}
               groupTitles={area ? groupTitles(area) : null}
@@ -158,7 +165,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
               onFixKey={() => setScreen('ebird-key')}
             />
           )}
-          {panel === 'suggestions' && (
+          {panel === 'hotspots' && (
             <SuggestionsPanel
               isInRegion={isInArea}
               birdsRegion={birdsRegion}
@@ -168,6 +175,12 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
               refreshMinutes={settings.refreshMinutes}
               onFixKey={() => setScreen('ebird-key')}
             />
+          )}
+          {panel === 'notes' && area && (
+            <section className="birding-panel scout-notes" aria-label="Notes">
+              <AreaDetails area={area} />
+              {!area.note && <p>No note from your compiler for this area.</p>}
+            </section>
           )}
         </>
       ) : (

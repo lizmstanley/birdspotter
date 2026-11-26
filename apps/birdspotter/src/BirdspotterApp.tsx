@@ -19,7 +19,7 @@ import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
 import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import { BIRDSPOTTER } from './appIdentity.ts';
 
-type Panel = 'nearby' | 'suggestions';
+type Panel = 'sightings' | 'hotspots';
 
 const DEFAULT_BACK_DAYS = 7;
 
@@ -35,12 +35,12 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
   const { ebirdApiKey, saveEbirdKey } = useEbirdKey(setError);
   const [locationControl, setLocationControl] = useState<GeolocateControl | null>(null);
   const live = useLiveLocation(locationControl, storage, BIRDSPOTTER);
-  const [panel, setPanel] = useState<Panel>('nearby');
+  const [panel, setPanel] = useState<Panel>('sightings');
   const [screen, setScreen] = useState<Screen | null>(null);
   const [settings, setSettings] = useState(() => readSettings(storage, BIRDSPOTTER.settingsStorageKey));
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
   const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
-  // Above both tabs, so Nearby and Suggestions share one load.
+  // Above both tabs, so Sightings and Hotspots share one load.
   const nearby = useNearbyData(
     ebirdApiKey,
     null,
@@ -79,14 +79,14 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
           )}
           <BirdingMap addLayers={addNoLayers} onReady={takeMap} />
           <div className="birdspotter-tabs">
-            <button type="button" aria-pressed={panel === 'nearby'} onClick={() => setPanel('nearby')}>
-              Nearby
+            <button type="button" aria-pressed={panel === 'sightings'} onClick={() => setPanel('sightings')}>
+              Sightings
             </button>
-            <button type="button" aria-pressed={panel === 'suggestions'} onClick={() => setPanel('suggestions')}>
-              Suggestions
+            <button type="button" aria-pressed={panel === 'hotspots'} onClick={() => setPanel('hotspots')}>
+              Hotspots
             </button>
           </div>
-          {panel === 'nearby' && (
+          {panel === 'sightings' && (
             <NearbyPanel
               isInRegion={null}
               groupTitles={null}
@@ -98,7 +98,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               onFixKey={() => setScreen('ebird-key')}
             />
           )}
-          {panel === 'suggestions' && (
+          {panel === 'hotspots' && (
             <SuggestionsPanel
               isInRegion={null}
               birdsRegion={null}

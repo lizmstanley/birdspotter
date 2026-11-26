@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import type { AreaLeader } from '@birdspotter/cbc-manager/services/areaLink.ts';
+import type { AreaLeader, AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
 import { areaName } from './areaName.ts';
 import { AreaScanner } from './AreaScanner.tsx';
 import { emailHref, phoneHref } from './leaderContact.ts';
@@ -87,35 +87,55 @@ function PasteForm({ onLoad, onClose }: { readonly onLoad: (text: string) => boo
   );
 }
 
-function AreaPicker({ areas, activeArea, onPick, onRemove }: Omit<AreaPanelProps, 'onLoadText'>) {
-  if (areas.length === 0) return null;
+/** The area's name, its leaders, and the compiler's note, as the link carries them. */
+export function AreaDetails({ area }: { readonly area: AreaLinkData }) {
+  return (
+    <>
+      <h2>{areaName(area)}</h2>
+      <LeaderList leaders={area.leaders} />
+      {area.note && <p className="scout-area-note">{area.note}</p>}
+    </>
+  );
+}
 
+interface SavedAreaCardProps {
+  readonly area: SavedArea;
+  readonly isActive: boolean;
+  readonly onPick: (key: string) => void;
+  readonly onRemove: (key: string) => void;
+}
+
+function SavedAreaCard({ area, isActive, onPick, onRemove }: SavedAreaCardProps) {
   function handleRemove() {
-    if (!activeArea) return;
     const isConfirmed = window.confirm(
-      `Remove ${areaName(activeArea.data)} from this phone? You will need its link or code to load it again.`
+      `Remove ${areaName(area.data)} from this phone? You will need its link or code to load it again.`
     );
-    if (isConfirmed) onRemove(activeArea.key);
+    if (isConfirmed) onRemove(area.key);
   }
 
   return (
-    <div className="scout-actions">
-      {areas.length > 1 && (
-        <select aria-label="Active area" value={activeArea?.key ?? ''} onChange={(event) => onPick(event.target.value)}>
-          {areas.map((area) => (
-            <option key={area.key} value={area.key}>
-              {areaName(area.data)}
-            </option>
-          ))}
-        </select>
-      )}
-      {activeArea && (
+    <li className="scout-area-card">
+      <AreaDetails area={area.data} />
+      <div className="scout-actions">
+        {isActive ? (
+          <span className="scout-area-active">Active area</span>
+        ) : (
+          <button type="button" onClick={() => onPick(area.key)}>
+            Make active
+          </button>
+        )}
         <button type="button" onClick={handleRemove}>
           Remove area
         </button>
-      )}
-    </div>
+      </div>
+    </li>
   );
+}
+
+/** @returns the active area first, then the rest, latest loaded first */
+function activeFirst(areas: readonly SavedArea[], activeKey: string | null): SavedArea[] {
+  const latestFirst = [...areas].reverse();
+  return [...latestFirst.filter((area) => area.key === activeKey), ...latestFirst.filter((area) => area.key !== activeKey)];
 }
 
 export function AreaPanel({ areas, activeArea, onLoadText, onPick, onRemove }: AreaPanelProps) {
@@ -124,23 +144,28 @@ export function AreaPanel({ areas, activeArea, onLoadText, onPick, onRemove }: A
 
   return (
     <div className="scout-areas">
-      {activeArea ? (
-        <>
-          <h2>{areaName(activeArea.data)}</h2>
-          <LeaderList leaders={activeArea.data.leaders} />
-          {activeArea.data.note && <p className="scout-area-note">{activeArea.data.note}</p>}
-        </>
+      {areas.length === 0 ? (
+        <p>No area loaded. Open the link from your compiler, paste it, or scan its QR code.</p>
       ) : (
-        <p>No area loaded. Open the link from your compiler, paste it, or scan its code.</p>
+        <ul className="scout-area-list">
+          {activeFirst(areas, activeArea?.key ?? null).map((area) => (
+            <SavedAreaCard
+              key={area.key}
+              area={area}
+              isActive={area.key === activeArea?.key}
+              onPick={onPick}
+              onRemove={onRemove}
+            />
+          ))}
+        </ul>
       )}
-      <AreaPicker areas={areas} activeArea={activeArea} onPick={onPick} onRemove={onRemove} />
       {entry === 'none' && (
         <div className="scout-actions">
           <button type="button" onClick={() => setEntry('paste')}>
             Paste link
           </button>
           <button type="button" onClick={() => setEntry('scan')}>
-            Scan area code
+            Scan QR code
           </button>
         </div>
       )}

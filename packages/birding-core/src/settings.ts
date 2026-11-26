@@ -9,7 +9,7 @@ export const RADIUS_MILE_CHOICES = [2, 5, NEARBY_RADIUS_MILES, 10, 15, 25] as co
 export type RadiusMiles = (typeof RADIUS_MILE_CHOICES)[number];
 
 export interface BirdingSettings {
-  /** How often the Nearby list checks eBird, and how old a saved eBird copy may be. */
+  /** How often the Sightings list checks eBird, and how old a saved eBird copy may be. */
   readonly refreshMinutes: RefreshMinutes;
   /** How far around the person the lists look, in an app that shows the choice. */
   readonly radiusMiles: RadiusMiles;

@@ -180,7 +180,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             <strong>Send an area:</strong> open an area and click <strong>Share Area</strong>. Send the
             link, or print or show its QR code. The counter opens the link, or opens{' '}
             <strong>Your areas</strong> from the menu and taps <strong>Paste link</strong> or{' '}
-            <strong>Scan area code</strong>. CBC Scout keeps every area it loads, one active at a time.
+            <strong>Scan QR code</strong>. CBC Scout keeps every area it loads, one active at a time.
             The link carries the area leader&apos;s contact and the <strong>Note for counters</strong> you save
             on the area&apos;s page, such as where to meet or which feeders they may visit. Anyone with the link
             can read the note.
@@ -190,7 +190,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             where you are and whether you&apos;re in your area, outside it, or outside the circle.
           </li>
           <li>
-            <strong>Nearby:</strong> notable sightings, recent sightings, and eBird hotspots, those in your
+            <strong>Sightings:</strong> notable sightings, recent sightings, and eBird hotspots, those in your
             area first, then nearest first. They show once location is on. Each place has its distance,
             its direction past a tenth of a mile, and a{' '}
             <strong>Directions</strong> link to Apple Maps on iPhone and iPad, or Google Maps elsewhere.
@@ -198,9 +198,12 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             is marked <strong>Confirmed</strong>.
           </li>
           <li>
-            <strong>Suggestions:</strong> <strong>Hotspots to visit</strong>, ranked by species last
+            <strong>Hotspots:</strong> <strong>Hotspots to visit</strong>, ranked by species last
             reported there. With an area loaded whose outline is a shape, not a route line, it also shows{' '}
             <strong>Birds to look for</strong>, species whose latest report is outside your area.
+          </li>
+          <li>
+            <strong>Notes:</strong> the active area&apos;s name, its leaders, and your note for counters.
           </li>
           <li>
             <strong>Party hours and miles:</strong> <strong>Start count</strong> records the route and
@@ -238,7 +241,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           </a>{' '}
           is a phone app for any birder, with no count to set up. It shows a map of where you are and lists
           recent sightings, notable sightings, and eBird hotspots around you, each with its distance,
-          direction, and a <strong>Directions</strong> link. <strong>Suggestions</strong> lists hotspots
+          direction, and a <strong>Directions</strong> link. <strong>Hotspots</strong> lists hotspots
           worth a stop. It has no areas, count sessions, or hours and miles. Install it from{' '}
           <code>{BIRDSPOTTER_URL}</code> the same way as CBC Scout. In <strong>Settings</strong>, choose
           how often to check eBird and how far around you to search, from 2 to 25 miles. Its settings are
