@@ -54,7 +54,7 @@ export default tseslint.config(
   },
   {
     // Replaces the apps rule above for these files, so it repeats PGLITE.
-    files: ['apps/lets-go-birding/**/*.{ts,tsx}'],
+    files: ['apps/birdspotter/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -64,16 +64,20 @@ export default tseslint.config(
             {
               // App files sit at most one folder below src/, so two steps up leaves the app.
               regex: '^(\\./)?(\\.\\./){2,}',
-              message: "Let's Go Birding imports only the birding core, never the web app or CBC Scout.",
+              message: 'Birdspotter imports only the birding core, never the circle manager or CBC Scout.',
             },
             {
               group: ['@birdspotter/*', '!@birdspotter/birding-core'],
-              message: "Let's Go Birding imports only the birding core, never the web app or CBC Scout.",
+              message: 'Birdspotter imports only the birding core, never the circle manager or CBC Scout.',
             },
           ],
         },
       ],
     },
+  },
+  {
+    files: ['apps/*/public/sw.js'],
+    languageOptions: { globals: { self: 'readonly', URL: 'readonly', fetch: 'readonly' } },
   },
   {
     files: ['src/**/*.{ts,tsx}'],

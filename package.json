@@ -11,9 +11,9 @@
   "scripts": {
     "dev": "vite",
     "dev:cbc-scout": "vite --mode cbc-scout",
-    "dev:lets-go-birding": "vite --mode lets-go-birding",
-    "build": "tsc -b && vite build && vite build --mode cbc-scout && vite build --mode lets-go-birding",
-    "preview": "vite preview",
+    "dev:birdspotter": "vite --mode birdspotter",
+    "build": "tsc -b && vite build --mode site && vite build && vite build --mode cbc-scout && vite build --mode birdspotter",
+    "preview": "vite preview --mode site",
     "test": "node --test \"src/**/*.test.ts\" \"packages/*/src/**/*.test.ts\" \"apps/*/src/**/*.test.ts\"",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
     "lint": "eslint src packages apps"

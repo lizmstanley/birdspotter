@@ -2,9 +2,10 @@ import type { Flash, SetError } from '../hooks/useNotices';
 import { describeError } from './describeError';
 
 // Shared links always point at the hosted copy, even from a copy running on someone's own computer.
-const HOSTED_APP_URL = 'https://lizstanley.com/birdspotter/';
-export const CBC_SCOUT_URL = `${HOSTED_APP_URL}cbc-scout/`;
-export const LETS_GO_BIRDING_URL = `${HOSTED_APP_URL}lets-go-birding/`;
+const HOSTED_SITE_URL = 'https://lizstanley.com/birdspotter/';
+const CIRCLE_MANAGER_URL = `${HOSTED_SITE_URL}cbc/manager/`;
+export const CBC_SCOUT_URL = `${HOSTED_SITE_URL}cbc/scout/`;
+export const BIRDSPOTTER_URL = `${HOSTED_SITE_URL}app/`;
 
 /** Opens the device's share sheet, or copies the link where the browser has none. */
 export async function shareLink(
@@ -41,7 +42,7 @@ export function shareApp(flash: Flash, setError: SetError): Promise<void> {
     {
       title: 'CBC Circle Manager',
       text: 'A free, browser-only tool for Christmas Bird Count compilers.',
-      url: HOSTED_APP_URL,
+      url: CIRCLE_MANAGER_URL,
     },
     'Link to the app copied. Paste it anywhere to share it.',
     flash,
