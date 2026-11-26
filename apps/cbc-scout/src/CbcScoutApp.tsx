@@ -3,7 +3,6 @@ import type { GeolocateControl } from 'maplibre-gl';
 import { About } from '@birdspotter/birding-core/About.tsx';
 import { BirdingBar, BirdingScreen } from '@birdspotter/birding-core/BirdingBar.tsx';
 import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
-import { FirstRunScreen } from '@birdspotter/birding-core/FirstRunScreen.tsx';
 import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
@@ -63,14 +62,26 @@ function Messages({ error, notice }: { readonly error: string | null; readonly n
   );
 }
 
+function EbirdKeyNeeded({ onAddKey }: { readonly onAddKey: () => void }) {
+  return (
+    <section className="birding-panel" aria-label="eBird key needed">
+      <p>
+        Sightings and hotspots come from eBird and need your own free eBird key. Your area, the map, notes, and the
+        count work without one.
+      </p>
+      <button type="button" onClick={onAddKey}>
+        Add eBird key
+      </button>
+    </section>
+  );
+}
+
 export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutAppProps) {
   const [error, setError] = useState<string | null>(areaStartup.error);
   const [notice, setNotice] = useState<string | null>(areaStartup.notice);
   const { ebirdApiKey, saveEbirdKey } = useEbirdKey(setError);
   // With no area yet, the counter's first job is loading one.
-  const [screen, setScreen] = useState<ScoutScreen | null>(() =>
-    ebirdApiKey && !activeSavedArea(areaStartup.saved) ? 'areas' : null
-  );
+  const [screen, setScreen] = useState<ScoutScreen | null>(() => (activeSavedArea(areaStartup.saved) ? null : 'areas'));
   const { areas, activeArea, loadAreaText, pickArea, removeArea } = useSavedAreas({
     startup: areaStartup,
     storage,
@@ -114,11 +125,6 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
     setScreen(null);
   }
 
-  function saveFirstKey(key: string): void {
-    saveEbirdKey(key);
-    if (!activeArea) setScreen('areas');
-  }
-
   function pickActiveArea(key: string): void {
     pickArea(key);
     setScreen(null);
@@ -126,71 +132,66 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
 
   return (
     <div className="scout">
-      {ebirdApiKey && <BirdingBar title={CBC_SCOUT.name} appScreens={SCOUT_SCREENS} onOpen={setScreen} />}
+      <BirdingBar title={CBC_SCOUT.name} appScreens={SCOUT_SCREENS} onOpen={setScreen} />
       <InstallBanner appName={CBC_SCOUT.name} installPrompt={installPrompt} />
       {/* The Your areas screen covers these, so it shows them itself. */}
       {screen !== 'areas' && <Messages error={error} notice={notice} />}
-      {ebirdApiKey ? (
-        <>
-          <ScoutMap
-            area={area}
-            live={live}
-            onLocationControl={setLocationControl}
-            storage={storage}
-            setError={setError}
-            setNotice={setNotice}
-          />
-          <div className="scout-tabs">
-            <button type="button" aria-pressed={panel === 'sightings'} onClick={() => setPanel('sightings')}>
-              Sightings
-            </button>
-            <button type="button" aria-pressed={panel === 'hotspots'} onClick={() => setPanel('hotspots')}>
-              Hotspots
-            </button>
-            {area && (
-              <button type="button" aria-pressed={panel === 'notes'} onClick={() => setPanel('notes')}>
-                Notes
-              </button>
-            )}
-          </div>
-          {panel === 'sightings' && (
-            <NearbyPanel
-              isInRegion={isInArea}
-              groupTitles={area ? groupTitles(area) : null}
-              data={nearby}
-              live={live}
-              backDays={backDays}
-              onBackDaysChange={setBackDays}
-              refreshMinutes={settings.refreshMinutes}
-              onFixKey={() => setScreen('ebird-key')}
-            />
-          )}
-          {panel === 'hotspots' && (
-            <SuggestionsPanel
-              isInRegion={isInArea}
-              birdsRegion={birdsRegion}
-              data={nearby}
-              live={live}
-              backDays={backDays}
-              refreshMinutes={settings.refreshMinutes}
-              onFixKey={() => setScreen('ebird-key')}
-            />
-          )}
-          {panel === 'notes' && area && (
-            <section className="birding-panel scout-notes" aria-label="Notes">
-              <AreaDetails area={area} />
-              {!area.note && <p>No note from your compiler for this area.</p>}
-            </section>
-          )}
-        </>
-      ) : (
-        <FirstRunScreen appName={CBC_SCOUT.name} onSave={saveFirstKey} onHelp={() => setScreen('help')} />
+      <ScoutMap
+        area={area}
+        live={live}
+        onLocationControl={setLocationControl}
+        storage={storage}
+        setError={setError}
+        setNotice={setNotice}
+      />
+      <div className="scout-tabs">
+        <button type="button" aria-pressed={panel === 'sightings'} onClick={() => setPanel('sightings')}>
+          Sightings
+        </button>
+        <button type="button" aria-pressed={panel === 'hotspots'} onClick={() => setPanel('hotspots')}>
+          Hotspots
+        </button>
+        {area && (
+          <button type="button" aria-pressed={panel === 'notes'} onClick={() => setPanel('notes')}>
+            Notes
+          </button>
+        )}
+      </div>
+      {panel !== 'notes' && !ebirdApiKey && <EbirdKeyNeeded onAddKey={() => setScreen('ebird-key')} />}
+      {panel === 'sightings' && ebirdApiKey && (
+        <NearbyPanel
+          isInRegion={isInArea}
+          groupTitles={area ? groupTitles(area) : null}
+          data={nearby}
+          live={live}
+          backDays={backDays}
+          onBackDaysChange={setBackDays}
+          refreshMinutes={settings.refreshMinutes}
+          onFixKey={() => setScreen('ebird-key')}
+        />
+      )}
+      {panel === 'hotspots' && ebirdApiKey && (
+        <SuggestionsPanel
+          isInRegion={isInArea}
+          birdsRegion={birdsRegion}
+          data={nearby}
+          live={live}
+          backDays={backDays}
+          refreshMinutes={settings.refreshMinutes}
+          onFixKey={() => setScreen('ebird-key')}
+        />
+      )}
+      {panel === 'notes' && area && (
+        <section className="birding-panel scout-notes" aria-label="Notes">
+          <AreaDetails area={area} />
+          {!area.note && <p>No note from your compiler for this area.</p>}
+        </section>
       )}
       {screen && (
         <BirdingScreen
           screen={screen}
           appScreens={SCOUT_SCREENS}
-          closeText={ebirdApiKey ? 'Back to map' : 'Back'}
+          closeText="Back to map"
           onClose={() => setScreen(null)}
         >
           {screen === 'areas' && (

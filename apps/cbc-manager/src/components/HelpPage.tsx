@@ -170,9 +170,10 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             own storage, apart from Safari.
           </li>
           <li>
-            <strong>eBird key:</strong> CBC Scout asks for a key on its first screen. Get one as in
-            section 1, paste it, and tap <strong>Save key</strong>. To change it later, open the menu and
-            tap <strong>eBird key</strong>. The web app, CBC Scout, and Birdspotter share one saved
+            <strong>eBird key:</strong> the area, map, notes, and count work without one. Sightings and
+            hotspots need it: the <strong>Sightings</strong> and <strong>Hotspots</strong> tabs show{' '}
+            <strong>Add eBird key</strong> until one is saved. Get one as in section 1, paste it, and tap{' '}
+            <strong>Save key</strong>. To change it later, open the menu and tap <strong>eBird key</strong>. The web app, CBC Scout, and Birdspotter share one saved
             key, but only in the same browser on the same device, so a counter&apos;s phone needs it entered
             once.
           </li>

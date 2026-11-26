@@ -33,7 +33,7 @@ export function Help({ appName, opensWithoutSignal, children }: HelpProps) {
         <a href={EBIRD_KEY_REQUEST_URL} target="_blank" rel="noreferrer">
           eBird API key request page
         </a>
-        . It shows up right away. Paste it on the first screen and tap <strong>Save key</strong>.
+        . It shows up right away. Paste it where {appName} asks for it and tap <strong>Save key</strong>.
       </p>
       <p>
         To change it later, open the menu and tap <strong>eBird key</strong>. If eBird rejects the key, the lists
