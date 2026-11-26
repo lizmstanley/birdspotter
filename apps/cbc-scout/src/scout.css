@@ -53,6 +53,21 @@ body,
   color: #854d0e;
 }
 
+.scout-areas {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.scout-areas h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.scout-areas p {
+  margin: 0 0 8px;
+}
+
 .scout-leaders {
   margin: 0 0 8px;
   padding: 0;

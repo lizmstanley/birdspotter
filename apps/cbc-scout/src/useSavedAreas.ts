@@ -20,9 +20,11 @@ interface SavedAreasOptions {
   readonly storage: KeyValueStorage | null;
   readonly setError: (message: string | null) => void;
   readonly setNotice: (message: string | null) => void;
+  /** Runs after a load from any source makes its area the active one. */
+  readonly onLoad: () => void;
 }
 
-export function useSavedAreas({ startup, storage, setError, setNotice }: SavedAreasOptions) {
+export function useSavedAreas({ startup, storage, setError, setNotice, onLoad }: SavedAreasOptions) {
   const [saved, setSaved] = useState(startup.saved);
 
   function keep(next: SavedAreas): void {
@@ -40,6 +42,7 @@ export function useSavedAreas({ startup, storage, setError, setNotice }: SavedAr
     setError(null);
     setNotice(source === 'address' ? noticeForAddressLoad(isRunningInstalled(window)) : null);
     keep(withArea(saved, read.payload, read.data));
+    onLoad();
     return true;
   }
 
