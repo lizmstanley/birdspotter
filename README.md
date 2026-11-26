@@ -74,7 +74,7 @@ It also works in a plain browser tab. On iPhone, the home screen app keeps its o
 
 CBC Scout needs an eBird API key before it shows anything, so its first screen asks for one. Get a key as in [Set up your eBird key](#set-up-your-ebird-key), paste it, and tap **Save key**. The screen links to the eBird request page too.
 
-To change the key later, open the menu at the top and tap **eBird key**. If eBird rejects the key, the lists show a **Fix eBird key** button that opens the same screen.
+To change the key later, open the menu at the top and tap **eBird key**. If eBird rejects the key, or the key has a character an eBird key can't have, such as a curly quote, the lists show a **Fix eBird key** button that opens the same screen. The key forms refuse to save such a key.
 
 The menu also has **Help**, how CBC Scout works in plain words, and **About**, who made it and why. The first screen links to Help too, before a key is saved.
 

@@ -1,5 +1,6 @@
 import { EBIRD_SITE_URL } from './ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
+import type { KeyProblem } from './nearbyRefresh.ts';
 import { noSignalText } from './noSignalText.ts';
 import { refreshIntervalText, type RefreshMinutes } from './settings.ts';
 import type { NearbyData } from './useNearbyData.ts';
@@ -16,19 +17,24 @@ function waitingText(live: LiveLocation): string {
   return 'Turn on location with the location button on the map to see what is nearby.';
 }
 
+const KEY_PROBLEM_TEXT: Readonly<Record<KeyProblem, string>> = {
+  rejected: 'eBird rejected your API key. Fix it under eBird key in the menu.',
+  unsendable: "Your eBird API key has a character an eBird key can't have. Fix it under eBird key in the menu.",
+};
+
 /** The eBird load's errors, and why no rows show yet. */
 export function NearbyStatus({ data, live, onFixKey }: NearbyStatusProps) {
   return (
     <>
-      {data.isKeyRejected && (
+      {data.keyProblem && (
         <div className="birding-nearby-error" role="alert">
-          <p>eBird rejected your API key. Fix it under eBird key in the menu.</p>
+          <p>{KEY_PROBLEM_TEXT[data.keyProblem]}</p>
           <button type="button" onClick={onFixKey}>
             Fix eBird key
           </button>
         </div>
       )}
-      {data.error && !data.isKeyRejected && (
+      {data.error && !data.keyProblem && (
         <p className="birding-nearby-error" role="alert">
           {data.error}
         </p>

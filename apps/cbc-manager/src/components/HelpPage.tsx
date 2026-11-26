@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { About } from '@birdspotter/birding-core/About.tsx';
-import { EBIRD_KEY_REQUEST_URL } from '@birdspotter/birding-core/ebird.ts';
+import {
+  EBIRD_KEY_REQUEST_URL,
+  isSendableEbirdKey,
+  UNSENDABLE_KEY_TEXT,
+} from '@birdspotter/birding-core/ebird.ts';
 import { CBC_SCOUT_URL, BIRDSPOTTER_URL } from '../services/shareApp.ts';
 
 export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/birdspotter/discussions';
@@ -14,6 +18,7 @@ interface Props {
 
 export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
   const [draftKey, setDraftKey] = useState(ebirdApiKey);
+  const [isUnsendable, setIsUnsendable] = useState(false);
   const isChanged = draftKey.trim() !== ebirdApiKey;
 
   return (
@@ -66,13 +71,21 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             placeholder="Paste your eBird API key"
             autoComplete="off"
             value={draftKey}
-            onChange={(e) => setDraftKey(e.target.value)}
+            aria-invalid={isUnsendable}
+            aria-describedby={isUnsendable ? 'ebird-key-error' : undefined}
+            onChange={(e) => {
+              setDraftKey(e.target.value);
+              setIsUnsendable(false);
+            }}
           />
           <button
             type="button"
             className="btn-primary"
             disabled={!isChanged || !draftKey.trim()}
-            onClick={() => onSaveEbirdKey(draftKey)}
+            onClick={() => {
+              if (isSendableEbirdKey(draftKey)) onSaveEbirdKey(draftKey);
+              else setIsUnsendable(true);
+            }}
           >
             Save Key
           </button>
@@ -82,6 +95,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
               title="Forget the key in this browser"
               onClick={() => {
                 setDraftKey('');
+                setIsUnsendable(false);
                 onSaveEbirdKey('');
               }}
             >
@@ -90,6 +104,11 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           )}
           <span className="muted">{ebirdApiKey ? 'A key is saved.' : 'No key saved yet.'}</span>
         </div>
+        {isUnsendable && (
+          <p id="ebird-key-error" className="error-box" role="alert">
+            {UNSENDABLE_KEY_TEXT}
+          </p>
+        )}
       </div>
 
       <div className="card">

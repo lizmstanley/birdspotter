@@ -3,6 +3,7 @@ import { forgetRecentCopies, readRecentCopy, readTodaysCopy, saveTodaysCopy, typ
 import { isLatitude, isLongitude } from './coordinates.ts';
 import {
   EbirdKeyRejectedError,
+  EbirdKeyUnsendableError,
   EbirdRequestError,
   EbirdUnreachableError,
   UnexpectedResponseError,
@@ -100,14 +101,42 @@ function savedList<T>(saved: SavedItems<T>, isNoSignalCopy: boolean): EbirdList<
   return { items: saved.items, fetchedAt: saved.savedAt, isNoSignalCopy };
 }
 
+/**
+ * The browser's own header rule decides which characters a key may hold. `fetch` would reject the same key with a
+ * `TypeError`, which looks like no signal.
+ * @throws EbirdKeyUnsendableError when the key cannot be sent in a request header
+ */
+function ebirdKeyHeaders(apiKey: string): Headers {
+  try {
+    return new Headers({ 'X-eBirdApiToken': apiKey.trim() });
+  } catch (err) {
+    if (err instanceof TypeError) throw new EbirdKeyUnsendableError(err);
+    throw err;
+  }
+}
+
+export const UNSENDABLE_KEY_TEXT =
+  "That key has a character an eBird key can't have, so it was not saved. Copy the key again from eBird.";
+
+/** @returns whether the browser can send the key to eBird */
+export function isSendableEbirdKey(apiKey: string): boolean {
+  try {
+    ebirdKeyHeaders(apiKey);
+    return true;
+  } catch (err) {
+    if (err instanceof EbirdKeyUnsendableError) return false;
+    throw err;
+  }
+}
+
 async function requestEbirdList<T>(
   endpoint: EbirdEndpoint,
   url: string,
-  apiKey: string,
+  headers: Headers,
   isItem: (value: unknown) => value is T
 ): Promise<T[]> {
   const res = await fetch(url, {
-    headers: { 'X-eBirdApiToken': apiKey.trim() },
+    headers,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (res.status === EBIRD_KEY_REJECTED_STATUS) {
@@ -124,6 +153,7 @@ async function requestEbirdList<T>(
 /**
  * With no signal, falls back to a saved copy up to 6 hours old, whatever `maxAgeMs` is, including one saved before
  * midnight. An eBird error response does not fall back.
+ * @throws EbirdKeyUnsendableError when the key cannot be sent, even when a saved copy exists
  * @throws EbirdUnreachableError with no signal and no such copy
  */
 async function fetchEbirdList<T>(
@@ -134,18 +164,19 @@ async function fetchEbirdList<T>(
   maxAgeMs: number | undefined,
   lifetimeMs?: number
 ): Promise<EbirdList<T>> {
+  const headers = ebirdKeyHeaders(apiKey);
   const saved = readTodaysCopy(url, isItem, maxAgeMs);
   if (saved) return savedList(saved, false);
   let items: T[];
   try {
-    items = await requestEbirdList(endpoint, url, apiKey, isItem);
+    items = await requestEbirdList(endpoint, url, headers, isItem);
   } catch (err) {
     if (!isNoSignal(err)) throw err;
     const fallback = readRecentCopy(url, isItem, EBIRD_DATA_LIFETIME_MS);
     if (fallback) return savedList(fallback, true);
     throw new EbirdUnreachableError(endpoint, err);
   }
-  saveTodaysCopy(url, items, lifetimeMs);
+  saveTodaysCopy(url, items, EBIRD_DATA_LIFETIME_MS, lifetimeMs);
   return { items, fetchedAt: Date.now(), isNoSignalCopy: false };
 }
 
