@@ -212,6 +212,10 @@ a.birding-nearby-place {
   color: #991b1b;
 }
 
+.birding-key-error {
+  color: #991b1b;
+}
+
 .birding-nearby-credit {
   margin-top: 12px;
   font-size: 0.85rem;

@@ -24,6 +24,14 @@ export class EbirdKeyRejectedError extends Error {
   }
 }
 
+/** The key has a character the browser cannot send in a request header, so no request reaches eBird. */
+export class EbirdKeyUnsendableError extends Error {
+  constructor(cause: unknown) {
+    super("ebird: the API key has a character an eBird key can't have.", { cause });
+    this.name = 'EbirdKeyUnsendableError';
+  }
+}
+
 export class EbirdUnreachableError extends Error {
   readonly endpoint: EbirdEndpoint;
 

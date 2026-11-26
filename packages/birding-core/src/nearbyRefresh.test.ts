@@ -8,14 +8,16 @@ import {
   isWithinLifetime,
   RETRY_AFTER_ERROR_MS,
   sightingsDelayMs,
+  type FetchOutcome,
 } from './nearbyRefresh.ts';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
-const loaded = { error: null, isKeyRejected: false, hasNoSignal: false };
-const failed = { error: 'ebird: the sightings request failed. (HTTP 503)', isKeyRejected: false, hasNoSignal: false };
-const rejected = { error: 'eBird rejected the key.', isKeyRejected: true, hasNoSignal: false };
-const savedForNoSignal = { error: null, isKeyRejected: false, hasNoSignal: true };
-const noSignalNoCopy = { error: 'ebird: eBird could not be reached.', isKeyRejected: false, hasNoSignal: true };
+const loaded: FetchOutcome = { error: null, keyProblem: null, hasNoSignal: false };
+const failed: FetchOutcome = { error: 'ebird: the sightings request failed. (HTTP 503)', keyProblem: null, hasNoSignal: false };
+const rejected: FetchOutcome = { error: 'eBird rejected the key.', keyProblem: 'rejected', hasNoSignal: false };
+const unsendable: FetchOutcome = { error: "The key can't be sent.", keyProblem: 'unsendable', hasNoSignal: false };
+const savedForNoSignal: FetchOutcome = { error: null, keyProblem: null, hasNoSignal: true };
+const noSignalNoCopy: FetchOutcome = { error: 'ebird: eBird could not be reached.', keyProblem: null, hasNoSignal: true };
 
 test('sightings that loaded are fetched again at the refresh interval', () => {
   assert.equal(sightingsDelayMs(loaded, FIFTEEN_MINUTES_MS), FIFTEEN_MINUTES_MS);
@@ -37,9 +39,11 @@ test('with no signal, either list is retried after a minute, with or without a s
   }
 });
 
-test('after a rejected key, either list is tried again at the refresh interval', () => {
-  assert.equal(sightingsDelayMs(rejected, FIFTEEN_MINUTES_MS), FIFTEEN_MINUTES_MS);
-  assert.equal(hotspotsDelayMs(rejected, FIFTEEN_MINUTES_MS), FIFTEEN_MINUTES_MS);
+test('after a rejected key or one that cannot be sent, either list is tried again at the refresh interval', () => {
+  for (const outcome of [rejected, unsendable]) {
+    assert.equal(sightingsDelayMs(outcome, FIFTEEN_MINUTES_MS), FIFTEEN_MINUTES_MS);
+    assert.equal(hotspotsDelayMs(outcome, FIFTEEN_MINUTES_MS), FIFTEEN_MINUTES_MS);
+  }
 });
 
 test('data is shown until it is 6 hours old, and no data is never shown', () => {
@@ -58,7 +62,7 @@ test('after a failed fetch, held data stays until it is 6 hours old, then is dro
   assert.equal(heldAfterFailure(null, fetchedAt, false), null);
 });
 
-test('after eBird rejects the key, data fetched under the earlier key is dropped', () => {
+test('after a key problem, data fetched under the earlier key is dropped', () => {
   const fetchedAt = 1_000_000;
   assert.equal(heldAfterFailure({ data: ['row'], fetchedAt }, fetchedAt + 1000, true), null);
 });
