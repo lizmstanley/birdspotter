@@ -70,6 +70,18 @@ test('saved areas and the active one come back from storage', () => {
   assert.equal(unreadableCount, 0);
 });
 
+// Encoded by the version 1 encoder from `areaData()`, before links carried a note.
+const VERSION_1_PAYLOAD =
+  'RY7RCoMgFIZfJc61Dm05qKvdDlbEbsMLV2ckuJKSMYjefUe7GIL_z-f51A0-UEkGPVRQN_UNGEyx2mlC42dn16yZlzASn6HqeHnOlRCCFUUZUzMwNC5zOn-mkvHsYfvxZdENBAPBltKT3EX9TFbSU8q0x3U0_gdH1ZqecCRv6V-tCdkdzYDLcSdcZM6VUlzQNCEk5E244te8vcNTwDXArvcf';
+
+test('an area saved from a version 1 link still reads, with no note', () => {
+  const storage = new MemoryStorage();
+  storage.setItem(AREAS_STORAGE_KEY, JSON.stringify([VERSION_1_PAYLOAD]));
+  const { saved, unreadableCount } = readSavedAreas(storage);
+  assert.equal(unreadableCount, 0);
+  assert.deepEqual(saved.areas[0].data, areaData());
+});
+
 test('unreadable stored areas are dropped and counted', () => {
   const storage = new MemoryStorage();
   storage.setItem(AREAS_STORAGE_KEY, JSON.stringify([AREA_12.payload, 'damaged', 42]));

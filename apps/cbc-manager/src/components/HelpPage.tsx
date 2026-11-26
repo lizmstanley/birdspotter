@@ -181,6 +181,9 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             link, or print or show its QR code. The counter opens the link, or opens{' '}
             <strong>Your areas</strong> from the menu and taps <strong>Paste link</strong> or{' '}
             <strong>Scan area code</strong>. CBC Scout keeps every area it loads, one active at a time.
+            The link carries the area leader&apos;s contact and the <strong>Note for counters</strong> you save
+            on the area&apos;s page, such as where to meet or which feeders they may visit. Anyone with the link
+            can read the note.
           </li>
           <li>
             <strong>Map:</strong> the circle and the area&apos;s outline. Tap the location button to show

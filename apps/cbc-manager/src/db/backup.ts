@@ -170,10 +170,10 @@ async function restoreAreas(tx: Transaction, areas: readonly BackupRow[]): Promi
     await tx.query(
       `INSERT INTO public.areas (
           circle_code, code, sort_order, cities, roads, notable_spots, active_restrictions, is_counted,
-          requires_special_access, is_solo_reserved, walking_friendly
+          requires_special_access, is_solo_reserved, walking_friendly, counter_note
        ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, COALESCE($8::BOOLEAN, TRUE),
-          COALESCE($9::BOOLEAN, FALSE), COALESCE($10::BOOLEAN, FALSE), $11
+          COALESCE($9::BOOLEAN, FALSE), COALESCE($10::BOOLEAN, FALSE), $11, $12
        )
        ON CONFLICT (circle_code, code) DO UPDATE SET
           cities = COALESCE(EXCLUDED.cities, public.areas.cities),
@@ -183,7 +183,8 @@ async function restoreAreas(tx: Transaction, areas: readonly BackupRow[]): Promi
           is_counted = COALESCE($8::BOOLEAN, public.areas.is_counted),
           requires_special_access = COALESCE($9::BOOLEAN, public.areas.requires_special_access),
           is_solo_reserved = COALESCE($10::BOOLEAN, public.areas.is_solo_reserved),
-          walking_friendly = COALESCE(EXCLUDED.walking_friendly, public.areas.walking_friendly)`,
+          walking_friendly = COALESCE(EXCLUDED.walking_friendly, public.areas.walking_friendly),
+          counter_note = COALESCE(EXCLUDED.counter_note, public.areas.counter_note)`,
       // A flag missing from the file (an ETL backup) keeps the value already in the app.
       [
         String(a.circle_code),
@@ -197,6 +198,7 @@ async function restoreAreas(tx: Transaction, areas: readonly BackupRow[]): Promi
         optionalBoolean(a.requires_special_access),
         optionalBoolean(a.is_solo_reserved),
         optionalBoolean(a.walking_friendly),
+        a.counter_note ? String(a.counter_note) : null,
       ]
     );
   }

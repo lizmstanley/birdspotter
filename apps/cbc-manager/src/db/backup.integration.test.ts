@@ -28,6 +28,7 @@ async function seededDb() {
   );
   await db.setAreaResultsReceived(CIRCLE, '1A', true);
   await db.setAreaCounted(CIRCLE, '2B', false);
+  await db.setAreaCounterNote(CIRCLE, '1A', 'Meet at the boat launch.\nGate code is on the sign-up sheet.');
   await client.query(`UPDATE public.areas SET parent_area_code = '1A' WHERE code = '2B'`);
   await db.upsertCircleBoundaries(CIRCLE, [{ code: '1A', name: 'North', geometry: POLYGON }]);
   return ctx;
@@ -57,6 +58,39 @@ test('a backup restored into an empty database reproduces the roster and areas',
     await scalar(target.client, `SELECT parent_area_code FROM public.areas WHERE code = '2B'`),
     '1A'
   );
+});
+
+test('an area note survives a backup and restore', async () => {
+  const source = await seededDb();
+  const target = await openTestDb();
+
+  await target.db.importJsonBackup(await source.db.exportJsonBackup());
+
+  const notes = (await target.db.getAreas(CIRCLE)).map((a) => [a.code, a.counter_note]);
+  assert.deepEqual(notes, [['1A', 'Meet at the boat launch.\nGate code is on the sign-up sheet.'], ['2B', null]]);
+});
+
+test('a backup from before area notes restores with no note', async () => {
+  const source = await seededDb();
+  const backup = JSON.parse(await source.db.exportJsonBackup());
+  for (const area of backup.areas) delete area.counter_note;
+  const target = await openTestDb();
+
+  await target.db.importJsonBackup(JSON.stringify(backup));
+
+  const notes = (await target.db.getAreas(CIRCLE)).map((a) => [a.code, a.counter_note]);
+  assert.deepEqual(notes, [['1A', null], ['2B', null]]);
+});
+
+test('a backup from before area notes keeps the notes already in the app', async () => {
+  const { db } = await seededDb();
+  const backup = JSON.parse(await db.exportJsonBackup());
+  for (const area of backup.areas) delete area.counter_note;
+
+  await db.importJsonBackup(JSON.stringify(backup));
+
+  const notes = (await db.getAreas(CIRCLE)).map((a) => [a.code, a.counter_note]);
+  assert.deepEqual(notes, [['1A', 'Meet at the boat launch.\nGate code is on the sign-up sheet.'], ['2B', null]]);
 });
 
 test('restoring a backup over the same circle replaces its roster without duplicates', async () => {

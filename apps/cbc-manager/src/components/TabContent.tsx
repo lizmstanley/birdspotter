@@ -154,11 +154,12 @@ function AreaDetail({
   onSelectTab,
 }: Props & { selectedArea: SelectedArea }) {
   const selectedCode = selectedArea.code.toUpperCase();
-  const areaLinkData = useMemo(
-    () => buildAreaLinkData(circle, data.areaBoundaries, data.assignments, selectedArea.code),
-    [circle, data.areaBoundaries, data.assignments, selectedArea.code]
-  );
   const areaInfo = data.areas.find((a) => a.code.toUpperCase() === selectedCode) ?? null;
+  const counterNote = areaInfo?.counter_note ?? null;
+  const areaLinkData = useMemo(
+    () => buildAreaLinkData(circle, data.areaBoundaries, data.assignments, selectedArea.code, counterNote),
+    [circle, data.areaBoundaries, data.assignments, selectedArea.code, counterNote]
+  );
   return (
     <AreaDetailPage
       circleCode={circle.code}
@@ -179,6 +180,7 @@ function AreaDetail({
       onCopyLink={onCopyLink}
       onToggleCounted={areaActions.toggleAreaCounted}
       onToggleResultsReceived={areaActions.toggleResultsReceived}
+      onSaveCounterNote={areaActions.saveCounterNote}
     />
   );
 }
