@@ -13,27 +13,27 @@ import { useEbirdKey } from '@birdspotter/birding-core/useEbirdKey.ts';
 import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
 import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import { AppBar, AppScreen, type Screen } from './AppBar.tsx';
-import { LETS_GO_BIRDING } from './appIdentity.ts';
+import { BIRDSPOTTER } from './appIdentity.ts';
 
 type Panel = 'nearby' | 'suggestions';
 
 const DEFAULT_BACK_DAYS = 7;
 
-interface LetsGoBirdingAppProps {
+interface BirdspotterAppProps {
   readonly installPrompt: InstallPromptStore;
   readonly storage: KeyValueStorage | null;
 }
 
 function addNoLayers(): void {}
 
-export function LetsGoBirdingApp({ installPrompt, storage }: LetsGoBirdingAppProps) {
+export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) {
   const [error, setError] = useState<string | null>(null);
   const { ebirdApiKey, saveEbirdKey } = useEbirdKey(setError);
   const [locationControl, setLocationControl] = useState<GeolocateControl | null>(null);
-  const live = useLiveLocation(locationControl, storage, LETS_GO_BIRDING);
+  const live = useLiveLocation(locationControl, storage, BIRDSPOTTER);
   const [panel, setPanel] = useState<Panel>('nearby');
   const [screen, setScreen] = useState<Screen | null>(null);
-  const [settings, setSettings] = useState(() => readSettings(storage, LETS_GO_BIRDING.settingsStorageKey));
+  const [settings, setSettings] = useState(() => readSettings(storage, BIRDSPOTTER.settingsStorageKey));
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
   const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
   // Above both tabs, so Nearby and Suggestions share one load.
@@ -49,7 +49,7 @@ export function LetsGoBirdingApp({ installPrompt, storage }: LetsGoBirdingAppPro
 
   function changeSettings(next: BirdingSettings): void {
     setSettings(next);
-    setIsSettingsSaved(writeSettings(storage, LETS_GO_BIRDING.settingsStorageKey, next));
+    setIsSettingsSaved(writeSettings(storage, BIRDSPOTTER.settingsStorageKey, next));
   }
 
   function changeKey(key: string): void {
@@ -58,23 +58,23 @@ export function LetsGoBirdingApp({ installPrompt, storage }: LetsGoBirdingAppPro
   }
 
   return (
-    <div className="lgb">
+    <div className="birdspotter">
       {ebirdApiKey && <AppBar onOpen={setScreen} />}
-      <InstallBanner appName={LETS_GO_BIRDING.name} installPrompt={installPrompt} />
+      <InstallBanner appName={BIRDSPOTTER.name} installPrompt={installPrompt} />
       {error && (
-        <p className="lgb-error" role="alert">
+        <p className="birdspotter-error" role="alert">
           {error}
         </p>
       )}
       {ebirdApiKey ? (
         <>
           {live.error && (
-            <p className="lgb-error" role="status">
+            <p className="birdspotter-error" role="status">
               {live.error}
             </p>
           )}
           <BirdingMap addLayers={addNoLayers} onReady={takeMap} />
-          <div className="lgb-tabs">
+          <div className="birdspotter-tabs">
             <button type="button" aria-pressed={panel === 'nearby'} onClick={() => setPanel('nearby')}>
               Nearby
             </button>
@@ -108,11 +108,11 @@ export function LetsGoBirdingApp({ installPrompt, storage }: LetsGoBirdingAppPro
           {screen && (
             <AppScreen screen={screen} onClose={() => setScreen(null)}>
               {screen === 'ebird-key' && (
-                <EbirdKeyForm appName={LETS_GO_BIRDING.name} savedKey={ebirdApiKey} onSave={changeKey} />
+                <EbirdKeyForm appName={BIRDSPOTTER.name} savedKey={ebirdApiKey} onSave={changeKey} />
               )}
               {screen === 'settings' && (
                 <SettingsForm
-                  appName={LETS_GO_BIRDING.name}
+                  appName={BIRDSPOTTER.name}
                   settings={settings}
                   isSaved={isSettingsSaved}
                   isRadiusShown
@@ -123,9 +123,9 @@ export function LetsGoBirdingApp({ installPrompt, storage }: LetsGoBirdingAppPro
           )}
         </>
       ) : (
-        <div className="lgb-first-run">
-          <h1>{LETS_GO_BIRDING.name}</h1>
-          <EbirdKeyForm appName={LETS_GO_BIRDING.name} savedKey="" onSave={saveEbirdKey} />
+        <div className="birdspotter-first-run">
+          <h1>{BIRDSPOTTER.name}</h1>
+          <EbirdKeyForm appName={BIRDSPOTTER.name} savedKey="" onSave={saveEbirdKey} />
         </div>
       )}
     </div>

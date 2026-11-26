@@ -5,18 +5,17 @@ import { watchInstallPrompt } from '@birdspotter/birding-core/installPrompt.ts';
 import { requestPersistentStorage } from '@birdspotter/birding-core/persistentStorage.ts';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import '@birdspotter/birding-core/birding.css';
-import { LetsGoBirdingApp } from './LetsGoBirdingApp.tsx';
+import { BirdspotterApp } from './BirdspotterApp.tsx';
 // After the core styles, so the app's rules win a tie.
-import './lgb.css';
-
-const APP_PATH = `${import.meta.env.BASE_URL}lets-go-birding/`;
+import './birdspotter.css';
 
 function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
-  // Scoped to this app's folder so the web app and CBC Scout never come under it.
-  navigator.serviceWorker.register(`${APP_PATH}sw.js`, { scope: APP_PATH }).catch((err: unknown) => {
+  // Scoped to this app's folder so the CBC apps never come under it.
+  const appPath = import.meta.env.BASE_URL;
+  navigator.serviceWorker.register(`${appPath}sw.js`, { scope: appPath }).catch((err: unknown) => {
     // The app still works online without it; only Chrome's install offer depends on it.
-    console.warn("Let's Go Birding: service worker registration failed", err);
+    console.warn('Birdspotter: service worker registration failed', err);
   });
 }
 
@@ -36,6 +35,6 @@ registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <LetsGoBirdingApp installPrompt={installPrompt} storage={appStorage()} />
+    <BirdspotterApp installPrompt={installPrompt} storage={appStorage()} />
   </StrictMode>
 );

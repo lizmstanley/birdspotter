@@ -1,6 +1,6 @@
 {
-  "name": "Let's Go Birding",
-  "short_name": "Let's Go Birding",
+  "name": "Birdspotter",
+  "short_name": "Birdspotter",
   "description": "Recent bird sightings and eBird hotspots near you.",
   "id": "./",
   "start_url": "./",

@@ -12,7 +12,7 @@ body,
   margin: 0;
 }
 
-.lgb {
+.birdspotter {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -21,19 +21,19 @@ body,
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-.lgb-error {
+.birdspotter-error {
   margin: 0;
   padding: 8px 16px;
   background: #fee2e2;
   color: #991b1b;
 }
 
-.lgb-tabs {
+.birdspotter-tabs {
   display: flex;
   border-top: 1px solid #cbd5e1;
 }
 
-.lgb-tabs button {
+.birdspotter-tabs button {
   flex: 1;
   border: 0;
   border-bottom: 3px solid transparent;
@@ -41,12 +41,12 @@ body,
   font-weight: 600;
 }
 
-.lgb-tabs button[aria-pressed='true'] {
+.birdspotter-tabs button[aria-pressed='true'] {
   border-bottom-color: #4d7c0f;
   background: #f8fafc;
 }
 
-.lgb-bar {
+.birdspotter-bar {
   position: relative;
   display: flex;
   align-items: center;
@@ -56,26 +56,26 @@ body,
   color: #fff;
 }
 
-.lgb-bar button {
+.birdspotter-bar button {
   border: 0;
   background: transparent;
   color: inherit;
 }
 
-.lgb-bar-menu {
+.birdspotter-bar-menu {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 44px;
 }
 
-.lgb-bar-title {
+.birdspotter-bar-title {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
 }
 
-.lgb-menu {
+.birdspotter-menu {
   position: absolute;
   top: 100%;
   left: 8px;
@@ -88,18 +88,18 @@ body,
   box-shadow: 0 4px 12px rgb(15 23 42 / 0.2);
 }
 
-.lgb-menu ul {
+.birdspotter-menu ul {
   margin: 0;
   padding: 4px 0;
   list-style: none;
 }
 
-.lgb-bar .lgb-menu button {
+.birdspotter-bar .birdspotter-menu button {
   width: 100%;
   text-align: left;
 }
 
-.lgb-screen {
+.birdspotter-screen {
   position: absolute;
   inset: 0;
   z-index: 4;
@@ -109,12 +109,12 @@ body,
   background: #f8fafc;
 }
 
-.lgb-screen-body {
+.birdspotter-screen-body {
   flex: 1;
   overflow-y: auto;
 }
 
-.lgb-first-run h1 {
+.birdspotter-first-run h1 {
   max-width: 32rem;
   margin: 16px auto 0;
   padding: 0 16px;

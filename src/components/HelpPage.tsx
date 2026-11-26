@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { EBIRD_KEY_REQUEST_URL } from '@birdspotter/birding-core/ebird.ts';
-import { CBC_SCOUT_URL, LETS_GO_BIRDING_URL } from '../services/shareApp.ts';
+import { CBC_SCOUT_URL, BIRDSPOTTER_URL } from '../services/shareApp.ts';
 
 export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/birdspotter/discussions';
 
@@ -152,7 +152,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           <li>
             <strong>eBird key:</strong> CBC Scout asks for a key on its first screen. Get one as in
             section 1, paste it, and tap <strong>Save key</strong>. To change it later, open the menu and
-            tap <strong>eBird key</strong>. The web app, CBC Scout, and Let&apos;s Go Birding share one saved
+            tap <strong>eBird key</strong>. The web app, CBC Scout, and Birdspotter share one saved
             key, but only in the same browser on the same device, so a counter&apos;s phone needs it entered
             once.
           </li>
@@ -207,16 +207,16 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
       </div>
 
       <div className="card">
-        <h3>5. Let&apos;s Go Birding for Any Birder</h3>
+        <h3>5. Birdspotter for Any Birder</h3>
         <p>
-          <a href={LETS_GO_BIRDING_URL} target="_blank" rel="noreferrer">
-            Let&apos;s Go Birding
+          <a href={BIRDSPOTTER_URL} target="_blank" rel="noreferrer">
+            Birdspotter
           </a>{' '}
           is a phone app for any birder, with no count to set up. It shows a map of where you are and lists
           recent sightings, notable sightings, and eBird hotspots around you, each with its distance,
           direction, and a <strong>Directions</strong> link. <strong>Suggestions</strong> lists hotspots
           worth a stop. It has no areas, count sessions, or hours and miles. Install it from{' '}
-          <code>{LETS_GO_BIRDING_URL}</code> the same way as CBC Scout. In <strong>Settings</strong>, choose
+          <code>{BIRDSPOTTER_URL}</code> the same way as CBC Scout. In <strong>Settings</strong>, choose
           how often to check eBird and how far around you to search, from 2 to 25 miles. Its settings are
           its own, apart from CBC Scout&apos;s.
         </p>

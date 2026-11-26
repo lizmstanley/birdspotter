@@ -81,7 +81,7 @@ Awaiting Results starts tracking on count day. If no count date is set yet, it s
 
 ### Static hosting
 
-The app is static files on GitHub Pages. Audubon's circle page sends no CORS headers, so circle details need the dev or preview proxy and fall back to ArcGIS search on a static host.
+The site is static files on GitHub Pages. The home page at the site root leads with Birdspotter at `app/`; the CBC page at `cbc/` links to the circle manager at `cbc/manager/` and CBC Scout at `cbc/scout/`. An installed app's scope covers every path under it, so no app sits at the root or at `cbc/`: Birdspotter installed at the root would cover CBC Scout, and an area link could open in Birdspotter's window on Android. The two pages are plain HTML with no manifest, so neither installs. Each app builds into its own folder with its own base, so `import.meta.env.BASE_URL` is the app's address and each service worker's scope is that folder. Audubon's circle page sends no CORS headers, so circle details need the dev or preview proxy and fall back to ArcGIS search on a static host.
 
 ## Code layout
 
@@ -90,9 +90,9 @@ The app is static files on GitHub Pages. Audubon's circle page sends no CORS hea
 - `src/hooks` and `src/components`: state and UI, one component per tab.
 - `packages/birding-core`: the birding features with no Christmas Bird Count in them: the eBird client and its cache, nearby lists and suggestions, live location, the base map, install prompts, and the screens built on them. Each app passes in its name and its own storage keys, because apps on one origin share `localStorage`.
 - `apps/cbc-scout`: CBC Scout. It adds count areas, the count circle, and the count session to the core. It also imports the web app's area link and circle code from `src/`.
-- `apps/lets-go-birding`: Let's Go Birding, for any birder. It uses the core alone, with no region and no pinned search: the lists follow the person, with a search radius from its settings. It has no effort tracking, because birders record checklists and effort in eBird. It is a separate app rather than a mode of CBC Scout, so neither carries the other's screens. It is served from the same origin as the others, so the saved eBird key and eBird cache carry over; a separate domain would lose them and need its own DNS and Pages site.
+- `apps/birdspotter`: Birdspotter, for any birder. It uses the core alone, with no region and no pinned search: the lists follow the person, with a search radius from its settings. It has no effort tracking, because birders record checklists and effort in eBird. It is a separate app rather than a mode of CBC Scout, so neither carries the other's screens. It is served from the same origin as the others, so the saved eBird key and eBird cache carry over; a separate domain would lose them and need its own DNS and Pages site.
 
-The repo is one npm workspace, so the core changes with its apps in one pull request and needs no release. Lint stops the core from importing an app, stops a phone app from importing the web app's database, and stops Let's Go Birding from importing anything but the core.
+The repo is one npm workspace, so the core changes with its apps in one pull request and needs no release. Lint stops the core from importing an app, stops a phone app from importing the web app's database, and stops Birdspotter from importing anything but the core.
 
 ## What would change with a server
 

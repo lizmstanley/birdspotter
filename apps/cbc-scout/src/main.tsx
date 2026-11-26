@@ -11,12 +11,11 @@ import { CbcScoutApp } from './CbcScoutApp.tsx';
 // After the core styles, so the app's rules win a tie.
 import './scout.css';
 
-const SCOUT_PATH = `${import.meta.env.BASE_URL}cbc-scout/`;
-
 function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
-  // Scoped to CBC Scout's folder so the web app never comes under it.
-  navigator.serviceWorker.register(`${SCOUT_PATH}sw.js`, { scope: SCOUT_PATH }).catch((err: unknown) => {
+  // Scoped to CBC Scout's folder so the circle manager and Birdspotter never come under it.
+  const scoutPath = import.meta.env.BASE_URL;
+  navigator.serviceWorker.register(`${scoutPath}sw.js`, { scope: scoutPath }).catch((err: unknown) => {
     // The app still works online without it; only Chrome's install offer depends on it.
     console.warn('CBC Scout: service worker registration failed', err);
   });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { LETS_GO_BIRDING } from './appIdentity.ts';
+import { BIRDSPOTTER } from './appIdentity.ts';
 
 const SCREENS = ['ebird-key', 'settings'] as const;
 export type Screen = (typeof SCREENS)[number];
@@ -9,7 +9,7 @@ const SCREEN_TITLES: Readonly<Record<Screen, string>> = {
   settings: 'Settings',
 };
 
-const MENU_ID = 'lgb-menu';
+const MENU_ID = 'birdspotter-menu';
 
 function MenuIcon() {
   return (
@@ -46,10 +46,10 @@ export function AppBar({ onOpen }: { onOpen: (screen: Screen) => void }) {
   }
 
   return (
-    <header ref={barRef} className="lgb-bar">
+    <header ref={barRef} className="birdspotter-bar">
       <button
         type="button"
-        className="lgb-bar-menu"
+        className="birdspotter-bar-menu"
         aria-label="Menu"
         aria-expanded={isOpen}
         aria-controls={MENU_ID}
@@ -57,8 +57,8 @@ export function AppBar({ onOpen }: { onOpen: (screen: Screen) => void }) {
       >
         <MenuIcon />
       </button>
-      <span className="lgb-bar-title">{LETS_GO_BIRDING.name}</span>
-      <nav id={MENU_ID} className="lgb-menu" hidden={!isOpen} aria-label="Menu">
+      <span className="birdspotter-bar-title">{BIRDSPOTTER.name}</span>
+      <nav id={MENU_ID} className="birdspotter-menu" hidden={!isOpen} aria-label="Menu">
         <ul>
           {SCREENS.map((screen) => (
             <li key={screen}>
@@ -97,16 +97,16 @@ export function AppScreen({ screen, onClose, children }: AppScreenProps) {
   }, [onClose]);
 
   return (
-    <section className="lgb-screen" aria-labelledby="lgb-screen-title">
-      <header className="lgb-bar">
+    <section className="birdspotter-screen" aria-labelledby="birdspotter-screen-title">
+      <header className="birdspotter-bar">
         <button ref={backRef} type="button" onClick={onClose}>
           Back to map
         </button>
-        <h1 id="lgb-screen-title" className="lgb-bar-title">
+        <h1 id="birdspotter-screen-title" className="birdspotter-bar-title">
           {SCREEN_TITLES[screen]}
         </h1>
       </header>
-      <div className="lgb-screen-body">{children}</div>
+      <div className="birdspotter-screen-body">{children}</div>
     </section>
   );
 }

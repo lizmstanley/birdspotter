@@ -1,6 +1,6 @@
 import { encodeAreaLink, type AreaLinkData } from '../../../../src/services/areaLink.ts';
 
-export const SCOUT_URL = 'https://example.test/cbc-scout/';
+export const SCOUT_URL = 'https://example.test/cbc/scout/';
 
 export function areaData(overrides: Partial<AreaLinkData> = {}): AreaLinkData {
   return {

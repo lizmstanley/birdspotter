@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { defineConfig, type ProxyOptions } from 'vite';
+import { defineConfig, type ProxyOptions, type UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // cbc.audubon.org sends no CORS headers, so the browser reaches it through the dev and preview server.
@@ -12,33 +12,65 @@ const audubonProxy: Record<string, ProxyOptions> = {
   },
 };
 
-// Each phone app builds in its own pass so it shares no chunks with the web app or the other phone app.
-// Rooted at apps/ so apps/<mode>/index.html builds to dist/<mode>/index.html, the app's hosted address.
-const PHONE_APP_MODES = ['cbc-scout', 'lets-go-birding'] as const;
-type PhoneAppMode = (typeof PHONE_APP_MODES)[number];
-const APPS_ROOT = fileURLToPath(new URL('./apps', import.meta.url));
+// GitHub Pages serves this repo under /birdspotter/. Local dev and preview stay at /.
+const SITE_BASE = process.env.GITHUB_PAGES ? '/birdspotter/' : '/';
 
-function isPhoneAppMode(mode: string): mode is PhoneAppMode {
-  return PHONE_APP_MODES.some((appMode) => appMode === mode);
+function repoPath(path: string): string {
+  return fileURLToPath(new URL(path, import.meta.url));
 }
 
-// The web app's pass copies public/, which holds each phone app's manifest, icons, and service worker.
-function phoneAppConfig(mode: PhoneAppMode) {
+// Each app builds in its own pass, into the folder it is served from, so no two apps share a chunk.
+// An installed app's scope covers every path under it, so no app sits at the site root or at cbc/.
+const APP_PATHS = {
+  'cbc-scout': 'cbc/scout/',
+  birdspotter: 'app/',
+} as const;
+type PhoneAppMode = keyof typeof APP_PATHS;
+const CIRCLE_MANAGER_PATH = 'cbc/manager/';
+
+function isPhoneAppMode(mode: string): mode is PhoneAppMode {
+  return Object.hasOwn(APP_PATHS, mode);
+}
+
+// Vite writes an HTML entry at its path relative to root, so root is the app's own folder.
+// Each app copies its own public/ folder, which holds its manifest, icons, and service worker.
+function phoneAppConfig(mode: PhoneAppMode): UserConfig {
   return {
-    root: APPS_ROOT,
-    publicDir: fileURLToPath(new URL('./public', import.meta.url)),
+    root: repoPath(`./apps/${mode}`),
+    base: `${SITE_BASE}${APP_PATHS[mode]}`,
+    build: { outDir: repoPath(`./dist/${APP_PATHS[mode]}`), emptyOutDir: true },
+  };
+}
+
+// The home page and the CBC page are plain HTML with relative links. This pass runs first and empties dist/.
+// Preview runs in this mode, so it serves all of dist/.
+function siteConfig(): UserConfig {
+  return {
+    root: repoPath('./site'),
+    base: SITE_BASE,
+    publicDir: false,
     build: {
-      outDir: fileURLToPath(new URL('./dist', import.meta.url)),
-      emptyOutDir: false,
-      copyPublicDir: false,
-      rollupOptions: { input: fileURLToPath(new URL(`./apps/${mode}/index.html`, import.meta.url)) },
+      outDir: repoPath('./dist'),
+      emptyOutDir: true,
+      rollupOptions: { input: [repoPath('./site/index.html'), repoPath('./site/cbc/index.html')] },
     },
   };
 }
 
+function circleManagerConfig(): UserConfig {
+  return {
+    base: `${SITE_BASE}${CIRCLE_MANAGER_PATH}`,
+    build: { outDir: repoPath(`./dist/${CIRCLE_MANAGER_PATH}`), emptyOutDir: true },
+  };
+}
+
+function passConfig(mode: string): UserConfig {
+  if (mode === 'site') return siteConfig();
+  if (isPhoneAppMode(mode)) return phoneAppConfig(mode);
+  return circleManagerConfig();
+}
+
 export default defineConfig(({ mode }) => ({
-  // GitHub Pages serves this repo under /birdspotter/. Local dev and preview stay at /.
-  base: process.env.GITHUB_PAGES ? '/birdspotter/' : '/',
   plugins: [react()],
   optimizeDeps: {
     // Pre-bundling breaks PGlite's WASM loading. MapLibre must stay pre-bundled: it ships only a UMD build.
@@ -46,5 +78,5 @@ export default defineConfig(({ mode }) => ({
   },
   server: { proxy: audubonProxy },
   preview: { proxy: audubonProxy },
-  ...(isPhoneAppMode(mode) ? phoneAppConfig(mode) : {}),
+  ...passConfig(mode),
 }));
