@@ -3,11 +3,13 @@ import { EBIRD_KEY_REQUEST_URL } from './ebird.ts';
 
 interface HelpProps {
   readonly appName: string;
+  /** Whether the app's service worker saves its files, so it opens with no signal. */
+  readonly opensWithoutSignal: boolean;
   /** The app's own sections, after the shared ones. */
   readonly children?: ReactNode;
 }
 
-export function Help({ appName, children }: HelpProps) {
+export function Help({ appName, opensWithoutSignal, children }: HelpProps) {
   return (
     <div className="birding-help">
       <h2>What the lists show</h2>
@@ -48,9 +50,13 @@ export function Help({ appName, children }: HelpProps) {
 
       <h2>No signal</h2>
       <p>
-        {appName} needs a signal to open, to draw the map, and to check eBird. If the signal drops, the lists keep
-        the eBird data they last loaded and say when it was fetched. Once that data is 6 hours old, eBird&apos;s
-        terms no longer allow showing it, so it leaves the screen until a signal returns.
+        {opensWithoutSignal
+          ? `${appName} opens with no signal once it has opened with a signal since its last update. ` +
+            'It needs a signal to draw the street map, which may be blank without one, and to check eBird.'
+          : `${appName} needs a signal to open, to draw the map, and to check eBird.`}{' '}
+        If the signal drops, the lists keep the eBird data they last loaded and say when it was fetched. Once that
+        data is 6 hours old, eBird&apos;s terms no longer allow showing it, so it leaves the screen until a signal
+        returns.
       </p>
 
       <h2>Install it</h2>
