@@ -6,9 +6,17 @@ interface EbirdControlsProps {
   readonly isBusy: boolean;
   readonly onBackDaysChange: (days: number) => void;
   readonly onLoad: () => void;
+  readonly onExportKml: () => void;
 }
 
-export function EbirdControls({ hasKey, backDays, isBusy, onBackDaysChange, onLoad }: EbirdControlsProps) {
+export function EbirdControls({
+  hasKey,
+  backDays,
+  isBusy,
+  onBackDaysChange,
+  onLoad,
+  onExportKml,
+}: EbirdControlsProps) {
   return (
     <div className="ebird-bar">
       <NeedsEbirdKey hasKey={hasKey}>
@@ -34,6 +42,13 @@ export function EbirdControls({ hasKey, backDays, isBusy, onBackDaysChange, onLo
           {isBusy ? 'Fetching eBird...' : 'Load Hotspots & Sightings'}
         </button>
       </NeedsEbirdKey>
+      <button
+        type="button"
+        title="Download the layers shown on the map, with eBird hotspots and sightings, as a KML file for Google Earth or My Maps"
+        onClick={onExportKml}
+      >
+        Export Map as KML
+      </button>
     </div>
   );
 }

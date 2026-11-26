@@ -7,6 +7,7 @@ import { AreaImportBar } from './map/AreaImportBar';
 import { excludeNotCounted } from './map/areaFeatures';
 import { EbirdControls } from './map/EbirdControls';
 import { HotspotsTable, SightingsTable } from './map/EbirdTables';
+import { buildMapKml } from './map/kmlExport';
 import { LayerLegend } from './map/LayerLegend';
 import { ScoutPanel } from './map/ScoutPanel';
 import type { AreaBoundaryItem, ScoutedCircleDraft } from './map/types';
@@ -84,6 +85,25 @@ export function CircleMap({
     [ebird.sightings, areaOutlines]
   );
 
+  const isCircleShown = isScouting || showCircleOverlay;
+
+  function exportKml() {
+    const kml = buildMapKml({
+      title: `${effectiveCode} — ${effectiveName}`,
+      circle: isCircleShown ? { lat: effectiveLat, lng: effectiveLng, radiusMiles } : null,
+      areas: isScouting || !showAreas ? [] : areaBoundaries,
+      notCountedAreaCodes,
+      hotspots: showHotspots ? hotspotRows : [],
+      sightings: showSightings ? sightingRows : [],
+    });
+    const url = URL.createObjectURL(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${effectiveCode.replace(/[^A-Za-z0-9_-]+/g, '-')}-map-${new Date().toISOString().slice(0, 10)}.kml`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   const exitScouting = useEffectEvent(() => scouting.exit());
   useEffect(() => {
     exitScouting();
@@ -103,7 +123,7 @@ export function CircleMap({
     lat: effectiveLat,
     lng: effectiveLng,
     radiusMiles,
-    isCircleShown: isScouting || showCircleOverlay,
+    isCircleShown,
   });
 
   const hoveredArea = useAreaLayer({
@@ -162,6 +182,7 @@ export function CircleMap({
           isBusy={ebird.isBusy}
           onBackDaysChange={ebird.setBackDays}
           onLoad={() => void ebird.load(effectiveCode, effectiveLat, effectiveLng)}
+          onExportKml={exportKml}
         />
 
         {!isScouting && (
