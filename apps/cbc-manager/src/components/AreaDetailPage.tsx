@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { AreaOption, AssignmentRow } from '../db/pgliteDb';
 import type { AreaLinkData } from '../services/areaLink';
 import { areaDisplayName } from './map/mapText';
+import { CounterNoteEditor } from './CounterNoteEditor';
 import { countingSince } from './PersonHistoryDialog';
 import { ShareAreaPanel } from './ShareAreaPanel';
 
@@ -25,6 +26,7 @@ interface Props {
   onCopyLink: (url: string) => void;
   onToggleCounted: (areaCode: string, isCounted: boolean) => Promise<void>;
   onToggleResultsReceived: (areaCode: string, received: boolean) => Promise<void>;
+  onSaveCounterNote: (areaCode: string, note: string) => Promise<void>;
 }
 
 export function AreaDetailPage({
@@ -46,6 +48,7 @@ export function AreaDetailPage({
   onCopyLink,
   onToggleCounted,
   onToggleResultsReceived,
+  onSaveCounterNote,
 }: Props) {
   const areaAssignments = assignments.filter(
     (a) => (a.area ?? '').toUpperCase() === areaCode.toUpperCase()
@@ -53,6 +56,7 @@ export function AreaDetailPage({
   const emails = areaAssignments.map((a) => a.email).filter((e): e is string => Boolean(e));
   const title = areaDisplayName(areaCode);
   const [isSharing, setIsSharing] = useState(false);
+  const savedNote = areaInfo?.counter_note ?? '';
 
   return (
     <div className="stack">
@@ -155,6 +159,13 @@ export function AreaDetailPage({
             <strong>Active Restriction:</strong> {areaInfo.active_restrictions}
           </div>
         )}
+
+        <CounterNoteEditor
+          key={`${areaCode}\n${savedNote}`}
+          areaCode={areaCode}
+          savedNote={savedNote}
+          onSave={onSaveCounterNote}
+        />
       </div>
 
       <div className="card">

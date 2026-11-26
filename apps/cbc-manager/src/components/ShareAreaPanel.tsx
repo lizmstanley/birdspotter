@@ -1,5 +1,12 @@
 import { useMemo } from 'react';
-import { AreaLinkTooLargeError, buildAreaLink, type AreaLink, type AreaLinkData } from '../services/areaLink';
+import {
+  AREA_NOTE_MAX_LENGTH,
+  AreaLinkTooLargeError,
+  AreaNoteTooLongError,
+  buildAreaLink,
+  type AreaLink,
+  type AreaLinkData,
+} from '../services/areaLink';
 import { describeError } from '../services/describeError';
 import { qrCodeDataUrl } from '../services/qrCode';
 import { CBC_SCOUT_URL } from '../services/shareApp';
@@ -11,6 +18,10 @@ interface Props {
   onCopyLink: (url: string) => void;
 }
 
+// The densest code on record as scanning well on a phone held a 429-byte link at QR version 16, which tops out
+// at 450 bytes at medium error correction. Raise this after a phone scan test of a denser code.
+const EASY_SCAN_MAX_BYTES = 450;
+
 type LinkResult = { status: 'ok'; link: AreaLink; qrImageUrl: string } | { status: 'error'; message: string };
 
 function makeLink(linkData: AreaLinkData): LinkResult {
@@ -20,6 +31,12 @@ function makeLink(linkData: AreaLinkData): LinkResult {
   } catch (err) {
     if (err instanceof AreaLinkTooLargeError) {
       return { status: 'error', message: 'This outline is too detailed to fit in a link, even simplified.' };
+    }
+    if (err instanceof AreaNoteTooLongError) {
+      return {
+        status: 'error',
+        message: `The note for counters is ${err.length} characters. Shorten it to ${AREA_NOTE_MAX_LENGTH} or fewer to share the area.`,
+      };
     }
     return { status: 'error', message: `Could not make the link: ${describeError(err)}` };
   }
@@ -44,6 +61,7 @@ export function ShareAreaPanel({ title, linkData, onShareLink, onCopyLink }: Pro
       <p className="muted">
         Send this link to the area&apos;s counters. It opens the area in CBC Scout.{' '}
         {leaderSummary(linkData.leaders.length)}
+        {linkData.note && ' Includes the note for counters.'}
       </p>
       <div className="row-actions">
         {canShare && (
@@ -61,6 +79,11 @@ export function ShareAreaPanel({ title, linkData, onShareLink, onCopyLink }: Pro
         </p>
       )}
       <p className="muted">Or print this QR code, or show it on screen, for counters in person.</p>
+      {link.bytes > EASY_SCAN_MAX_BYTES && (
+        <p className="muted">
+          This QR code is dense and may be hard for some phones to scan. Share Link or Copy Link sends the same area.
+        </p>
+      )}
       <img className="share-area-qr" src={qrImageUrl} alt={`QR code for the ${title} link`} />
     </div>
   );

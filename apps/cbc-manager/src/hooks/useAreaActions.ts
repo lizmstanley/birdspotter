@@ -75,6 +75,15 @@ export function useAreaActions(
     });
   }
 
+  async function saveCounterNote(areaCode: string, note: string) {
+    if (!activeCircle) return;
+    await attempt(async () => {
+      await db.setAreaCounterNote(activeCircle.code, areaCode, note);
+      await reload();
+      flash(note.trim() ? `Saved the note for "${areaCode}".` : `Cleared the note for "${areaCode}".`);
+    });
+  }
+
   function deleteArea(areaCode: string) {
     if (!activeCircle) return;
     const code = activeCircle.code;
@@ -91,5 +100,5 @@ export function useAreaActions(
     });
   }
 
-  return { reassign, changeCenter, importBoundaries, clearBoundaries, toggleResultsReceived, toggleAreaCounted, deleteArea };
+  return { reassign, changeCenter, importBoundaries, clearBoundaries, toggleResultsReceived, toggleAreaCounted, saveCounterNote, deleteArea };
 }

@@ -238,7 +238,8 @@ a:hover {
 button,
 select,
 input[type='password'],
-input[type='text'] {
+input[type='text'],
+textarea {
   font: inherit;
   font-size: 0.875rem;
   padding: 8px 12px;
@@ -251,6 +252,7 @@ input[type='text'] {
 
 input[type='password']:focus,
 input[type='text']:focus,
+textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--forest-700);
@@ -1087,6 +1089,23 @@ code {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--border);
+}
+
+.counter-note {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.counter-note textarea {
+  display: block;
+  width: 100%;
+  margin: 6px 0;
+  resize: vertical;
+}
+
+.counter-note-over {
+  color: var(--danger-text);
 }
 
 .share-area-qr {

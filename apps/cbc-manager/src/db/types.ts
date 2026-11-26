@@ -92,6 +92,7 @@ export interface AreaOption {
   cities: string | null;
   notable_spots?: string | null;
   active_restrictions: string | null;
+  counter_note: string | null;
   is_counted: boolean;
   results_received: boolean;
 }

@@ -62,7 +62,7 @@ test('the link data holds the circle, the area outline, and only area leaders of
     assignment({ full_name: 'Not A Leader' }),
     assignment({ full_name: 'Other Area Leader', is_area_leader: true, area: '13' }),
   ];
-  assert.deepEqual(buildAreaLinkData(CIRCLE, BOUNDARIES, assignments, '12'), {
+  assert.deepEqual(buildAreaLinkData(CIRCLE, BOUNDARIES, assignments, '12', 'Meet at the\nnature center lot. '), {
     circleCode: 'MNMI',
     circleName: 'Minneapolis North',
     circleCenter: [-93.25, 44.95],
@@ -70,7 +70,15 @@ test('the link data holds the circle, the area outline, and only area leaders of
     areaLabel: '12 - Richfield',
     outline: { type: 'Polygon', coordinates: [RING] },
     leaders: [{ name: 'Pat Leader', phone: '612-555-0100', email: 'pat@example.test' }, { name: 'Sam Second' }],
+    note: 'Meet at the\nnature center lot.',
   });
+});
+
+test('a blank note is left out of the link data', () => {
+  for (const note of [null, '', ' \n ']) {
+    const data = buildAreaLinkData(CIRCLE, BOUNDARIES, [], '12', note);
+    assert.equal(data && 'note' in data, false);
+  }
 });
 
 test('the area code matches outlines and leaders regardless of case', () => {
@@ -78,7 +86,8 @@ test('the area code matches outlines and leaders regardless of case', () => {
     CIRCLE,
     [boundary('4N', null)],
     [assignment({ area: '4n', is_area_leader: true, full_name: 'Lee' })],
-    '4n'
+    '4n',
+    null
   );
   assert.equal(data?.areaCode, '4N');
   assert.deepEqual(data?.leaders.map((l) => l.name), ['Lee']);
@@ -86,10 +95,10 @@ test('the area code matches outlines and leaders regardless of case', () => {
 });
 
 test('an area without a polygon or line outline has no link data', () => {
-  assert.equal(buildAreaLinkData(CIRCLE, BOUNDARIES, [], '99'), null);
-  assert.equal(buildAreaLinkData(CIRCLE, [boundary('12', null, 'Point')], [], '12'), null);
+  assert.equal(buildAreaLinkData(CIRCLE, BOUNDARIES, [], '99', null), null);
+  assert.equal(buildAreaLinkData(CIRCLE, [boundary('12', null, 'Point')], [], '12', null), null);
 });
 
 test('the outer circle outline is never shared as an area', () => {
-  assert.equal(buildAreaLinkData(CIRCLE, BOUNDARIES, [], 'Full CBC circle'), null);
+  assert.equal(buildAreaLinkData(CIRCLE, BOUNDARIES, [], 'Full CBC circle', null), null);
 });

@@ -128,6 +128,7 @@ export function AreaPanel({ areas, activeArea, onLoadText, onPick, onRemove }: A
         <>
           <h2>{areaName(activeArea.data)}</h2>
           <LeaderList leaders={activeArea.data.leaders} />
+          {activeArea.data.note && <p className="scout-area-note">{activeArea.data.note}</p>}
         </>
       ) : (
         <p>No area loaded. Open the link from your compiler, paste it, or scan its code.</p>

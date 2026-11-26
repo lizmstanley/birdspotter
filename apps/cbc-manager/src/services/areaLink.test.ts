@@ -4,7 +4,9 @@ import { deflateSync, strToU8 } from 'fflate';
 import type { Position } from 'geojson';
 import {
   AREA_LINK_FORMAT_VERSION,
+  AREA_NOTE_MAX_LENGTH,
   AreaLinkTooLargeError,
+  AreaNoteTooLongError,
   buildAreaLink,
   decodeAreaLink,
   encodeAreaLink,
@@ -123,6 +125,50 @@ test('an area that cannot fit even simplified throws AreaLinkTooLargeError', () 
   assert.throws(() => buildAreaLink(BASE_URL, huge), AreaLinkTooLargeError);
 });
 
+const NOTE = 'Meet at the nature center lot at 7.\nFeeders at 12 Elm St. are OK.\n\nNo entry past the gate.';
+
+test('an area note decodes with its line breaks', () => {
+  const decoded = decodeAreaLink(encodeAreaLink({ ...AREA, note: NOTE }));
+  assert.deepEqual(decoded, { ...AREA, note: NOTE });
+});
+
+test('a blank note is left out of the link', () => {
+  const decoded = decodeAreaLink(encodeAreaLink({ ...AREA, note: ' \n ' }));
+  assert.equal('note' in decoded, false);
+  assert.equal(encodeAreaLink({ ...AREA, note: ' \n ' }), encodeAreaLink(AREA));
+});
+
+test('a version 1 link still decodes, and a note field in it is ignored', () => {
+  const decoded = decodeAreaLink(packedPayload({ ...VALID_PACKED, v: 1, m: 'Never written by version 1' }));
+  assert.equal(decoded.areaCode, '12');
+  assert.equal('note' in decoded, false);
+});
+
+test('a note of exactly the limit round trips', () => {
+  const note = 'n'.repeat(AREA_NOTE_MAX_LENGTH);
+  assert.equal(decodeAreaLink(encodeAreaLink({ ...AREA, note })).note, note);
+});
+
+test('encoding a note over the limit throws AreaNoteTooLongError', () => {
+  assert.throws(
+    () => buildAreaLink(BASE_URL, { ...AREA, note: 'n'.repeat(AREA_NOTE_MAX_LENGTH + 1) }),
+    (err: unknown) => err instanceof AreaNoteTooLongError && err.length === AREA_NOTE_MAX_LENGTH + 1
+  );
+});
+
+test('simplifying a detailed outline keeps the note whole', () => {
+  const note = incompressibleText(AREA_NOTE_MAX_LENGTH);
+  const detailed: AreaLinkData = { ...AREA, note, outline: { type: 'Polygon', coordinates: [wobblyRing(4000)] } };
+  const link = buildAreaLink(BASE_URL, detailed);
+  assert.ok(link.pointsKept < link.pointsIn);
+  assert.equal(decodeAreaLink(new URL(link.url).hash.slice(1)).note, note);
+});
+
+test('the link reports its length in UTF-8 bytes', () => {
+  const link = buildAreaLink(BASE_URL, { ...AREA, note: 'Café' });
+  assert.equal(link.bytes, new TextEncoder().encode(link.url).length);
+});
+
 test('a link from an unknown format version throws UnsupportedAreaLinkVersionError', () => {
   assert.throws(
     () => decodeAreaLink(packedPayload({ ...VALID_PACKED, v: AREA_LINK_FORMAT_VERSION + 1 })),
@@ -146,6 +192,9 @@ const REJECTED: readonly [string, string, string][] = [
   ['a ring of three points', packedPayload({ ...VALID_PACKED, p: [[[-9330001, 4490001, 10001, 0, 0, 10001]]] }), 'malformed outline'],
   ['a leader with no name', packedPayload({ ...VALID_PACKED, l: [{ e: 'x@example.test' }] }), 'malformed leader'],
   ['a leader phone that is not text', packedPayload({ ...VALID_PACKED, l: [{ n: 'Pat', p: 5 }] }), 'malformed leader'],
+  ['a note that is not text', packedPayload({ ...VALID_PACKED, m: 42 }), 'malformed note'],
+  ['a blank note', packedPayload({ ...VALID_PACKED, m: '  ' }), 'malformed note'],
+  ['a note over the limit', packedPayload({ ...VALID_PACKED, m: 'n'.repeat(AREA_NOTE_MAX_LENGTH + 1) }), 'malformed note'],
   ['an outline over 20,000 points', packedPayload({ ...VALID_PACKED, t: 'L', p: [[[0, 0, ...Array(40_002).fill(0)]]] }), 'too many points'],
 ];
 

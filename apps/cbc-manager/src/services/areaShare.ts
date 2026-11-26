@@ -22,7 +22,8 @@ export function buildAreaLinkData(
   circle: SavedCircle,
   boundaries: readonly AreaBoundaryRow[],
   assignments: readonly AssignmentRow[],
-  areaCode: string
+  areaCode: string,
+  counterNote: string | null
 ): AreaLinkData | null {
   const boundary = boundaries.find(
     (b) => isSameArea(b.code, areaCode) && !isOuterCircleName(`${b.code} ${b.label ?? ''}`)
@@ -30,6 +31,7 @@ export function buildAreaLinkData(
   const outline = boundary ? toAreaOutlineGeometry(boundary.boundary_geojson) : null;
   if (!boundary || !outline) return null;
   const areaLabel = presentText(boundary.label);
+  const note = presentText(counterNote);
   return {
     circleCode: circle.code,
     circleName: circle.name,
@@ -38,5 +40,6 @@ export function buildAreaLinkData(
     ...(areaLabel ? { areaLabel } : {}),
     outline,
     leaders: assignments.filter((row) => row.is_area_leader && isSameArea(row.area, areaCode)).map(toLeader),
+    ...(note ? { note } : {}),
   };
 }

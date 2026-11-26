@@ -6,7 +6,8 @@ export function ScoutHelp() {
       <p>
         Your compiler sends your count area as a link or a QR code. Open the link, or open{' '}
         <strong>Your areas</strong> from the menu and tap <strong>Paste link</strong> and paste it, or tap{' '}
-        <strong>Scan area code</strong> and point the camera at the QR code.
+        <strong>Scan area code</strong> and point the camera at the QR code. The area can come with a note from your
+        compiler, such as where to meet or which feeders you may visit. It shows on <strong>Your areas</strong>, under the area&apos;s name and leader.
       </p>
       <p>
         CBC Scout keeps every area it loads, with one active at a time. With more than one, pick the active area from
