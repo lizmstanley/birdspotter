@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   AREA_NOTE_MAX_LENGTH,
   AreaLinkTooLargeError,
@@ -42,13 +42,23 @@ function makeLink(linkData: AreaLinkData): LinkResult {
   }
 }
 
-function leaderSummary(count: number): string {
+function leaderSummary(count: number, isPhoneLeftOut: boolean): string {
   if (count === 0) return 'No area leader is set, so the link has no contact.';
-  return count === 1 ? "Includes the area leader's contact." : `Includes contact for ${count} area leaders.`;
+  const contact = isPhoneLeftOut ? 'name and email' : 'contact';
+  return count === 1 ? `Includes the area leader's ${contact}.` : `Includes the ${contact} of ${count} area leaders.`;
+}
+
+function withoutPhones(linkData: AreaLinkData): AreaLinkData {
+  const leaders = linkData.leaders.map(({ name, email }) => (email ? { name, email } : { name }));
+  return { ...linkData, leaders };
 }
 
 export function ShareAreaPanel({ title, linkData, onShareLink, onCopyLink }: Props) {
-  const result = useMemo(() => makeLink(linkData), [linkData]);
+  const [isPhoneLeftOut, setIsPhoneLeftOut] = useState(false);
+  const result = useMemo(
+    () => makeLink(isPhoneLeftOut ? withoutPhones(linkData) : linkData),
+    [linkData, isPhoneLeftOut]
+  );
   const canShare = typeof navigator.share === 'function';
 
   if (result.status === 'error') {
@@ -60,9 +70,15 @@ export function ShareAreaPanel({ title, linkData, onShareLink, onCopyLink }: Pro
     <div className="share-area-panel">
       <p className="muted">
         Send this link to the area&apos;s counters. It opens the area in CBC Scout.{' '}
-        {leaderSummary(linkData.leaders.length)}
+        {leaderSummary(linkData.leaders.length, isPhoneLeftOut)}
         {linkData.note && ' Includes the note for counters.'}
       </p>
+      {linkData.leaders.some((leader) => leader.phone) && (
+        <label className="share-area-option">
+          <input type="checkbox" checked={isPhoneLeftOut} onChange={(e) => setIsPhoneLeftOut(e.target.checked)} />
+          <span>Leave out phone numbers, for a link or code you post in public</span>
+        </label>
+      )}
       <div className="row-actions">
         {canShare && (
           <button type="button" className="btn-primary" onClick={() => onShareLink(title, link.url)}>

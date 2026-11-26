@@ -72,17 +72,17 @@ It also works in a plain browser tab. On iPhone, the home screen app keeps its o
 
 ### Add an eBird key
 
-CBC Scout needs an eBird API key before it shows anything, so its first screen asks for one. Get a key as in [Set up your eBird key](#set-up-your-ebird-key), paste it, and tap **Save key**. The screen links to the eBird request page too.
+CBC Scout shows the area, the map, notes, and the count session without an eBird key. Sightings and hotspots need one: until a key is saved, the **Sightings** and **Hotspots** tabs show **Add eBird key**. Get a key as in [Set up your eBird key](#set-up-your-ebird-key), paste it, and tap **Save key**. The key screen links to the eBird request page too.
 
 To change the key later, open the menu at the top and tap **eBird key**. If eBird rejects the key, or the key has a character an eBird key can't have, such as a curly quote, the lists show a **Fix eBird key** button that opens the same screen. The key forms refuse to save such a key.
 
-The menu also has **Help**, how CBC Scout works in plain words, and **About**, who made it and why. The first screen links to Help too, before a key is saved.
+The menu also has **Help**, how CBC Scout works in plain words, and **About**, who made it and why.
 
 The web app, CBC Scout, and Birdspotter share one saved key, but only in the same browser on the same device. A counter's phone needs the key entered once.
 
 ### Send counters their area
 
-In the web app, open an area and click **Share Area**. It makes a link and a QR code. Send the link with **Share Link** or **Copy Link**, or print the QR code or show it on screen for counters in person.
+In the web app, open an area and click **Share Area**. It makes a link and a QR code. Send the link with **Share Link** or **Copy Link**, or print the QR code or show it on screen for counters in person. To post a link or code in public, such as on your count's web page, tick **Leave out phone numbers**: the link then carries the leaders' names and emails only.
 
 The link carries the area's **Note for counters**, which you write and save on the area's page. CBC Scout shows it under the area's name and leader. Anyone with the link can read the note, so put in it only what you would text to the whole party. A long note makes a dense QR code; when it may be hard to scan, Share Area says so, and the link itself works the same.
 
