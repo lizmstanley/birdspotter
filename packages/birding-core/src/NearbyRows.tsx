@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   ebirdChecklistUrl,
   isConfirmedReport,
@@ -40,7 +41,7 @@ export function SightingRow({ row, isNotable, reason }: SightingRowProps) {
 
 interface HotspotRowProps {
   readonly row: NearbyRow<EbirdHotspot>;
-  readonly reason?: string;
+  readonly reason?: ReactNode;
 }
 
 export function HotspotRow({ row, reason }: HotspotRowProps) {

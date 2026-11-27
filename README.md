@@ -99,8 +99,8 @@ CBC Scout keeps every area it loads, with one active at a time. **Your areas** l
 ### What it shows
 
 - **Map:** the 15-mile circle and the area's outline. Tap the location button on the map to show where you are. While it's on, the line above the map says whether you're in your area, outside your area, or outside the circle. If you leave it on, it's on again the next time you open CBC Scout.
-- **Sightings:** notable sightings, then recent sightings, then eBird hotspots. The lists show once location is on, nearest first. Pick how many days back, from 1 to 30. With an area loaded, they list only places in your area; with a route line instead of a shape, they cover the whole circle, places in it first. With no area, they cover 7.5 miles around you. Each sighting links to its eBird checklist. Notable sightings include reports still waiting for review; one an eBird reviewer has confirmed is marked **Confirmed**, here and in Birds to look for.
-- **Hotspots:** **Hotspots to visit**, the hotspots in your area (or every hotspot, with no area loaded) ranked by the species last reported there. With an area loaded whose outline is a shape, not a route line, it also shows **Birds to look for**, each species reported in your area, at its latest report there.
+- **Sightings:** notable sightings, then recent sightings. The lists show once location is on, nearest first. Pick how many days back, from 1 to 30. With an area loaded, they list only places in your area; with a route line instead of a shape, they cover the whole circle, places in it first. With no area, they cover 7.5 miles around you. Each sighting links to its eBird checklist. Notable sightings include reports still waiting for review; one an eBird reviewer has confirmed is marked **Confirmed**.
+- **Hotspots:** **Hotspots to visit**, the hotspots in your area (or every hotspot, with no area loaded) ranked by the species reported there in the days picked on Sightings. Tap a hotspot's species count to see which species, each linked to its eBird checklist, with notable ones marked.
 - **Directions:** every place shows its distance from you, its direction once it's more than a tenth of a mile away, and a **Directions** link. It opens Apple Maps on iPhone and iPad, and Google Maps everywhere else.
 - **Notes:** the tab under the map shows the active area's name, its leaders, and the compiler's note for the area as plain text.
 - **Your areas:** in the menu, every saved area with its name and leaders, with their phone and email as tap-to-call and tap-to-email links, and the compiler's note.
@@ -141,8 +141,8 @@ Install it the way you install [CBC Scout](#install-it): **Add to Home Screen** 
 Its first screen asks for an eBird API key. Get one as in [Set up your eBird key](#set-up-your-ebird-key). In a browser, and in installed apps on Android, a key saved in the web app or CBC Scout on the same device works here too. On iPhone, each home screen app keeps its own storage, so an installed Birdspotter asks for the key once. To change the key, open the menu at the top and tap **eBird key**.
 
 - **Map:** tap the location button on the map to show where you are. If you leave it on, it's on again the next time you open the app.
-- **Sightings:** notable sightings, then recent sightings, then eBird hotspots, nearest first, as in CBC Scout. Pick how many days back, from 1 to 30.
-- **Hotspots:** **Hotspots to visit**, the hotspots around you ranked by the species last reported there.
+- **Sightings:** notable sightings, then recent sightings, nearest first, as in CBC Scout. Pick how many days back, from 1 to 30.
+- **Hotspots:** **Hotspots to visit**, the hotspots around you ranked by the species reported there. Tap the species count to see which.
 - **Directions:** every place shows its distance and direction from you, and a **Directions** link.
 - **Settings:** open the menu and tap **Settings**. **Check eBird for new sightings** works as in CBC Scout. **Search around you** sets how far the lists look: 2, 5, 7.5, 10, 15, or 25 miles. The default is 7.5 miles. The search moves with you once you're half that distance from where it started.
 
