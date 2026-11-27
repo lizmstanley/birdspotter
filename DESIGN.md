@@ -89,7 +89,13 @@ Count areas often have no signal, so CBC Scout's service worker saves the app's 
 
 The saved page is replaced only once every built file it loads is saved, and the previous release's built files are removed only after that, so a signal lost mid-update leaves the previous release able to open. The worker reads the asset list from the new page itself, so the app code takes no part. The cache has one name with a `cbc-scout-` prefix; a change to what it stores renames it, and activation removes the other `cbc-scout-` caches except saved street maps. It never touches other names, since the apps share the origin's caches.
 
-Rejected: `vite-plugin-pwa` or Workbox precaching, a dependency and build plugin for a few lines of worker code; a build step that writes a precache list, since network first saves the same files on the first online open; cache first for built files, safe with hashed names but a second rule where one works; dropping the whole cache when a new page arrives, simpler, but a signal drop mid-update leaves nothing to open. Birdspotter's worker saves nothing, since nothing asks for it offline yet.
+Rejected: `vite-plugin-pwa` or Workbox precaching, a dependency and build plugin for a few lines of worker code; a build step that writes a precache list, since network first saves the same files on the first online open; cache first for built files, safe with hashed names but a second rule where one works; dropping the whole cache when a new page arrives, simpler, but a signal drop mid-update leaves nothing to open.
+
+### Birdspotter opens with no signal
+
+Birding spots often have a poor signal, so Birdspotter's worker follows CBC Scout's rules for the page and other files under its scope: network first, revalidated, the saved copy after a failure or 4 seconds, the release saved on install, and a new page saved only once all its built files are. Its one cache is named with a `birdspotter-` prefix, and activation removes only other `birdspotter-` caches. It saves no map: Birdspotter has no area to bound a street map download.
+
+One rule differs. Built files under `assets/` are answered from the save first, and from the network only when not saved. Their names change with every build, so a saved one is never stale. With network first, each built file waits on the network again after the page does: on a weak signal that answers the page, up to 4 more seconds for the built files, and on a good signal a `304` round trip per file once the host's 10-minute cache lapses. Cache first leaves the page as the only wait. A page served from the save therefore needs no record of its client, as CBC Scout keeps. CBC Scout keeps network first for built files today.
 
 ### CBC Scout saves an area's street map
 

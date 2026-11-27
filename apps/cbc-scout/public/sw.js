@@ -2,6 +2,7 @@
 // back once the network answers. OpenFreeMap requests fall back to a street map the counter saved; other origins
 // (eBird) pass through untouched. Chrome installs a page only when its service worker handles fetch.
 // Every cache on this origin is shared with the other apps, so only names with this prefix are ever removed.
+// The release-saving functions match apps/birdspotter/public/sw.js; change both together.
 const CACHE_PREFIX = 'cbc-scout-';
 // Rename when what the worker stores changes; activation removes the old cache.
 const CACHE_NAME = `${CACHE_PREFIX}v1`;

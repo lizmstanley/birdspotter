@@ -14,7 +14,7 @@ function registerServiceWorker(): void {
   // Scoped to this app's folder so the CBC apps never come under it.
   const appPath = import.meta.env.BASE_URL;
   navigator.serviceWorker.register(`${appPath}sw.js`, { scope: appPath }).catch((err: unknown) => {
-    // The app still works online without it; only Chrome's install offer depends on it.
+    // The app still works online without it; opening with no signal and Chrome's install offer depend on it.
     console.warn('Birdspotter: service worker registration failed', err);
   });
 }
