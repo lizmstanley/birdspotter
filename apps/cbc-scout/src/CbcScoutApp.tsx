@@ -114,15 +114,14 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
     settings.refreshMinutes * 60 * 1000
   );
   const isInArea = useMemo(() => (area ? isInAreaTest(area, countCircle(area)) : null), [area]);
-  // A route's stand-in region is the whole circle, the same circle the sightings come from, so nothing is outside it.
   // A route has no inside, so its places are grouped against the circle instead of kept to the area.
   const isRoute = area?.outline.type === 'LineString';
   const areaShapeTest = isRoute ? null : isInArea;
   const birdsRegion = useMemo<BirdsRegion | null>(
-    () => (areaShapeTest ? { isInRegion: areaShapeTest, outsideText: 'outside your area' } : null),
+    () => (areaShapeTest ? { isInRegion: areaShapeTest, placeText: 'in your area' } : null),
     [areaShapeTest]
   );
-  const sightings = useMemo(() => (areaShapeTest ? inAreaOnly(nearby, areaShapeTest) : nearby), [nearby, areaShapeTest]);
+  const areaData = useMemo(() => (areaShapeTest ? inAreaOnly(nearby, areaShapeTest) : nearby), [nearby, areaShapeTest]);
 
   function changeSettings(next: BirdingSettings): void {
     setSettings(next);
@@ -171,7 +170,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
         <NearbyPanel
           isInRegion={isInArea}
           groupTitles={isRoute ? ROUTE_GROUP_TITLES : null}
-          data={sightings}
+          data={areaData}
           live={live}
           backDays={backDays}
           onBackDaysChange={setBackDays}
@@ -183,7 +182,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
         <SuggestionsPanel
           isInRegion={isInArea}
           birdsRegion={birdsRegion}
-          data={nearby}
+          data={areaData}
           live={live}
           backDays={backDays}
           refreshMinutes={settings.refreshMinutes}

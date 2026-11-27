@@ -201,7 +201,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           <li>
             <strong>Hotspots:</strong> <strong>Hotspots to visit</strong>, ranked by species last
             reported there. With an area loaded whose outline is a shape, not a route line, it also shows{' '}
-            <strong>Birds to look for</strong>, species whose latest report is outside your area.
+            <strong>Birds to look for</strong>, each species reported in your area, at its latest report there.
           </li>
           <li>
             <strong>Notes:</strong> the active area&apos;s name, its leaders, and your note for counters.
