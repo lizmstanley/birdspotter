@@ -51,7 +51,7 @@ export function hotspotsToVisit<H extends HotspotPlace>(
 }
 
 /**
- * Species whose latest loaded report is outside the region, nearest first.
+ * Species reported in the region, each at its latest report there, nearest first.
  * @param notable eBird's notable reports, which mark a species as notable and may hold a later report than regular
  */
 export function birdsToLookFor<S extends ReportedSighting>(
@@ -61,7 +61,9 @@ export function birdsToLookFor<S extends ReportedSighting>(
   isInRegion: RegionTest
 ): BirdSuggestion<S>[] {
   const notableSpecies = new Set(notable.map((sighting) => sighting.speciesCode));
-  return sortNearby(latestReports([...regular, ...notable]), position, isInRegion)
-    .filter((row) => !row.isInRegion)
-    .map((row) => ({ row, isNotable: notableSpecies.has(row.item.speciesCode) }));
+  const reportsInRegion = [...regular, ...notable].filter(isInRegion);
+  return sortNearby(latestReports(reportsInRegion), position, isInRegion).map((row) => ({
+    row,
+    isNotable: notableSpecies.has(row.item.speciesCode),
+  }));
 }

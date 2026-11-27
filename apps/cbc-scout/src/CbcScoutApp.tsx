@@ -6,6 +6,7 @@ import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
 import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
+import type { RegionTest } from '@birdspotter/birding-core/nearby.ts';
 import { NearbyPanel, type GroupTitles } from '@birdspotter/birding-core/NearbyPanel.tsx';
 import type { AppScreen, Screen } from '@birdspotter/birding-core/screens.ts';
 import { readSettings, writeSettings, type BirdingSettings } from '@birdspotter/birding-core/settings.ts';
@@ -14,9 +15,7 @@ import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import { SuggestionsPanel, type BirdsRegion } from '@birdspotter/birding-core/SuggestionsPanel.tsx';
 import { useEbirdKey } from '@birdspotter/birding-core/useEbirdKey.ts';
 import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
-import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
-import { areaDisplayName } from '@birdspotter/cbc-manager/components/map/mapText.ts';
-import type { AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
+import { useNearbyData, type NearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCircle.ts';
 import { AreaDetails, AreaPanel } from './AreaPanel.tsx';
 import { countCircle, countCircleQuery, isInAreaTest } from './areaRegion.ts';
@@ -40,9 +39,15 @@ interface CbcScoutAppProps {
   readonly storage: KeyValueStorage | null;
 }
 
-function groupTitles(area: AreaLinkData): GroupTitles {
-  if (area.outline.type === 'LineString') return { inRegion: 'In the circle', elsewhere: 'Outside the circle' };
-  return { inRegion: `In ${areaDisplayName(area.areaCode)}`, elsewhere: 'Outside your area' };
+const ROUTE_GROUP_TITLES: GroupTitles = { inRegion: 'In the circle', elsewhere: 'Outside the circle' };
+
+function inAreaOnly(data: NearbyData, isInArea: RegionTest): NearbyData {
+  return {
+    ...data,
+    regular: data.regular.filter(isInArea),
+    notable: data.notable.filter(isInArea),
+    hotspots: data.hotspots.filter(isInArea),
+  };
 }
 
 function Messages({ error, notice }: { readonly error: string | null; readonly notice: string | null }) {
@@ -109,11 +114,14 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
     settings.refreshMinutes * 60 * 1000
   );
   const isInArea = useMemo(() => (area ? isInAreaTest(area, countCircle(area)) : null), [area]);
-  // A route's stand-in region is the whole circle, the same circle the sightings come from, so nothing is outside it.
+  // A route has no inside, so its places are grouped against the circle instead of kept to the area.
+  const isRoute = area?.outline.type === 'LineString';
+  const areaShapeTest = isRoute ? null : isInArea;
   const birdsRegion = useMemo<BirdsRegion | null>(
-    () => (area?.outline.type !== 'LineString' && isInArea ? { isInRegion: isInArea, outsideText: 'outside your area' } : null),
-    [area, isInArea]
+    () => (areaShapeTest ? { isInRegion: areaShapeTest, placeText: 'in your area' } : null),
+    [areaShapeTest]
   );
+  const areaData = useMemo(() => (areaShapeTest ? inAreaOnly(nearby, areaShapeTest) : nearby), [nearby, areaShapeTest]);
 
   function changeSettings(next: BirdingSettings): void {
     setSettings(next);
@@ -161,8 +169,8 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
       {panel === 'sightings' && ebirdApiKey && (
         <NearbyPanel
           isInRegion={isInArea}
-          groupTitles={area ? groupTitles(area) : null}
-          data={nearby}
+          groupTitles={isRoute ? ROUTE_GROUP_TITLES : null}
+          data={areaData}
           live={live}
           backDays={backDays}
           onBackDaysChange={setBackDays}
@@ -174,7 +182,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
         <SuggestionsPanel
           isInRegion={isInArea}
           birdsRegion={birdsRegion}
-          data={nearby}
+          data={areaData}
           live={live}
           backDays={backDays}
           refreshMinutes={settings.refreshMinutes}

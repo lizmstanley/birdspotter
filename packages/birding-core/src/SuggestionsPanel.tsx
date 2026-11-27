@@ -7,11 +7,11 @@ import type { RefreshMinutes } from './settings.ts';
 import { birdsToLookFor, hotspotsToVisit } from './suggestions.ts';
 import type { NearbyData } from './useNearbyData.ts';
 
-/** The region birds are looked for outside of, and how to name what lies outside it. */
+/** The region birds are looked for in, and how to name it. */
 export interface BirdsRegion {
   readonly isInRegion: RegionTest;
-  /** Ends "Last reported 2.1 mi away, …", as in "outside the park". */
-  readonly outsideText: string;
+  /** Ends "Last reported 2.1 mi away, …", as in "in the park". */
+  readonly placeText: string;
 }
 
 interface SuggestionsPanelProps {
@@ -71,7 +71,7 @@ export function SuggestionsPanel({
             <>
               <h2>Birds to look for</h2>
               {birds.length === 0 && !data.isLoading && data.sightingsFetchedAt !== null && (
-                <p>No species last reported {birdsRegion.outsideText} in that time.</p>
+                <p>No species reported {birdsRegion.placeText} in that time.</p>
               )}
               <ul className="birding-nearby-list">
                 {birds.map(({ row, isNotable }) => (
@@ -79,7 +79,7 @@ export function SuggestionsPanel({
                     key={`${row.item.subId}-${row.item.speciesCode}`}
                     row={row}
                     isNotable={isNotable}
-                    reason={`Last reported ${formatDistance(row.miles)} away, ${birdsRegion.outsideText}`}
+                    reason={`Last reported ${formatDistance(row.miles)} away, ${birdsRegion.placeText}`}
                   />
                 ))}
               </ul>

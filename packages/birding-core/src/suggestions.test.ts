@@ -72,30 +72,35 @@ test('with no region, ranks every hotspot around the person', () => {
   );
 });
 
-test('lists species last reported outside the region, nearest first, marking notable ones', () => {
+test('lists species reported in the region at their latest report there, nearest first, marking notable ones', () => {
   const regular = [
-    report('bkcchi', 'L1', 44.91),
+    report('bkcchi', 'L1', 44.91, '2026-11-20 08:00'),
+    report('bkcchi', 'L5', 44.99, '2026-11-21 09:00'),
+    report('dowwoo', 'L2', 44.95),
     report('gyrfal', 'L4', 45.1, '2026-11-21 09:00'),
-    report('dowwoo', 'L4', 45.03),
-    report('snoowl', 'L2', 44.95, '2026-11-19 07:00'),
   ];
-  const notable = [report('gyrfal', 'L4', 45.1, '2026-11-21 09:00'), report('snoowl', 'L4', 45.2, '2026-11-22')];
+  const notable = [report('snoowl', 'L1', 44.91, '2026-11-22'), report('gyrfal', 'L4', 45.1, '2026-11-21 09:00')];
 
   const birds = birdsToLookFor(regular, notable, here, isInRegion);
 
   assert.deepEqual(
     birds.map(({ row, isNotable }) => [row.item.speciesCode, row.item.lat, isNotable]),
     [
-      ['dowwoo', 45.03, false],
-      ['gyrfal', 45.1, true],
-      ['snoowl', 45.2, true],
+      ['bkcchi', 44.99, false],
+      ['dowwoo', 44.95, false],
+      ['snoowl', 44.91, true],
     ]
   );
 });
 
-test('a species last reported in the region is left out, even with an earlier report outside it', () => {
-  const regular = [report('bkcchi', 'L2', 44.95, '2026-11-22 10:00')];
-  const notable = [report('bkcchi', 'L4', 45.1, '2026-11-20 10:00')];
+test('a species keeps its latest report in the region, even with a later report outside it', () => {
+  const regular = [report('bkcchi', 'L2', 44.95, '2026-11-20 10:00')];
+  const notable = [report('bkcchi', 'L4', 45.1, '2026-11-22 10:00')];
 
-  assert.deepEqual(birdsToLookFor(regular, notable, here, isInRegion), []);
+  const birds = birdsToLookFor(regular, notable, here, isInRegion);
+
+  assert.deepEqual(
+    birds.map(({ row, isNotable }) => [row.item.speciesCode, row.item.lat, isNotable]),
+    [['bkcchi', 44.95, true]]
+  );
 });

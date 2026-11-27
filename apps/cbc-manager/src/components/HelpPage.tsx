@@ -191,8 +191,8 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             where you are and whether you&apos;re in your area, outside it, or outside the circle.
           </li>
           <li>
-            <strong>Sightings:</strong> notable sightings, recent sightings, and eBird hotspots, those in your
-            area first, then nearest first. They show once location is on. Each place has its distance,
+            <strong>Sightings:</strong> notable sightings, recent sightings, and eBird hotspots in your area,
+            nearest first. They show once location is on. Each place has its distance,
             its direction past a tenth of a mile, and a{' '}
             <strong>Directions</strong> link to Apple Maps on iPhone and iPad, or Google Maps elsewhere.
             Notable sightings include reports still waiting for review. One an eBird reviewer has confirmed
@@ -201,7 +201,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           <li>
             <strong>Hotspots:</strong> <strong>Hotspots to visit</strong>, ranked by species last
             reported there. With an area loaded whose outline is a shape, not a route line, it also shows{' '}
-            <strong>Birds to look for</strong>, species whose latest report is outside your area.
+            <strong>Birds to look for</strong>, each species reported in your area, at its latest report there.
           </li>
           <li>
             <strong>Notes:</strong> the active area&apos;s name, its leaders, and your note for counters.
