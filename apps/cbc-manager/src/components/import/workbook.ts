@@ -11,9 +11,14 @@ export async function readFirstSheet(file: File): Promise<Record<string, unknown
   return XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[firstSheetName], { defval: '' });
 }
 
-export function writeParticipantsSheet(sheet: XLSX.WorkSheet, baseName: string, format: SheetFormat): void {
+export function participantsWorkbook(sheet: XLSX.WorkSheet): XLSX.WorkBook {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheet, 'Participants');
+  return wb;
+}
+
+export function writeParticipantsSheet(sheet: XLSX.WorkSheet, baseName: string, format: SheetFormat): void {
+  const wb = participantsWorkbook(sheet);
   if (format === 'xlsx') {
     XLSX.writeFile(wb, `${baseName}.xlsx`);
   } else {
