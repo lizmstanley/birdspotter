@@ -4,6 +4,8 @@ import { NO_SAVED_AREAS, readSavedAreas, withArea, writeSavedAreas, type SavedAr
 
 export interface AreaStartup {
   readonly saved: SavedAreas;
+  /** False when the browser blocked reading the stored areas, so `saved` may lack areas the phone keeps. */
+  readonly isSavedListRead: boolean;
   readonly error: string | null;
   readonly notice: string | null;
 }
@@ -67,6 +69,7 @@ export function startSavedAreas(storage: KeyValueStorage | null, startLink: stri
   ];
   return {
     saved,
+    isSavedListRead: !stored.isStorageBlocked,
     error: errors.length > 0 ? errors.join(' ') : null,
     notice: read?.status === 'read' ? noticeForAddressLoad(isRunningInstalled) : null,
   };

@@ -4,6 +4,7 @@ import { BASEMAP_STYLE_URL } from '@birdspotter/birding-core/basemap.ts';
 import type { LngLatBox } from './areaOutline.ts';
 import { tilesCoveringBox } from './mapTiles.ts';
 import {
+  deleteMapsWithoutArea,
   deleteSavedMap,
   isSameBox,
   MAX_PARALLEL_REQUESTS,
@@ -85,6 +86,7 @@ function fakeCaches() {
       return { put: async (key: string, response: Response) => void store.set(key, response) };
     },
     delete: async (name: string) => stores.delete(name),
+    keys: async () => [...stores.keys()],
     match: async (key: string, { cacheName }: { cacheName: string }) => stores.get(cacheName)?.get(key)?.clone(),
   };
   return { caches: storage as unknown as CacheStorage, stores };
@@ -198,6 +200,15 @@ test('removing a saved map deletes its cache', async () => {
   await download(fakeFetch(), caches);
   assert.equal(await deleteSavedMap(caches, AREA_KEY), true);
   assert.equal(stores.has(savedMapCacheName(AREA_KEY)), false);
+});
+
+test('on start, only maps whose area is gone are deleted', async () => {
+  const { caches, stores } = fakeCaches();
+  for (const name of ['cbc-scout-v1', 'another-app', savedMapCacheName('MNMI/12'), savedMapCacheName('MNMI/13')]) {
+    await caches.open(name);
+  }
+  await deleteMapsWithoutArea(caches, ['MNMI/12']);
+  assert.deepEqual([...stores.keys()], ['cbc-scout-v1', 'another-app', savedMapCacheName('MNMI/12')]);
 });
 
 test('a box matches only a box with every side the same', () => {

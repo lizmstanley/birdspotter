@@ -281,6 +281,21 @@ export async function readSavedMapInfo(caches: CacheStorage, areaKey: string): P
   }
 }
 
+/**
+ * Deletes every saved map whose area is not among `areaKeys`, such as the map of a saved area that could no longer be
+ * read. A blocked Cache API leaves the maps, as with no saved map.
+ */
+export async function deleteMapsWithoutArea(caches: CacheStorage, areaKeys: readonly string[]): Promise<void> {
+  const kept = new Set(areaKeys.map(savedMapCacheName));
+  try {
+    const names = await caches.keys();
+    const orphans = names.filter((name) => name.startsWith(MAP_CACHE_PREFIX) && !kept.has(name));
+    await Promise.all(orphans.map((name) => caches.delete(name)));
+  } catch {
+    // Nothing to tell the counter: the maps stay until the next start.
+  }
+}
+
 /** @returns false when the Cache API is blocked */
 export async function deleteSavedMap(caches: CacheStorage, areaKey: string): Promise<boolean> {
   try {

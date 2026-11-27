@@ -18,7 +18,7 @@ test('an opening link is saved and made active in the installed app', () => {
   const storage = new MemoryStorage();
   const startup = startSavedAreas(storage, LINK, true);
   assert.equal(startup.saved.activeKey, 'MNMI/12');
-  assert.deepEqual(startup, { saved: startup.saved, error: null, notice: null });
+  assert.deepEqual(startup, { saved: startup.saved, isSavedListRead: true, error: null, notice: null });
   assert.equal(readSavedAreas(storage).saved.activeKey, 'MNMI/12');
 });
 
@@ -56,6 +56,7 @@ test('blocked storage still loads the opening link for this session', () => {
 test('unavailable storage says nothing until an area needs saving', () => {
   assert.equal(startSavedAreas(null, null, true).error, null);
   assert.equal(startSavedAreas(null, LINK, true).error, STORAGE_BLOCKED_MESSAGE);
+  assert.equal(startSavedAreas(null, LINK, true).isSavedListRead, false);
 });
 
 function fakeWindow(href: string) {
