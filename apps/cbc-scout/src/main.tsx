@@ -19,7 +19,7 @@ function registerServiceWorker(): void {
   // Scoped to CBC Scout's folder so the circle manager and Birdspotter never come under it.
   const scoutPath = import.meta.env.BASE_URL;
   navigator.serviceWorker.register(`${scoutPath}sw.js`, { scope: scoutPath }).catch((err: unknown) => {
-    // The app still works online without it; only Chrome's install offer depends on it.
+    // The app still works online without it; opening with no signal and Chrome's install offer depend on it.
     console.warn('CBC Scout: service worker registration failed', err);
   });
 }
