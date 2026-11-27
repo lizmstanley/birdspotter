@@ -15,7 +15,8 @@ export function ScoutHelp() {
       </p>
       <p>
         With an area loaded, the map shows the count circle and the area&apos;s outline. <strong>Sightings</strong>{' '}
-        covers the whole circle, with places in your area first. <strong>Hotspots to visit</strong> lists only the
+        lists only sightings and hotspots in your area, nearest first. With a route line instead of a shape, it covers
+        the whole circle. <strong>Hotspots to visit</strong> lists only the
         hotspots in your area. When the outline is a shape, not a route line, <strong>Hotspots</strong> also shows{' '}
         <strong>Birds to look for</strong>, species whose latest report is outside your area.
       </p>
