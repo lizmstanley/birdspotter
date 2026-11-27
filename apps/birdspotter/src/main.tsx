@@ -1,10 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { CrashBoundary } from '@birdspotter/birding-core/CrashBoundary.tsx';
 import { watchInstallPrompt } from '@birdspotter/birding-core/installPrompt.ts';
 import { requestPersistentStorage } from '@birdspotter/birding-core/persistentStorage.ts';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import '@birdspotter/birding-core/birding.css';
+import { BIRDSPOTTER } from './appIdentity.ts';
 import { BirdspotterApp } from './BirdspotterApp.tsx';
 // After the core styles, so the app's rules win a tie.
 import './birdspotter.css';
@@ -35,6 +37,8 @@ registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BirdspotterApp installPrompt={installPrompt} storage={appStorage()} />
+    <CrashBoundary appName={BIRDSPOTTER.name}>
+      <BirdspotterApp installPrompt={installPrompt} storage={appStorage()} />
+    </CrashBoundary>
   </StrictMode>
 );
