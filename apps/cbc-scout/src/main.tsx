@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { CrashBoundary } from '@birdspotter/birding-core/CrashBoundary.tsx';
 import { isRunningInstalled } from '@birdspotter/birding-core/installOffer.ts';
 import { watchInstallPrompt } from '@birdspotter/birding-core/installPrompt.ts';
 import { requestPersistentStorage } from '@birdspotter/birding-core/persistentStorage.ts';
@@ -9,6 +10,7 @@ import '@birdspotter/birding-core/birding.css';
 import { startSavedAreas, takeAreaLinkFromAddress } from './areaStartup.ts';
 import { browserCaches, deleteMapsWithoutArea } from './offlineMap.ts';
 import { CbcScoutApp } from './CbcScoutApp.tsx';
+import { CBC_SCOUT } from './scoutIdentity.ts';
 // After the core styles, so the app's rules win a tie.
 import './scout.css';
 
@@ -17,7 +19,7 @@ function registerServiceWorker(): void {
   // Scoped to CBC Scout's folder so the circle manager and Birdspotter never come under it.
   const scoutPath = import.meta.env.BASE_URL;
   navigator.serviceWorker.register(`${scoutPath}sw.js`, { scope: scoutPath }).catch((err: unknown) => {
-    // The app still works online without it; only Chrome's install offer depends on it.
+    // The app still works online without it; opening with no signal and Chrome's install offer depend on it.
     console.warn('CBC Scout: service worker registration failed', err);
   });
 }
@@ -46,6 +48,8 @@ if (mapCaches && areaStartup.isSavedListRead) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <CbcScoutApp installPrompt={installPrompt} areaStartup={areaStartup} storage={storage} />
+    <CrashBoundary appName={CBC_SCOUT.name}>
+      <CbcScoutApp installPrompt={installPrompt} areaStartup={areaStartup} storage={storage} />
+    </CrashBoundary>
   </StrictMode>
 );

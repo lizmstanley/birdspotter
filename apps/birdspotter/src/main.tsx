@@ -1,10 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { CrashBoundary } from '@birdspotter/birding-core/CrashBoundary.tsx';
 import { watchInstallPrompt } from '@birdspotter/birding-core/installPrompt.ts';
 import { requestPersistentStorage } from '@birdspotter/birding-core/persistentStorage.ts';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import '@birdspotter/birding-core/birding.css';
+import { BIRDSPOTTER } from './appIdentity.ts';
 import { BirdspotterApp } from './BirdspotterApp.tsx';
 // After the core styles, so the app's rules win a tie.
 import './birdspotter.css';
@@ -14,7 +16,7 @@ function registerServiceWorker(): void {
   // Scoped to this app's folder so the CBC apps never come under it.
   const appPath = import.meta.env.BASE_URL;
   navigator.serviceWorker.register(`${appPath}sw.js`, { scope: appPath }).catch((err: unknown) => {
-    // The app still works online without it; only Chrome's install offer depends on it.
+    // The app still works online without it; opening with no signal and Chrome's install offer depend on it.
     console.warn('Birdspotter: service worker registration failed', err);
   });
 }
@@ -35,6 +37,8 @@ registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BirdspotterApp installPrompt={installPrompt} storage={appStorage()} />
+    <CrashBoundary appName={BIRDSPOTTER.name}>
+      <BirdspotterApp installPrompt={installPrompt} storage={appStorage()} />
+    </CrashBoundary>
   </StrictMode>
 );
