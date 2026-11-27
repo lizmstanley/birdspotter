@@ -24,6 +24,7 @@ import { activeSavedArea } from './savedAreas.ts';
 import { CBC_SCOUT } from './scoutIdentity.ts';
 import { ScoutHelp } from './ScoutHelp.tsx';
 import { ScoutMap } from './ScoutMap.tsx';
+import { useOfflineMap } from './useOfflineMap.ts';
 import { useSavedAreas } from './useSavedAreas.ts';
 
 type Panel = 'sightings' | 'hotspots' | 'notes';
@@ -94,6 +95,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
     setNotice,
     onLoad: () => setScreen(null),
   });
+  const offlineMap = useOfflineMap(activeArea);
   const [locationControl, setLocationControl] = useState<GeolocateControl | null>(null);
   const live = useLiveLocation(locationControl, storage, CBC_SCOUT);
   const [chosenPanel, setPanel] = useState<Panel>('sightings');
@@ -203,6 +205,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
               <AreaPanel
                 areas={areas}
                 activeArea={activeArea}
+                offlineMap={offlineMap}
                 onLoadText={loadAreaText}
                 onPick={pickActiveArea}
                 onRemove={removeArea}

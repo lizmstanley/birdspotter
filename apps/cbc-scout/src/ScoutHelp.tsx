@@ -19,6 +19,15 @@ export function ScoutHelp() {
         the whole circle.
       </p>
 
+      <h2>The street map with no signal</h2>
+      <p>
+        The street map needs a signal to draw, unless you save it first. With a signal, open{' '}
+        <strong>Your areas</strong> and tap <strong>Save street map</strong> on the active area. CBC Scout saves the
+        map over your area and says when it is done. With no signal the map then shows streets, water, and labels
+        across your area, at every zoom. <strong>Remove street map</strong> takes it off the phone, and so does{' '}
+        <strong>Remove area</strong>.
+      </p>
+
       <h2>The count session</h2>
       <p>
         Tap <strong>Start count</strong> to record your party&apos;s hours and miles. While CBC Scout stays open on

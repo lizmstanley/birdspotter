@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
-import type { Feature, FeatureCollection, GeoJSON, Polygon, Position } from 'geojson';
+import type { Feature, FeatureCollection, GeoJSON, Polygon } from 'geojson';
 import { BirdingMap, showStartView, type ReadyMap } from '@birdspotter/birding-core/BirdingMap.tsx';
 import type { LiveLocation } from '@birdspotter/birding-core/locationTracking.ts';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import { addCircleLayers, CIRCLE_SOURCE } from '@birdspotter/cbc-manager/components/map/mapLayers.ts';
 import type { AreaLinkData, AreaOutlineGeometry } from '@birdspotter/cbc-manager/services/areaLink.ts';
 import { areaName } from './areaName.ts';
+import { outlineBox } from './areaOutline.ts';
 import { countCircle } from './areaRegion.ts';
 import { areaStatusAt, areaStatusText } from './areaStatus.ts';
 import { addRouteLayers, ROUTE_SOURCE, routeFeatures } from './routeLayers.ts';
@@ -41,25 +42,9 @@ function addScoutLayers(map: maplibregl.Map): void {
   addRouteLayers(map);
 }
 
-function outlinePositions(outline: AreaOutlineGeometry): Position[] {
-  switch (outline.type) {
-    case 'Polygon':
-      return outline.coordinates.flat();
-    case 'MultiPolygon':
-      return outline.coordinates.flat(2);
-    case 'LineString':
-      return outline.coordinates;
-    default: {
-      const unhandled: never = outline;
-      return unhandled;
-    }
-  }
-}
-
 function outlineBounds(outline: AreaOutlineGeometry): maplibregl.LngLatBounds {
-  const bounds = new maplibregl.LngLatBounds();
-  for (const [lng, lat] of outlinePositions(outline)) bounds.extend([lng, lat]);
-  return bounds;
+  const { west, south, east, north } = outlineBox(outline);
+  return new maplibregl.LngLatBounds([west, south], [east, north]);
 }
 
 function setSourceData(map: maplibregl.Map, sourceId: string, data: GeoJSON): void {

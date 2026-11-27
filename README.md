@@ -112,7 +112,7 @@ Open the menu and tap **Settings**. **Check eBird for new sightings** sets how o
 
 ### With no signal
 
-CBC Scout saves its own files on the phone, so it opens with no signal once it has opened with a signal since its last update. Open it online once before heading into the area. With no signal it shows the active area, your location, and the count session, which starts, runs, and stops as usual. The street map may be blank, because the map tiles aren't saved. On a weak signal that doesn't answer, it opens from the saved copy within about 4 seconds, which may be the previous release; the next open with a signal loads the newest one. If the signal drops, the lists keep the eBird data they last loaded, and say when it was fetched and that there is no signal. Closing and reopening the app with no signal shows the same data for the active area. Once the data is 6 hours old, eBird's terms no longer allow it, so it leaves the screen until a signal returns. With no active area, a reopened app usually finds nothing saved, because the search follows your location.
+CBC Scout saves its own files on the phone, so it opens with no signal once it has opened with a signal since its last update. Open it online once before heading into the area. With no signal it shows the active area, your location, and the count session, which starts, runs, and stops as usual. The street map is blank with no signal unless you saved it: with a signal, open **Your areas** and tap **Save street map** on the active area. CBC Scout downloads the streets, water, and labels over a rectangle around the area's outline at every zoom, shows its progress, and says when it is done or why it stopped. The area's card then shows the date and size of the saved map, and **Remove street map** takes it off. **Remove area** removes its map too. A saved map stays until you remove it. Each download is within OpenFreeMap's offline limits: at most 3,000 tiles and 50 MB, 4 requests at a time. Well beyond the area the map stays blank with no signal. If your compiler sends the area again with an outline that reaches past that rectangle, its saved map is removed; save it again. On a weak signal that doesn't answer, it opens from the saved copy within about 4 seconds, which may be the previous release; the next open with a signal loads the newest one. If the signal drops, the lists keep the eBird data they last loaded, and say when it was fetched and that there is no signal. Closing and reopening the app with no signal shows the same data for the active area. Once the data is 6 hours old, eBird's terms no longer allow it, so it leaves the screen until a signal returns. With no active area, a reopened app usually finds nothing saved, because the search follows your location.
 
 ### What stays on the phone
 
@@ -123,12 +123,13 @@ CBC Scout has no database and no server. It keeps these in the phone's browser s
 - the Settings choice
 - whether location tracking is on
 - the count session and its route
+- the saved street maps
 - copies of the day's eBird results
 
 It sends:
 
 - the key, the place to search, and the days back to eBird. The place is the circle's center when an area is loaded, or your location when none is.
-- map views to OpenFreeMap, for the map tiles.
+- map views to OpenFreeMap, for the map tiles, and the area's map tiles when you tap **Save street map**.
 
 Nothing goes to any other server. The area data sits after the `#` in the link, so it never reaches a server, and CBC Scout removes it from the address bar once it's read. **Directions** and checklist links open Apple Maps, Google Maps, or eBird only when tapped. **Share totals** goes wherever the counter sends it.
 

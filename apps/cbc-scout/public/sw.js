@@ -1,6 +1,6 @@
 // Saves CBC Scout's own files so it opens with no signal in a count area. Network first, so a release is never held
-// back once the network answers. Other origins (eBird, OpenFreeMap) pass through untouched. Chrome installs a page
-// only when its service worker handles fetch.
+// back once the network answers. OpenFreeMap requests fall back to a street map the counter saved; other origins
+// (eBird) pass through untouched. Chrome installs a page only when its service worker handles fetch.
 // Every cache on this origin is shared with the other apps, so only names with this prefix are ever removed.
 const CACHE_PREFIX = 'cbc-scout-';
 // Rename when what the worker stores changes; activation removes the old cache.
@@ -9,6 +9,11 @@ const FALLBACK_AFTER_MS = 4000;
 const SCOPE = self.registration.scope;
 const APP_PAGE_KEY = SCOPE;
 const BUILT_FILES_PREFIX = `${SCOPE}assets/`;
+// offlineMap.ts writes these caches and keys. Change both together.
+const MAP_HOST = 'https://tiles.openfreemap.org/';
+const MAP_CACHE_PREFIX = `${CACHE_PREFIX}map-v1:`;
+const SAVED_VECTOR_TILE_BASE = `${MAP_HOST}cbc-scout-saved/vector/`;
+const VECTOR_TILE_PATH = /\/(\d+\/\d+\/\d+\.pbf)$/;
 
 const savesInFlight = new Map();
 // Pages served from the save. Their files come from the save at once, so a weak signal costs one wait, not one per
@@ -23,7 +28,12 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => event.waitUntil(removeOtherCaches().then(() => self.clients.claim())));
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET' || !request.url.startsWith(SCOPE)) return;
+  if (request.method !== 'GET') return;
+  if (request.url.startsWith(MAP_HOST)) {
+    event.respondWith(networkOrSaved(fetch(request), () => findSavedMapFile(request.url)).then(({ response }) => response));
+    return;
+  }
+  if (!request.url.startsWith(SCOPE)) return;
   if (request.mode === 'navigate') {
     respondToNavigation(event);
     return;
@@ -33,7 +43,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(findSaved(request.url).then((saved) => saved ?? network()));
     return;
   }
-  event.respondWith(networkOrSaved(network(), request.url).then(({ response }) => response));
+  event.respondWith(networkOrSaved(network(), () => findSaved(request.url)).then(({ response }) => response));
 });
 
 function respondToNavigation(event) {
@@ -42,7 +52,7 @@ function respondToNavigation(event) {
   // Registered before respondWith reads the body, so the clone is taken from an unread response.
   event.waitUntil(network.then(saveReleaseIfAppPage, () => undefined));
   event.respondWith(
-    networkOrSaved(network, APP_PAGE_KEY).then(({ response, isSaved }) => {
+    networkOrSaved(network, () => findSaved(APP_PAGE_KEY)).then(({ response, isSaved }) => {
       if (isSaved) clientsOnSavedPage.add(event.resultingClientId);
       return response;
     }),
@@ -53,9 +63,33 @@ function findSaved(key) {
   return caches.match(key, { cacheName: CACHE_NAME }).catch(() => undefined);
 }
 
+// Vector tiles are saved without the planet build in their URL, so a TileJSON saved with any area reaches every saved
+// area's tiles.
+function savedMapKey(url) {
+  const tilePath = new URL(url).pathname.match(VECTOR_TILE_PATH);
+  return tilePath ? `${SAVED_VECTOR_TILE_BASE}${tilePath[1]}` : url;
+}
+
+async function findSavedMapFile(url) {
+  const key = savedMapKey(url);
+  try {
+    const mapCaches = (await caches.keys()).filter((name) => name.startsWith(MAP_CACHE_PREFIX));
+    for (const cacheName of mapCaches) {
+      const saved = await caches.match(key, { cacheName });
+      if (saved) return saved;
+    }
+  } catch {
+    // A blocked Cache API leaves the network's answer, as with no saved map.
+  }
+  return undefined;
+}
+
+// Saved maps belong to the counter's areas, not to a release, so a rename of CACHE_NAME keeps them.
 async function removeOtherCaches() {
   const names = await caches.keys();
-  const stale = names.filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME);
+  const stale = names.filter(
+    (name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME && !name.startsWith(MAP_CACHE_PREFIX),
+  );
   await Promise.all(stale.map((name) => caches.delete(name)));
 }
 
@@ -63,12 +97,13 @@ function isSavable(response) {
   return response.status === 200 && response.type === 'basic' && !response.redirected;
 }
 
-// Resolves to { response, isSaved }: the network's answer, or the saved copy once the network fails or has not
-// answered in FALLBACK_AFTER_MS. With no saved copy it waits for the network, and rejects if that fails.
-function networkOrSaved(network, savedKey) {
+// Resolves to { response, isSaved }: the network's answer, or the saved copy findSavedCopy finds once the network
+// fails or has not answered in FALLBACK_AFTER_MS. With no saved copy it waits for the network, and rejects if that
+// fails.
+function networkOrSaved(network, findSavedCopy) {
   return new Promise((resolve, reject) => {
     const serveSaved = (networkError) =>
-      findSaved(savedKey).then((saved) => {
+      findSavedCopy().then((saved) => {
         if (saved) resolve({ response: saved, isSaved: true });
         else if (networkError) reject(networkError);
       });

@@ -2,6 +2,7 @@ import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import { useEffect, useState } from 'react';
 import { useLatest } from '@birdspotter/birding-core/useLatest.ts';
 import { readAreaLinkText } from './areaLinkText.ts';
+import { browserCaches, deleteSavedMap } from './offlineMap.ts';
 import { noticeForAddressLoad, STORAGE_BLOCKED_MESSAGE, takeAreaLinkFromAddress, type AreaStartup } from './areaStartup.ts';
 import { isRunningInstalled } from '@birdspotter/birding-core/installOffer.ts';
 import {
@@ -61,6 +62,11 @@ export function useSavedAreas({ startup, storage, setError, setNotice, onLoad }:
     activeArea: activeSavedArea(saved),
     loadAreaText,
     pickArea: (key: string) => keep(withActiveArea(saved, key)),
-    removeArea: (key: string) => keep(withoutArea(saved, key)),
+    removeArea: (key: string) => {
+      keep(withoutArea(saved, key));
+      const caches = browserCaches();
+      // A map left by a blocked Cache API has no area to show it in, so the counter is not told.
+      if (caches) void deleteSavedMap(caches, key);
+    },
   };
 }
