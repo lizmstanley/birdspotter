@@ -33,9 +33,14 @@ interface AreaMapState {
 
 const CHECKING: OfflineMapState = { status: 'checking' };
 const NO_MAP: OfflineMapState = { status: 'none' };
+const STOPPED_BY_AREA_CHANGE: OfflineMapState = {
+  status: 'failed',
+  message: 'The street map stopped saving when the active area changed. Save it again.',
+};
 
 /**
- * The saved street map of the active area. A download stops when the active area changes. A map saved for another
+ * The saved street map of the active area. A download stops when the active area changes, and that area says so
+ * when it is active again. A map saved for another
  * outline, from before the compiler sent the area again, is removed, so a saved map always covers the area.
  */
 export function useOfflineMap(area: SavedArea | null): OfflineMap {
@@ -45,7 +50,9 @@ export function useOfflineMap(area: SavedArea | null): OfflineMap {
   const boxKey = area ? JSON.stringify(outlineBox(area.data.outline)) : null;
   const box = useMemo<LngLatBox | null>(() => (boxKey ? JSON.parse(boxKey) : null), [boxKey]);
   const [current, setCurrent] = useState<AreaMapState | null>(null);
+  // The running download, cleared when it ends.
   const downloadRef = useRef<AbortController | null>(null);
+  const stoppedAreaKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!areaKey || !box || !caches) return;
@@ -53,11 +60,21 @@ export function useOfflineMap(area: SavedArea | null): OfflineMap {
     void readSavedMapInfo(caches, areaKey).then(async (info) => {
       const isCovering = info !== null && isSameBox(info.box, box);
       if (info && !isCovering) await deleteSavedMap(caches, areaKey);
-      if (isCurrent) setCurrent({ areaKey, state: info && isCovering ? { status: 'saved', info } : NO_MAP });
+      if (!isCurrent) return;
+      if (info && isCovering) {
+        setCurrent({ areaKey, state: { status: 'saved', info } });
+        return;
+      }
+      const wasStopped = stoppedAreaKeyRef.current === areaKey;
+      if (wasStopped) stoppedAreaKeyRef.current = null;
+      setCurrent({ areaKey, state: wasStopped ? STOPPED_BY_AREA_CHANGE : NO_MAP });
     });
     return () => {
       isCurrent = false;
-      downloadRef.current?.abort();
+      if (!downloadRef.current) return;
+      stoppedAreaKeyRef.current = areaKey;
+      downloadRef.current.abort();
+      downloadRef.current = null;
     };
   }, [areaKey, box, caches]);
 
@@ -69,6 +86,7 @@ export function useOfflineMap(area: SavedArea | null): OfflineMap {
     const show = (state: OfflineMapState) => {
       if (!download.signal.aborted) setCurrent({ areaKey: area.key, state });
     };
+    stoppedAreaKeyRef.current = null;
     show({ status: 'saving', progress: { done: 0, total: 0 } });
     try {
       const info = await saveAreaMap({
@@ -82,12 +100,13 @@ export function useOfflineMap(area: SavedArea | null): OfflineMap {
       show({ status: 'saved', info });
     } catch (error) {
       show({ status: 'failed', message: describeMapDownloadError(error) });
+    } finally {
+      if (downloadRef.current === download) downloadRef.current = null;
     }
   }
 
   async function remove(): Promise<void> {
     if (!area || !caches) return;
-    downloadRef.current?.abort();
     const key = area.key;
     const isDeleted = await deleteSavedMap(caches, key);
     setCurrent({
