@@ -12,7 +12,7 @@ import type { AppScreen, Screen } from '@birdspotter/birding-core/screens.ts';
 import { readSettings, writeSettings, type BirdingSettings } from '@birdspotter/birding-core/settings.ts';
 import { SettingsForm } from '@birdspotter/birding-core/SettingsForm.tsx';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
-import { SuggestionsPanel, type BirdsRegion } from '@birdspotter/birding-core/SuggestionsPanel.tsx';
+import { SuggestionsPanel } from '@birdspotter/birding-core/SuggestionsPanel.tsx';
 import { useEbirdKey } from '@birdspotter/birding-core/useEbirdKey.ts';
 import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
 import { useNearbyData, type NearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
@@ -117,10 +117,6 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   // A route has no inside, so its places are grouped against the circle instead of kept to the area.
   const isRoute = area?.outline.type === 'LineString';
   const areaShapeTest = isRoute ? null : isInArea;
-  const birdsRegion = useMemo<BirdsRegion | null>(
-    () => (areaShapeTest ? { isInRegion: areaShapeTest, placeText: 'in your area' } : null),
-    [areaShapeTest]
-  );
   const areaData = useMemo(() => (areaShapeTest ? inAreaOnly(nearby, areaShapeTest) : nearby), [nearby, areaShapeTest]);
 
   function changeSettings(next: BirdingSettings): void {
@@ -181,7 +177,6 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
       {panel === 'hotspots' && ebirdApiKey && (
         <SuggestionsPanel
           isInRegion={isInArea}
-          birdsRegion={birdsRegion}
           data={areaData}
           live={live}
           backDays={backDays}

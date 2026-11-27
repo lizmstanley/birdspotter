@@ -14,13 +14,13 @@ export function Help({ appName, opensWithoutSignal, children }: HelpProps) {
     <div className="birding-help">
       <h2>What the lists show</h2>
       <p>
-        <strong>Sightings</strong> lists notable sightings, then recent sightings, then eBird hotspots, nearest first.
+        <strong>Sightings</strong> lists notable sightings, then recent sightings, nearest first.
         Pick how many days back, from 1 to 30. Notable sightings include reports still waiting for review. One an
         eBird reviewer has confirmed is marked <strong>Confirmed</strong>. Each sighting links to its eBird checklist.
       </p>
       <p>
-        <strong>Hotspots</strong> lists <strong>Hotspots to visit</strong>, ranked by the species last reported
-        there.
+        <strong>Hotspots</strong> lists <strong>Hotspots to visit</strong>, ranked by the species reported there.
+        Tap a hotspot&apos;s species count to see which species, each linked to its eBird checklist.
       </p>
       <p>
         Every place shows its distance from you, its direction once it&apos;s more than a tenth of a mile away, and

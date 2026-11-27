@@ -101,7 +101,6 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
           {panel === 'hotspots' && (
             <SuggestionsPanel
               isInRegion={null}
-              birdsRegion={null}
               data={nearby}
               live={live}
               backDays={backDays}

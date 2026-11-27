@@ -1,24 +1,16 @@
 import { useMemo } from 'react';
-import { formatDistance, type RegionTest } from './nearby.ts';
+import { ebirdChecklistUrl, type EbirdObservation } from './ebird.ts';
+import type { RegionTest } from './nearby.ts';
 import type { LiveLocation } from './locationTracking.ts';
-import { HotspotRow, SightingRow } from './NearbyRows.tsx';
+import { HotspotRow } from './NearbyRows.tsx';
 import { EbirdCredit, NearbyStatus } from './NearbyStatus.tsx';
 import type { RefreshMinutes } from './settings.ts';
-import { birdsToLookFor, hotspotsToVisit } from './suggestions.ts';
+import { hotspotsToVisit } from './suggestions.ts';
 import type { NearbyData } from './useNearbyData.ts';
-
-/** The region birds are looked for in, and how to name it. */
-export interface BirdsRegion {
-  readonly isInRegion: RegionTest;
-  /** Ends "Last reported 2.1 mi away, …", as in "in the park". */
-  readonly placeText: string;
-}
 
 interface SuggestionsPanelProps {
   /** Hotspots outside the region are left out; null to suggest every hotspot. */
   readonly isInRegion: RegionTest | null;
-  /** Null to leave out Birds to look for. */
-  readonly birdsRegion: BirdsRegion | null;
   readonly data: NearbyData;
   readonly live: LiveLocation;
   readonly backDays: number;
@@ -26,31 +18,39 @@ interface SuggestionsPanelProps {
   readonly onFixKey: () => void;
 }
 
-function hotspotReason(speciesCount: number): string {
-  if (speciesCount === 0) return 'No species last reported here in that time';
-  return `${speciesCount} species last reported here`;
+interface HotspotSpeciesProps {
+  readonly species: readonly EbirdObservation[];
+  readonly notableSpecies: ReadonlySet<string>;
 }
 
-/** Hotspots worth a stop and birds to watch for, from the sightings and hotspots the Sightings tab loaded. */
-export function SuggestionsPanel({
-  isInRegion,
-  birdsRegion,
-  data,
-  live,
-  backDays,
-  refreshMinutes,
-  onFixKey,
-}: SuggestionsPanelProps) {
+function HotspotSpecies({ species, notableSpecies }: HotspotSpeciesProps) {
+  if (species.length === 0) return <>No species reported here in that time</>;
+  const byName = [...species].sort((a, b) => a.comName.localeCompare(b.comName));
+  return (
+    <details className="birding-hotspot-species">
+      <summary>{species.length} species reported here</summary>
+      <ul>
+        {byName.map((sighting) => (
+          <li key={sighting.speciesCode}>
+            <a href={ebirdChecklistUrl(sighting.subId)} target="_blank" rel="noreferrer">
+              {sighting.comName}
+            </a>
+            {notableSpecies.has(sighting.speciesCode) && <span className="birding-nearby-notable">Notable</span>}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+/** Hotspots worth a stop, each with the species reported there, from the sightings and hotspots already loaded. */
+export function SuggestionsPanel({ isInRegion, data, live, backDays, refreshMinutes, onFixKey }: SuggestionsPanelProps) {
   const { position } = live;
   const hotspots = useMemo(
     () => (position ? hotspotsToVisit(data.hotspots, [...data.regular, ...data.notable], position, isInRegion) : []),
     [data.hotspots, data.regular, data.notable, position, isInRegion]
   );
-  const birdsIsInRegion = birdsRegion?.isInRegion ?? null;
-  const birds = useMemo(
-    () => (position && birdsIsInRegion ? birdsToLookFor(data.regular, data.notable, position, birdsIsInRegion) : []),
-    [data.regular, data.notable, position, birdsIsInRegion]
-  );
+  const notableSpecies = useMemo(() => new Set(data.notable.map((sighting) => sighting.speciesCode)), [data.notable]);
 
   return (
     <section className="birding-panel birding-nearby" aria-label="Hotspots">
@@ -63,28 +63,14 @@ export function SuggestionsPanel({
           <h2>Hotspots to visit</h2>
           {hotspots.length === 0 && !data.isLoading && data.hotspotsFetchedAt !== null && <p>No eBird hotspots here.</p>}
           <ul className="birding-nearby-list">
-            {hotspots.map(({ row, speciesCount }) => (
-              <HotspotRow key={row.item.locId} row={row} reason={hotspotReason(speciesCount)} />
+            {hotspots.map(({ row, species }) => (
+              <HotspotRow
+                key={row.item.locId}
+                row={row}
+                reason={<HotspotSpecies species={species} notableSpecies={notableSpecies} />}
+              />
             ))}
           </ul>
-          {birdsRegion && (
-            <>
-              <h2>Birds to look for</h2>
-              {birds.length === 0 && !data.isLoading && data.sightingsFetchedAt !== null && (
-                <p>No species reported {birdsRegion.placeText} in that time.</p>
-              )}
-              <ul className="birding-nearby-list">
-                {birds.map(({ row, isNotable }) => (
-                  <SightingRow
-                    key={`${row.item.subId}-${row.item.speciesCode}`}
-                    row={row}
-                    isNotable={isNotable}
-                    reason={`Last reported ${formatDistance(row.miles)} away, ${birdsRegion.placeText}`}
-                  />
-                ))}
-              </ul>
-            </>
-          )}
         </>
       )}
       <EbirdCredit refreshMinutes={refreshMinutes} hasNoSignal={data.hasNoSignal} />
