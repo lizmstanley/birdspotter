@@ -7,6 +7,7 @@ import { requestPersistentStorage } from '@birdspotter/birding-core/persistentSt
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import '@birdspotter/birding-core/birding.css';
 import { startSavedAreas, takeAreaLinkFromAddress } from './areaStartup.ts';
+import { browserCaches, deleteMapsWithoutArea } from './offlineMap.ts';
 import { CbcScoutApp } from './CbcScoutApp.tsx';
 // After the core styles, so the app's rules win a tie.
 import './scout.css';
@@ -37,6 +38,11 @@ registerServiceWorker();
 const storage = scoutStorage();
 // Read before React renders so a StrictMode double render cannot load the link twice or miss it.
 const areaStartup = startSavedAreas(storage, takeAreaLinkFromAddress(window), isRunningInstalled(window));
+const mapCaches = browserCaches();
+// With the stored areas unread, every map would look like it had no area.
+if (mapCaches && areaStartup.isSavedListRead) {
+  void deleteMapsWithoutArea(mapCaches, areaStartup.saved.areas.map((area) => area.key));
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
