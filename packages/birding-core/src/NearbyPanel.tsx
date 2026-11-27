@@ -3,7 +3,7 @@ import type { EbirdObservation } from './ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
 import type { RefreshMinutes } from './settings.ts';
 import { groupSightings, sortNearby, type NearbyRow, type Place, type RegionTest } from './nearby.ts';
-import { HotspotRow, SightingRow } from './NearbyRows.tsx';
+import { SightingRow } from './NearbyRows.tsx';
 import { EbirdCredit, NearbyStatus } from './NearbyStatus.tsx';
 import type { NearbyData } from './useNearbyData.ts';
 
@@ -51,7 +51,7 @@ function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean): R
   return <SightingRow key={`${row.item.subId}-${row.item.speciesCode}`} row={row} isNotable={isNotable} />;
 }
 
-/** Notable sightings, then other recent sightings, then hotspots, each nearest first, with those in the region ahead of the rest. */
+/** Notable sightings, then other recent sightings, each nearest first, with those in the region ahead of the rest. */
 export function NearbyPanel({
   isInRegion,
   groupTitles,
@@ -67,10 +67,6 @@ export function NearbyPanel({
     if (!position) return groupSightings<EbirdObservation>([], []);
     return groupSightings(sortNearby(data.regular, position, isInRegion), sortNearby(data.notable, position, isInRegion));
   }, [data.regular, data.notable, position, isInRegion]);
-  const hotspots = useMemo(
-    () => (position ? sortNearby(data.hotspots, position, isInRegion) : []),
-    [data.hotspots, position, isInRegion]
-  );
 
   return (
     <section className="birding-panel birding-nearby" aria-label="Sightings">
@@ -98,9 +94,6 @@ export function NearbyPanel({
             <p>{sightings.notable.length > 0 ? 'No other' : 'No'} sightings reported here in that time.</p>
           )}
           <RowGroups rows={sightings.regular} titles={groupTitles} renderRow={(row) => renderSighting(row, false)} />
-          <h2>Hotspots</h2>
-          {hotspots.length === 0 && !data.isLoading && data.hotspotsFetchedAt !== null && <p>No eBird hotspots here.</p>}
-          <RowGroups rows={hotspots} titles={groupTitles} renderRow={(row) => <HotspotRow key={row.item.locId} row={row} />} />
         </>
       )}
       <EbirdCredit refreshMinutes={refreshMinutes} hasNoSignal={data.hasNoSignal} />

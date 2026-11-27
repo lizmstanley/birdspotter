@@ -203,6 +203,24 @@ a.birding-nearby-place {
   color: #15803d;
 }
 
+.birding-hotspot-species summary {
+  cursor: pointer;
+}
+
+.birding-hotspot-species ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: #0f172a;
+}
+
+.birding-hotspot-species li {
+  padding: 2px 0;
+}
+
+.birding-hotspot-species .birding-nearby-notable {
+  margin-left: 6px;
+}
+
 .birding-nearby-distance {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
