@@ -3,7 +3,9 @@ import type { AreaLeader, AreaLinkData } from '@birdspotter/cbc-manager/services
 import { areaName } from './areaName.ts';
 import { AreaScanner } from './AreaScanner.tsx';
 import { emailHref, phoneHref } from './leaderContact.ts';
+import { OfflineMapControl } from './OfflineMapControl.tsx';
 import type { SavedArea } from './savedAreas.ts';
+import type { OfflineMap } from './useOfflineMap.ts';
 import type { AreaLinkSource } from './useSavedAreas.ts';
 
 type Entry = 'none' | 'paste' | 'scan';
@@ -11,6 +13,8 @@ type Entry = 'none' | 'paste' | 'scan';
 interface AreaPanelProps {
   readonly areas: readonly SavedArea[];
   readonly activeArea: SavedArea | null;
+  /** The active area's saved street map. */
+  readonly offlineMap: OfflineMap;
   readonly onLoadText: (text: string, source: AreaLinkSource) => boolean;
   readonly onPick: (key: string) => void;
   readonly onRemove: (key: string) => void;
@@ -100,15 +104,16 @@ export function AreaDetails({ area }: { readonly area: AreaLinkData }) {
 
 interface SavedAreaCardProps {
   readonly area: SavedArea;
-  readonly isActive: boolean;
+  /** Set only on the active area's card. */
+  readonly offlineMap: OfflineMap | null;
   readonly onPick: (key: string) => void;
   readonly onRemove: (key: string) => void;
 }
 
-function SavedAreaCard({ area, isActive, onPick, onRemove }: SavedAreaCardProps) {
+function SavedAreaCard({ area, offlineMap, onPick, onRemove }: SavedAreaCardProps) {
   function handleRemove() {
     const isConfirmed = window.confirm(
-      `Remove ${areaName(area.data)} from this phone? You will need its link or code to load it again.`
+      `Remove ${areaName(area.data)} and its saved street map from this phone? You will need its link or code to load it again.`
     );
     if (isConfirmed) onRemove(area.key);
   }
@@ -116,8 +121,9 @@ function SavedAreaCard({ area, isActive, onPick, onRemove }: SavedAreaCardProps)
   return (
     <li className="scout-area-card">
       <AreaDetails area={area.data} />
+      {offlineMap && <OfflineMapControl offlineMap={offlineMap} />}
       <div className="scout-actions">
-        {isActive ? (
+        {offlineMap ? (
           <span className="scout-area-active">Active area</span>
         ) : (
           <button type="button" onClick={() => onPick(area.key)}>
@@ -138,7 +144,7 @@ function activeFirst(areas: readonly SavedArea[], activeKey: string | null): Sav
   return [...latestFirst.filter((area) => area.key === activeKey), ...latestFirst.filter((area) => area.key !== activeKey)];
 }
 
-export function AreaPanel({ areas, activeArea, onLoadText, onPick, onRemove }: AreaPanelProps) {
+export function AreaPanel({ areas, activeArea, offlineMap, onLoadText, onPick, onRemove }: AreaPanelProps) {
   const [entry, setEntry] = useState<Entry>('none');
   const closeEntry = () => setEntry('none');
 
@@ -152,7 +158,7 @@ export function AreaPanel({ areas, activeArea, onLoadText, onPick, onRemove }: A
             <SavedAreaCard
               key={area.key}
               area={area}
-              isActive={area.key === activeArea?.key}
+              offlineMap={area.key === activeArea?.key ? offlineMap : null}
               onPick={onPick}
               onRemove={onRemove}
             />

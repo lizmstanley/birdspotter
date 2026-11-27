@@ -52,7 +52,7 @@ export function Help({ appName, opensWithoutSignal, children }: HelpProps) {
       <p>
         {opensWithoutSignal
           ? `${appName} opens with no signal once it has opened with a signal since its last update. ` +
-            'It needs a signal to draw the street map, which may be blank without one, and to check eBird.'
+            'It needs a signal to check eBird.'
           : `${appName} needs a signal to open, to draw the map, and to check eBird.`}{' '}
         If the signal drops, the lists keep the eBird data they last loaded and say when it was fetched. Once that
         data is 6 hours old, eBird&apos;s terms no longer allow showing it, so it leaves the screen until a signal
