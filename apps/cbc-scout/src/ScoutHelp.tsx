@@ -36,7 +36,7 @@ export function ScoutHelp() {
       </p>
       <p>
         After <strong>Stop count</strong>, <strong>Share totals</strong> sends your party&apos;s line of the count
-        sheet as text, to wherever you send it.
+        sheet as text, to wherever you send it. The last line, the party code, holds the same totals as a code.
       </p>
       <p>
         The phone also keeps the saved areas and the count session with its route. With an area loaded, the place

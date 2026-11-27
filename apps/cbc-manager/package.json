@@ -7,6 +7,7 @@
   "exports": {
     "./services/areaLink.ts": "./src/services/areaLink.ts",
     "./services/cbcCircle.ts": "./src/services/cbcCircle.ts",
+    "./services/partyCode.ts": "./src/services/partyCode.ts",
     "./components/map/mapLayers.ts": "./src/components/map/mapLayers.ts",
     "./components/map/mapText.ts": "./src/components/map/mapText.ts"
   },

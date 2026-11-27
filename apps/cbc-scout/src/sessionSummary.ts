@@ -1,3 +1,4 @@
+import { partyCodeLine, type PartyEffort } from '@birdspotter/cbc-manager/services/partyCode.ts';
 import type { CountSession, TravelMode } from './countSession.ts';
 import type { SessionTotals } from './sessionStretches.ts';
 
@@ -21,7 +22,23 @@ export function formatAmount(value: number): string {
 /** A phone records one party. */
 const PARTIES_PER_COUNT = 1;
 
-/** @returns the totals as plain text, with the count sheet's fields in its order */
+function partyEffort(session: StoppedSession, totals: SessionTotals): PartyEffort {
+  const { circleCode, areaCode } = session;
+  return {
+    partyId: session.partyId,
+    area: circleCode && areaCode ? { circleCode, areaCode } : null,
+    startTime: session.startTime,
+    stopTime: session.stopTime,
+    participants: session.participants,
+    carHours: totals.carHours,
+    footHours: totals.footHours,
+    feederHours: session.feederHours,
+    carMiles: totals.carMiles,
+    footMiles: totals.footMiles,
+  };
+}
+
+/** @returns the totals as plain text, with the count sheet's fields in its order, then the party code */
 export function sessionSummaryText(session: StoppedSession, totals: SessionTotals): string {
   return [
     'Christmas Bird Count party effort',
@@ -36,6 +53,7 @@ export function sessionSummaryText(session: StoppedSession, totals: SessionTotal
     `Miles by vehicle: ${formatAmount(totals.carMiles)}`,
     `Miles by foot: ${formatAmount(totals.footMiles)}`,
     ...(totals.gapMiles > 0 ? [gapNote(totals.gapMiles)] : []),
+    partyCodeLine(partyEffort(session, totals)),
   ].join('\n');
 }
 

@@ -3,6 +3,7 @@ import { simplify } from '@turf/simplify';
 import type { LineString, MultiPolygon, Polygon, Position } from 'geojson';
 import { isLatitude, isLongitude } from '@birdspotter/birding-core/coordinates.ts';
 import { isRecord } from '@birdspotter/birding-core/http.ts';
+import { fromBase64Url, toBase64Url } from './base64Url.ts';
 
 export type AreaOutlineGeometry = Polygon | MultiPolygon | LineString;
 
@@ -132,17 +133,6 @@ export function toAreaOutlineGeometry(geometry: { readonly type: string; readonl
   }
   if (type === 'LineString' && isLine(coordinates, MIN_LINE_POINTS)) return { type, coordinates };
   return null;
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function fromBase64Url(text: string): Uint8Array {
-  const binary = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
 function toScaled(value: number): number {
