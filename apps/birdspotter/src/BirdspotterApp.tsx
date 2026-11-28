@@ -21,6 +21,8 @@ import { BIRDSPOTTER } from './appIdentity.ts';
 
 type Panel = 'sightings' | 'hotspots';
 
+// The privacy page sits at the site root, one folder above app/.
+const PRIVACY_URL = `${import.meta.env.BASE_URL}../privacy/`;
 const DEFAULT_BACK_DAYS = 7;
 
 interface BirdspotterAppProps {
@@ -126,7 +128,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               onChange={changeSettings}
             />
           )}
-          {screen === 'help' && <Help appName={BIRDSPOTTER.name} />}
+          {screen === 'help' && <Help appName={BIRDSPOTTER.name} privacyUrl={PRIVACY_URL} />}
           {screen === 'about' && <About />}
         </BirdingScreen>
       )}

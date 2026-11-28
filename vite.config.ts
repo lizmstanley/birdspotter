@@ -42,7 +42,7 @@ function phoneAppConfig(mode: PhoneAppMode): UserConfig {
   };
 }
 
-// The home page and the CBC page are plain HTML with relative links. This pass runs first and empties dist/.
+// The home page, the CBC page, and the privacy page are plain HTML with relative links. This pass runs first and empties dist/.
 // Preview runs in this mode, so it serves all of dist/.
 function siteConfig(): UserConfig {
   return {
@@ -52,7 +52,13 @@ function siteConfig(): UserConfig {
     build: {
       outDir: repoPath('./dist'),
       emptyOutDir: true,
-      rollupOptions: { input: [repoPath('./site/index.html'), repoPath('./site/cbc/index.html')] },
+      rollupOptions: {
+        input: [
+          repoPath('./site/index.html'),
+          repoPath('./site/cbc/index.html'),
+          repoPath('./site/privacy/index.html'),
+        ],
+      },
     },
   };
 }

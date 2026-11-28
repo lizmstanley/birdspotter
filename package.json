@@ -14,9 +14,9 @@
     "dev:birdspotter": "vite --mode birdspotter",
     "build": "tsc -b && vite build --mode site && vite build && vite build --mode cbc-scout && vite build --mode birdspotter",
     "preview": "vite preview --mode site",
-    "test": "node --test \"packages/*/src/**/*.test.ts\" \"apps/*/src/**/*.test.ts\"",
+    "test": "node --test \"packages/*/src/**/*.test.ts\" \"apps/*/src/**/*.test.ts\" \"site/**/*.test.ts\"",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
-    "lint": "eslint packages apps"
+    "lint": "eslint packages apps site"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

@@ -8,6 +8,8 @@ import {
 import { CBC_SCOUT_URL, BIRDSPOTTER_URL } from '../services/shareApp.ts';
 
 export const DISCUSSIONS_URL = 'https://github.com/lizmstanley/birdspotter/discussions';
+// The privacy page sits at the site root, two folders above cbc/manager/.
+const PRIVACY_URL = `${import.meta.env.BASE_URL}../../privacy/`;
 
 interface Props {
   /** The saved eBird API key, or empty. */
@@ -225,11 +227,17 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           </li>
           <li>
             <strong>Privacy:</strong> the phone keeps the eBird key, saved areas, settings, whether
-            location tracking is on, the count session and its route, and the day&apos;s eBird results.
+            location tracking is on, the count session and its route, the saved street maps, CBC Scout&apos;s
+            own files, and recent eBird results.
             CBC Scout sends the key, the place to search, and the days back to eBird. The place is the
             circle&apos;s center when an area is loaded, or your location when none is. It sends map views
-            to OpenFreeMap. Nothing goes to any other server. The area data sits after the{' '}
-            <code>#</code> in the link, so it never reaches a server.
+            to OpenFreeMap. GitHub, which hosts the site, sends CBC Scout&apos;s files. Each of them sees
+            the phone&apos;s IP address. Nothing goes to any other server. The area data sits after the{' '}
+            <code>#</code> in the link, so it never reaches a server. The{' '}
+            <a href={PRIVACY_URL} target="_blank" rel="noreferrer">
+              privacy page
+            </a>{' '}
+            has the full list for CBC Scout and Birdspotter.
           </li>
         </ul>
       </div>

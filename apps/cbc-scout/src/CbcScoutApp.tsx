@@ -32,6 +32,8 @@ type ScoutScreen = Screen | 'areas';
 
 const SCOUT_SCREENS: readonly AppScreen<'areas'>[] = [{ id: 'areas', title: 'Your areas' }];
 
+// The privacy page sits at the site root, two folders above cbc/scout/.
+const PRIVACY_URL = `${import.meta.env.BASE_URL}../../privacy/`;
 const DEFAULT_BACK_DAYS = 7;
 
 interface CbcScoutAppProps {
@@ -225,7 +227,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
             />
           )}
           {screen === 'help' && (
-            <Help appName={CBC_SCOUT.name}>
+            <Help appName={CBC_SCOUT.name} privacyUrl={PRIVACY_URL}>
               <ScoutHelp />
             </Help>
           )}

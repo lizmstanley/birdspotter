@@ -3,11 +3,13 @@ import { EBIRD_KEY_REQUEST_URL } from './ebird.ts';
 
 interface HelpProps {
   readonly appName: string;
+  /** The site's privacy page, which sits outside every app's folder. */
+  readonly privacyUrl: string;
   /** The app's own sections, after the shared ones. */
   readonly children?: ReactNode;
 }
 
-export function Help({ appName, children }: HelpProps) {
+export function Help({ appName, privacyUrl, children }: HelpProps) {
   return (
     <div className="birding-help">
       <h2>What the lists show</h2>
@@ -64,10 +66,17 @@ export function Help({ appName, children }: HelpProps) {
 
       <h2>What stays on the phone</h2>
       <p>
-        {appName} has no account and no server. The phone keeps the eBird key, your settings, whether location is on,
-        and copies of the day&apos;s eBird results. {appName} sends the key, the place to search, and the days back
-        to eBird, and map views to OpenFreeMap for the map. Nothing goes to any other server.{' '}
-        <strong>Directions</strong> and checklist links open Apple Maps, Google Maps, or eBird only when tapped.
+        {appName} has no account and no server of its own. The phone keeps the eBird key, your settings, whether
+        location is on, {appName}&apos;s own files, and copies of recent eBird results. {appName} sends the key,
+        the place to search, and the days back to eBird, and map views to OpenFreeMap for the map. GitHub, which hosts
+        the site, sends {appName}&apos;s files. Each of them sees your phone&apos;s IP address. Nothing goes to any other
+        server. <strong>Directions</strong> and checklist links open Apple Maps, Google Maps, or eBird only when
+        tapped.
+      </p>
+      <p>
+        <a href={privacyUrl} target="_blank" rel="noreferrer">
+          Privacy: what the phone apps send and keep
+        </a>
       </p>
 
       {children}
