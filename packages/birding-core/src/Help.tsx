@@ -17,7 +17,9 @@ export function Help({ appName, privacyUrl, children }: HelpProps) {
         <strong>Sightings</strong> lists notable sightings, then recent sightings, nearest first.
         Pick how many days back, from 1 to 30. {appName} keeps that choice until you change it. Notable sightings
         include reports still waiting for review. One an eBird reviewer has confirmed is marked{' '}
-        <strong>Confirmed</strong>. Each sighting says how long ago it was reported and links to its eBird checklist.
+        <strong>Confirmed</strong>. Each sighting says how long ago it was reported and links to its eBird checklist. To
+        find one bird, type part of its name in <strong>Find a species</strong>, such as &quot;nuth&quot; or
+        &quot;coopers&quot;. Case, spaces, and punctuation don&apos;t matter. Clear the box to see every sighting again.
       </p>
       <p>
         <strong>Hotspots</strong> lists <strong>Hotspots to visit</strong>, ranked by the species reported there.
