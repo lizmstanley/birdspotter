@@ -17,6 +17,15 @@ export function participantsWorkbook(sheet: XLSX.WorkSheet): XLSX.WorkBook {
   return wb;
 }
 
+const FORMULA_START = /^[=+\-@\t\r]/;
+
+/** Puts a leading `'` on text a spreadsheet would run as a formula when it opens the CSV. */
+export function csvSafeRows(rows: Record<string, string>[]): Record<string, string>[] {
+  return rows.map((row) =>
+    Object.fromEntries(Object.entries(row).map(([key, text]) => [key, FORMULA_START.test(text) ? `'${text}` : text]))
+  );
+}
+
 export function writeParticipantsSheet(sheet: XLSX.WorkSheet, baseName: string, format: SheetFormat): void {
   const wb = participantsWorkbook(sheet);
   if (format === 'xlsx') {

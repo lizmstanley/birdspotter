@@ -1,11 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  RSVP_OPTIONS,
   SAMPLE_HEADERS,
   SAMPLE_ROWS,
   buildRows,
   checkRows,
   distinctValues,
+  normalizeCounterType,
   normalizeRsvp,
   type ColumnMapping,
 } from './importPreview.ts';
@@ -19,18 +21,71 @@ const MAPPING: ColumnMapping = {
   noteCol: 'Notes',
 };
 
-test('rsvp enum values pass through unchanged', () => {
-  assert.equal(normalizeRsvp('no_response'), 'no_response');
-  assert.equal(normalizeRsvp('no_show'), 'no_show');
-  assert.equal(normalizeRsvp('cancelled'), 'cancelled');
+test('every rsvp value and label reads back as that value', () => {
+  for (const option of RSVP_OPTIONS) {
+    assert.equal(normalizeRsvp(option.value), option.value);
+    assert.equal(normalizeRsvp(option.label), option.value);
+  }
 });
 
-test('free text rsvp is read loosely', () => {
-  assert.equal(normalizeRsvp('Yes'), 'confirmed');
-  assert.equal(normalizeRsvp('Maybe'), 'undecided');
-  assert.equal(normalizeRsvp('No'), 'declined_keep');
-  assert.equal(normalizeRsvp(''), 'confirmed');
+const RSVP_TEXT: [string, string][] = [
+  ['', 'confirmed'],
+  ['Yes', 'confirmed'],
+  ['Y', 'confirmed'],
+  ['Confirmed', 'confirmed'],
+  ['Maybe', 'undecided'],
+  ['Undecided', 'undecided'],
+  ['Pending', 'undecided'],
+  ['TBD', 'undecided'],
+  ['Please remove me', 'declined_remove'],
+  ['No show', 'no_show'],
+  ['No-show', 'no_show'],
+  ['noshow', 'no_show'],
+  ['Canceled', 'cancelled'],
+  ['Declined', 'declined_keep'],
+  ["Can't make it", 'declined_keep'],
+  ['Can’t make it', 'declined_keep'],
+  ['Significant other', 'no_response'],
+  ["Won't make it", 'declined_keep'],
+  ['Yes, no problem', 'confirmed'],
+  ['Count me in, yes', 'confirmed'],
+  ['Not confirmed', 'no_response'],
+  ['Not yet confirmed', 'no_response'],
+  ['Cannot attend', 'declined_keep'],
+  ['No', 'declined_keep'],
+  ['N', 'declined_keep'],
+  ['Not sure', 'no_response'],
+  ['Unconfirmed', 'no_response'],
+  ['Tentative', 'no_response'],
+];
+
+for (const [text, expected] of RSVP_TEXT) {
+  test(`rsvp text "${text}" reads as ${expected}`, () => {
+    assert.equal(normalizeRsvp(text), expected);
+  });
+}
+
+test('every rsvp reading is a value the app has', () => {
+  const values = new Set(RSVP_OPTIONS.map((o) => o.value));
+  for (const [text] of RSVP_TEXT) assert.ok(values.has(normalizeRsvp(text)), text);
 });
+
+const COUNTER_TEXT: [string, string][] = [
+  ['Field and feeders', 'both'],
+  ['Both', 'both'],
+  ['Field + feeder watch', 'both'],
+  ['Feeder', 'home_feeders'],
+  ['Home feeders', 'home_feeders'],
+  ['Coordinator only', 'coordinator_only'],
+  ['Field', 'field'],
+  ['', 'field'],
+];
+
+for (const [text, expected] of COUNTER_TEXT) {
+  test(`counter type text "${text}" reads as ${expected}`, () => {
+    assert.equal(normalizeCounterType(text), expected);
+  });
+}
 
 test('distinct values are counted, most common first', () => {
   const rows = [{ R: 'Yes' }, { R: 'No' }, { R: 'Yes' }, { R: '' }];
