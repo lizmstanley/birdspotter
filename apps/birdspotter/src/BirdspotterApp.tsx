@@ -30,8 +30,6 @@ interface BirdspotterAppProps {
   readonly storage: KeyValueStorage | null;
 }
 
-function addNoLayers(): void {}
-
 export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) {
   const [error, setError] = useState<string | null>(null);
   const { ebirdApiKey, saveEbirdKey } = useEbirdKey(setError);
@@ -79,7 +77,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               {live.error}
             </p>
           )}
-          <BirdingMap addLayers={addNoLayers} onReady={takeMap} />
+          <BirdingMap onReady={takeMap} data={nearby} position={live.position} />
           <div className="birdspotter-tabs">
             <button type="button" aria-pressed={panel === 'sightings'} onClick={() => setPanel('sightings')}>
               Sightings

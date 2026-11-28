@@ -44,13 +44,10 @@ interface CbcScoutAppProps {
 
 const ROUTE_GROUP_TITLES: GroupTitles = { inRegion: 'In the circle', elsewhere: 'Outside the circle' };
 
-function inAreaOnly(data: NearbyData, isInArea: RegionTest): NearbyData {
-  return {
-    ...data,
-    regular: data.regular.filter(isInArea),
-    notable: data.notable.filter(isInArea),
-    hotspots: data.hotspots.filter(isInArea),
-  };
+type NearbyLists = Pick<NearbyData, 'regular' | 'notable' | 'hotspots'>;
+
+function inAreaOnly({ regular, notable, hotspots }: NearbyLists, isInArea: RegionTest): NearbyLists {
+  return { regular: regular.filter(isInArea), notable: notable.filter(isInArea), hotspots: hotspots.filter(isInArea) };
 }
 
 function Messages({ error, notice }: { readonly error: string | null; readonly notice: string | null }) {
@@ -121,7 +118,13 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   // A route has no inside, so its places are grouped against the circle instead of kept to the area.
   const isRoute = area?.outline.type === 'LineString';
   const areaShapeTest = isRoute ? null : isInArea;
-  const areaData = useMemo(() => (areaShapeTest ? inAreaOnly(nearby, areaShapeTest) : nearby), [nearby, areaShapeTest]);
+  const { regular, notable, hotspots } = nearby;
+  // Keyed on the lists, not on nearby, which is new on every location fix, so the map regroups only when they change.
+  const areaLists = useMemo(
+    () => (areaShapeTest ? inAreaOnly({ regular, notable, hotspots }, areaShapeTest) : null),
+    [regular, notable, hotspots, areaShapeTest]
+  );
+  const areaData = areaLists ? { ...nearby, ...areaLists } : nearby;
 
   function changeSettings(next: BirdingSettings): void {
     setSettings(next);
@@ -147,6 +150,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
       <ScoutMap
         area={area}
         live={live}
+        data={areaData}
         onLocationControl={setLocationControl}
         storage={storage}
         setError={setError}
