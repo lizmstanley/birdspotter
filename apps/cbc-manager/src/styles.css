@@ -1146,3 +1146,25 @@ code {
   color: var(--text-muted);
   min-width: 120px;
 }
+
+.paste-party-text {
+  width: 100%;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.paste-party-values {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0 0 12px;
+}
+
+.paste-party-values dt {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.paste-party-values dd {
+  margin: 0;
+}

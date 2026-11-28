@@ -14,6 +14,15 @@ export async function currentSeasonOf(db: Queryable, circleCode: string): Promis
   return res.rows[0]?.year ?? seasonInPreparation(new Date());
 }
 
+/** @returns the circle's seasons, newest first */
+export async function getSeasons(db: Queryable, circleCode: string): Promise<number[]> {
+  const res = await db.query<{ year: number }>(
+    'SELECT year FROM public.count_years WHERE circle_code = $1 ORDER BY year DESC',
+    [circleCode]
+  );
+  return res.rows.map((row) => row.year);
+}
+
 /**
  * Makes `newYear` the circle's current season. People, areas, and pinned notes stay.
  * Results received start empty for the new season. The old season keeps its records.

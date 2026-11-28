@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { PGlite } from '@electric-sql/pglite';
 import { NoCurrentSeasonError } from './errors.ts';
 import { openTestDb, scalar } from './testing/testDb.ts';
 import type { Party } from './types.ts';
@@ -130,4 +131,66 @@ test('a circle with no current season cannot take a party, and no area is added'
 
   await assert.rejects(db.saveParty(CIRCLE, party('a', '3C', '2026-12-19T07:00:00Z')), NoCurrentSeasonError);
   assert.equal(await scalar(client, `SELECT COUNT(*)::INT FROM public.areas WHERE code = '3C'`), 0);
+});
+
+async function currentSeason(client: PGlite): Promise<number> {
+  return scalar<number>(client, `SELECT year FROM public.count_years WHERE circle_code = $1 AND is_current`, [CIRCLE]);
+}
+
+test('a circle lists its seasons newest first', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+  await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
+
+  assert.deepEqual(await db.getSeasons(CIRCLE), [season + 1, season]);
+});
+
+test('a party saved in an earlier season stays out of the current season', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+  await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
+
+  await db.savePartyInSeason(CIRCLE, season, party('a', '1A', '2026-12-19T07:00:00Z'));
+
+  assert.deepEqual(await db.getCurrentParties(CIRCLE), []);
+  assert.equal((await db.findParty(CIRCLE, 'a'))?.count_year, season);
+});
+
+test('saving a party in another season moves it there instead of adding it twice', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+  await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
+  await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
+
+  await db.savePartyInSeason(CIRCLE, season + 1, party('a', '2B', '2026-12-19T07:00:00Z', { participants: 4 }));
+
+  assert.deepEqual(
+    (await db.getCurrentParties(CIRCLE)).map((p) => [p.party_id, p.area_code, p.participants]),
+    [['a', '2B', 4]]
+  );
+  assert.equal(await scalar(client, `SELECT COUNT(*)::INT FROM public.parties WHERE party_id = 'a'`), 1);
+});
+
+test('a party for a season the circle does not have is refused and the saved party stays', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+  await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
+
+  await assert.rejects(db.savePartyInSeason(CIRCLE, season + 5, party('a', '1A', '2026-12-19T07:00:00Z')));
+  assert.equal((await db.findParty(CIRCLE, 'a'))?.count_year, season);
+});
+
+test('a pasted party for an area the circle does not have is refused, and no area is added', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+
+  await assert.rejects(db.savePartyInSeason(CIRCLE, season, party('a', '9Z', '2026-12-19T07:00:00Z')));
+  assert.equal(await scalar(client, `SELECT COUNT(*)::INT FROM public.areas WHERE code = '9Z'`), 0);
+});
+
+test('a party ID is found only in its own circle', async () => {
+  const { db } = await dbWithCircle();
+  await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
+
+  assert.equal(await db.findParty('MNBL', 'a'), null);
 });

@@ -24,6 +24,8 @@ export interface ActiveCircleData {
   areaBoundaries: AreaBoundaryRow[];
   parties: Party[];
   partyTotals: AreaPartyTotals[];
+  /** The circle's seasons, newest first */
+  seasons: number[];
 }
 
 const NO_CIRCLE_DATA: ActiveCircleData = {
@@ -35,6 +37,7 @@ const NO_CIRCLE_DATA: ActiveCircleData = {
   areaBoundaries: [],
   parties: [],
   partyTotals: [],
+  seasons: [],
 };
 
 export function pickActiveCircle(circles: readonly SavedCircle[]): SavedCircle | null {
@@ -42,17 +45,19 @@ export function pickActiveCircle(circles: readonly SavedCircle[]): SavedCircle |
 }
 
 async function loadActiveCircleData(db: LocalCbcDb, code: string): Promise<ActiveCircleData> {
-  const [assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyTotals] = await Promise.all([
-    db.getAssignments(code),
-    db.getOpenAreas(code),
-    db.getNeedsReminder(code),
-    db.getPossibleOutreach(code),
-    db.getAreas(code),
-    db.getCircleBoundaries(code),
-    db.getCurrentParties(code),
-    db.getCurrentPartyTotals(code),
-  ]);
-  return { assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyTotals };
+  const [assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyTotals, seasons] =
+    await Promise.all([
+      db.getAssignments(code),
+      db.getOpenAreas(code),
+      db.getNeedsReminder(code),
+      db.getPossibleOutreach(code),
+      db.getAreas(code),
+      db.getCircleBoundaries(code),
+      db.getCurrentParties(code),
+      db.getCurrentPartyTotals(code),
+      db.getSeasons(code),
+    ]);
+  return { assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyTotals, seasons };
 }
 
 /** @param onSettled runs after every load, whether it worked or not */
