@@ -74,7 +74,7 @@ function passConfig(mode: string): UserConfig {
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   optimizeDeps: {
-    // Pre-bundling breaks PGlite's WASM loading. MapLibre must stay pre-bundled: it ships only a UMD build.
+    // Pre-bundling breaks PGlite's WASM loading.
     exclude: ['@electric-sql/pglite'],
   },
   server: { proxy: audubonProxy },
