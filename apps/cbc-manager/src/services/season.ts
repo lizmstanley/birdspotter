@@ -30,3 +30,11 @@ export function seasonToRollOverTo(currentSeason: number | null, today: Date): n
   const target = seasonInPreparation(today);
   return target > currentSeason ? target : null;
 }
+
+/** @returns the season whose count window holds the local calendar day of `time`, or null when no window does */
+export function seasonOfCountDay(time: number): number | null {
+  const at = new Date(time);
+  const day = new Date(at.getFullYear(), at.getMonth(), at.getDate());
+  const season = day.getMonth() === WINDOW_START_MONTH_INDEX ? day.getFullYear() : day.getFullYear() - 1;
+  return day >= countWindowStart(season) && day <= countWindowEnd(season) ? season : null;
+}

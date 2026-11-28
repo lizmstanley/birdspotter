@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { countWindowStart, seasonInPreparation, seasonToRollOverTo } from './season.ts';
+import { countWindowStart, seasonInPreparation, seasonOfCountDay, seasonToRollOverTo } from './season.ts';
 
 const on = (y: number, m: number, d: number) => new Date(y, m - 1, d);
 
@@ -30,4 +30,18 @@ test('a season that was skipped still rolls to the latest', () => {
 
 test('the count window opens December 14', () => {
   assert.deepEqual(countWindowStart(2026), on(2026, 12, 14));
+});
+
+const at = (y: number, m: number, d: number, hour: number) => new Date(y, m - 1, d, hour).getTime();
+
+test('a count day maps to the season whose window holds its calendar date', () => {
+  assert.equal(seasonOfCountDay(at(2026, 12, 14, 0)), 2026);
+  assert.equal(seasonOfCountDay(at(2026, 12, 31, 23)), 2026);
+  assert.equal(seasonOfCountDay(at(2027, 1, 5, 23)), 2026);
+});
+
+test('a day outside every count window maps to no season', () => {
+  assert.equal(seasonOfCountDay(at(2026, 12, 13, 23)), null);
+  assert.equal(seasonOfCountDay(at(2027, 1, 6, 0)), null);
+  assert.equal(seasonOfCountDay(at(2026, 11, 20, 9)), null);
 });

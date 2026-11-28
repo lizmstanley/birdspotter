@@ -15,6 +15,7 @@ import { AwaitingResultsPage } from './AwaitingResultsPage';
 import { CircleMap } from './CircleMap';
 import { OpenAreasTab } from './OpenAreasTab';
 import { OutreachTab } from './OutreachTab';
+import { PastePartyCard } from './PastePartyCard';
 import { SpreadsheetImporter } from './SpreadsheetImporter';
 
 interface Props {
@@ -88,16 +89,25 @@ export function TabContent(props: Props) {
       );
     case 'results':
       return (
-        <AwaitingResultsPage
-          circleCode={circle.code}
-          countDate={circle.count_date}
-          areResultsDue={areResultsDue}
-          countedAreas={countedAreas}
-          assignments={assignments}
-          onToggleResultsReceived={areaActions.toggleResultsReceived}
-          onSelectArea={(code) => props.onOpenArea(code, null, 'results')}
-          onCopyBcc={onCopyBcc}
-        />
+        <div className="stack">
+          <PastePartyCard
+            circleCode={circle.code}
+            areas={data.areas}
+            seasons={data.seasons}
+            onFindParty={areaActions.findParty}
+            onSave={areaActions.savePastedParty}
+          />
+          <AwaitingResultsPage
+            circleCode={circle.code}
+            countDate={circle.count_date}
+            areResultsDue={areResultsDue}
+            countedAreas={countedAreas}
+            assignments={assignments}
+            onToggleResultsReceived={areaActions.toggleResultsReceived}
+            onSelectArea={(code) => props.onOpenArea(code, null, 'results')}
+            onCopyBcc={onCopyBcc}
+          />
+        </div>
       );
     case 'import':
       return (

@@ -177,6 +177,10 @@ export interface Party {
   readonly foot_miles: number;
 }
 
+export interface SeasonParty extends Party {
+  readonly count_year: number;
+}
+
 /** An area's effort for the season, summed over its parties. */
 export interface AreaPartyTotals {
   readonly area: string;

@@ -1,4 +1,4 @@
-import type { Party } from '../db/pgliteDb';
+import type { Party, SeasonParty } from '../db/pgliteDb';
 import { describeError } from '../services/describeError';
 import type { ParsedAreaBoundary } from '../services/kmlParser';
 import { failuresToError, type ActionContext } from './actionContext';
@@ -100,6 +100,26 @@ export function useAreaActions(
     return true;
   }
 
+  /** @returns whether the party was saved */
+  async function savePastedParty(season: number, party: Party): Promise<boolean> {
+    if (!activeCircle) return false;
+    try {
+      await db.savePartyInSeason(activeCircle.code, season, party);
+    } catch (err) {
+      setError(describeError(err));
+      return false;
+    }
+    await reload();
+    flash(`Saved the party in "${party.area_code}" for the ${season} season.`);
+    return true;
+  }
+
+  /** @returns the open circle's party with this ID, in any season, or null */
+  async function findParty(partyId: string): Promise<SeasonParty | null> {
+    if (!activeCircle) return null;
+    return db.findParty(activeCircle.code, partyId);
+  }
+
   function removeParty(party: Party) {
     if (!activeCircle) return;
     const code = activeCircle.code;
@@ -141,6 +161,8 @@ export function useAreaActions(
     toggleAreaCounted,
     saveCounterNote,
     saveParty,
+    savePastedParty,
+    findParty,
     removeParty,
     deleteArea,
   };

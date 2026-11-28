@@ -25,6 +25,7 @@ import type {
   ReminderRow,
   RolloverOptions,
   SavedCircle,
+  SeasonParty,
 } from './types.ts';
 
 export class CbcDb {
@@ -146,6 +147,18 @@ export class CbcDb {
 
   saveParty(circleCode: string, party: Party): Promise<void> {
     return parties.saveParty(this.db, circleCode, party);
+  }
+
+  savePartyInSeason(circleCode: string, season: number, party: Party): Promise<void> {
+    return parties.savePartyInSeason(this.db, circleCode, season, party);
+  }
+
+  findParty(circleCode: string, partyId: string): Promise<SeasonParty | null> {
+    return parties.findParty(this.db, circleCode, partyId);
+  }
+
+  getSeasons(circleCode: string): Promise<number[]> {
+    return seasons.getSeasons(this.db, circleCode);
   }
 
   deleteParty(circleCode: string, partyId: string): Promise<void> {
