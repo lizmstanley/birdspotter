@@ -18,6 +18,8 @@ One npm workspace: three browser-only apps, a shared birding core, and static si
 
 CI (`ci.yml`) runs lint, typecheck, test, build on every PR. `pr-title.yml` requires a Conventional Commits prefix (`feat:`, `fix(scope):`).
 
+Releases: `release.yml` runs release-please on push to `main` (`release-please-config.json`, `.release-please-manifest.json`). It keeps one open release PR that bumps the root version and writes `CHANGELOG.md` from squash titles on `main`. Merging it tags `v<version>` and publishes the GitHub release. Never edit `CHANGELOG.md` or the version by hand. The release PR runs no CI (opened with `GITHUB_TOKEN`), so it merges with the ruleset bypass. Needs two repo settings: "Allow GitHub Actions to create and approve pull requests" on, and squash merge title set to the PR title (`squash_merge_commit_title: PR_TITLE`), since `pr-title.yml` checks only the PR title.
+
 ## The apps
 
 | App | Path | Served at | Storage |
