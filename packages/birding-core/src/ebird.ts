@@ -243,6 +243,17 @@ export function recentNotableSightingsUrl(
   return `${recentObservationsUrl('recent/notable', lat, lng, radiusMiles, backDays)}&detail=simple&includeProvisional=true&fmt=json`;
 }
 
+/** Leaves out reports still waiting for review, as the regular sightings do. */
+export function recentSpeciesSightingsUrl(
+  speciesCode: string,
+  lat: number,
+  lng: number,
+  radiusMiles: number,
+  backDays: number
+): string {
+  return `${recentObservationsUrl(`recent/${encodeURIComponent(speciesCode)}`, lat, lng, radiusMiles, backDays)}&fmt=json`;
+}
+
 /** @param maxAgeMs how old a saved copy may be, at most 6 hours; omitted, 6 hours */
 export async function fetchRecentSightingsInCircle(
   apiKey: string,
@@ -271,4 +282,21 @@ export async function fetchRecentNotableSightingsInCircle(
 ): Promise<EbirdList<EbirdObservation>> {
   const url = recentNotableSightingsUrl(lat, lng, radiusMiles, backDays);
   return fetchObservations('notable sightings', url, apiKey, maxAgeMs);
+}
+
+/**
+ * The latest report of one species at each place, where the regular sightings hold only its latest report anywhere.
+ * @param maxAgeMs how old a saved copy may be, at most 6 hours; omitted, 6 hours
+ */
+export async function fetchRecentSpeciesSightingsInCircle(
+  apiKey: string,
+  speciesCode: string,
+  lat: number,
+  lng: number,
+  radiusMiles: number,
+  backDays: number,
+  maxAgeMs?: number
+): Promise<EbirdList<EbirdObservation>> {
+  const url = recentSpeciesSightingsUrl(speciesCode, lat, lng, radiusMiles, backDays);
+  return fetchObservations('species sightings', url, apiKey, maxAgeMs);
 }

@@ -7,7 +7,6 @@ import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
 import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
-import type { RegionTest } from '@birdspotter/birding-core/nearby.ts';
 import { NearbyPanel, type GroupTitles } from '@birdspotter/birding-core/NearbyPanel.tsx';
 import type { AppScreen, Screen } from '@birdspotter/birding-core/screens.ts';
 import { writeSettings } from '@birdspotter/birding-core/settings.ts';
@@ -16,10 +15,10 @@ import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import { SuggestionsPanel } from '@birdspotter/birding-core/SuggestionsPanel.tsx';
 import { useEbirdKey } from '@birdspotter/birding-core/useEbirdKey.ts';
 import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
-import { useNearbyData, type NearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
+import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCircle.ts';
 import { AreaDetails, AreaPanel } from './AreaPanel.tsx';
-import { countCircle, countCircleQuery, isInAreaTest } from './areaRegion.ts';
+import { countCircle, countCircleQuery, inAreaOnly, isInAreaTest } from './areaRegion.ts';
 import type { AreaStartup } from './areaStartup.ts';
 import { EdgeCueSetting } from './EdgeCueSetting.tsx';
 import { activeSavedArea } from './savedAreas.ts';
@@ -45,12 +44,6 @@ interface CbcScoutAppProps {
 }
 
 const ROUTE_GROUP_TITLES: GroupTitles = { inRegion: 'In the circle', elsewhere: 'Outside the circle' };
-
-type NearbyLists = Pick<NearbyData, 'regular' | 'notable' | 'hotspots'>;
-
-function inAreaOnly({ regular, notable, hotspots }: NearbyLists, isInArea: RegionTest): NearbyLists {
-  return { regular: regular.filter(isInArea), notable: notable.filter(isInArea), hotspots: hotspots.filter(isInArea) };
-}
 
 function Messages({ error, notice }: { readonly error: string | null; readonly notice: string | null }) {
   return (
@@ -121,11 +114,11 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   // A route has no inside, so its places are grouped against the circle instead of kept to the area.
   const isRoute = area?.outline.type === 'LineString';
   const areaShapeTest = isRoute ? null : isInArea;
-  const { regular, notable, hotspots } = nearby;
+  const { regular, notable, hotspots, fetchSpeciesPlaces } = nearby;
   // Keyed on the lists, not on nearby, which is new on every location fix, so the map regroups only when they change.
   const areaLists = useMemo(
-    () => (areaShapeTest ? inAreaOnly({ regular, notable, hotspots }, areaShapeTest) : null),
-    [regular, notable, hotspots, areaShapeTest]
+    () => (areaShapeTest ? inAreaOnly({ regular, notable, hotspots, fetchSpeciesPlaces }, areaShapeTest) : null),
+    [regular, notable, hotspots, fetchSpeciesPlaces, areaShapeTest]
   );
   const areaData = areaLists ? { ...nearby, ...areaLists } : nearby;
 

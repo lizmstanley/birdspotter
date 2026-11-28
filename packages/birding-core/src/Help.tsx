@@ -30,6 +30,12 @@ export function Help({ appName, privacyUrl, distanceUnit, children }: HelpProps)
         &quot;coopers&quot;. Case, spaces, and punctuation don&apos;t matter. Clear the box to see every sighting again.
       </p>
       <p>
+        A sighting shows the species&apos; latest report. Tap <strong>Every place reported</strong> under it to see
+        each place it was reported in those days, nearest first, with the latest report there. For a notable species,
+        that is every place with a notable report. For any other species, {appName} asks eBird when you open it, so it
+        needs a signal, unless you opened that species in the last 6 hours.
+      </p>
+      <p>
         <strong>Hotspots</strong> lists <strong>Hotspots to visit</strong>, ranked by the species reported there.
         Tap a hotspot&apos;s species count to see which species, each linked to its eBird checklist.
       </p>
@@ -92,10 +98,10 @@ export function Help({ appName, privacyUrl, distanceUnit, children }: HelpProps)
       <p>
         {appName} has no account and no server of its own. The phone keeps the eBird key, your settings and days
         back, whether location is on, {appName}&apos;s own files, and copies of recent eBird results. {appName} sends
-        the key, the place to search, and the days back to eBird, and map views to OpenFreeMap for the map. GitHub,
-        which hosts the site, sends {appName}&apos;s files. Each of them sees your phone&apos;s IP address. Nothing
-        goes to any other server. <strong>Directions</strong> and checklist links open Apple Maps, Google Maps, or
-        eBird only when tapped.
+        the key, the place to search, the days back, and any species whose places you open to eBird, and map views to
+        OpenFreeMap for the map. GitHub, which hosts the site, sends {appName}&apos;s files. Each of them sees your
+        phone&apos;s IP address. Nothing goes to any other server. <strong>Directions</strong> and checklist links open
+        Apple Maps, Google Maps, or eBird only when tapped.
       </p>
       <p>
         <a href={privacyUrl} target="_blank" rel="noreferrer">

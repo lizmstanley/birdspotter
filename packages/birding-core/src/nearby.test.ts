@@ -9,6 +9,7 @@ import {
   formatDistance,
   groupSightings,
   isRecentSightingsHidden,
+  latestAtEachPlace,
   NEARBY_RADIUS_MILES,
   nearbyQuery,
   noRecentSightingsText,
@@ -102,6 +103,20 @@ test('with no notable reports, every regular row stays', () => {
   const regular = sortNearby([{ speciesCode: 'bkcchi', lng: -93.25, lat: 44.95 }], here, null);
 
   assert.deepEqual(groupSightings(regular, []), { notable: [], regular });
+});
+
+test('keeps one report for each place, the latest there, including a date with no time', () => {
+  const reports = [
+    { locId: 'L1', obsDt: '2026-11-20 08:15', subId: 'S1' },
+    { locId: 'L2', obsDt: '2026-11-19', subId: 'S2' },
+    { locId: 'L1', obsDt: '2026-11-21 07:00', subId: 'S3' },
+    { locId: 'L2', obsDt: '2026-11-19 16:30', subId: 'S4' },
+    { locId: 'L1', obsDt: '2026-11-21', subId: 'S5' },
+  ];
+  assert.deepEqual(
+    latestAtEachPlace(reports).map((report) => report.subId),
+    ['S3', 'S4']
+  );
 });
 
 test('a search key ignores case, spaces, and punctuation', () => {

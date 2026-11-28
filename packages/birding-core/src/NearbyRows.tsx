@@ -16,6 +16,8 @@ interface SightingRowProps {
   readonly reason?: string;
   readonly now: Date;
   readonly distanceUnit: DistanceUnit;
+  /** Shown under the row, outside its checklist link. */
+  readonly places?: ReactNode;
 }
 
 function sightingRowClass(isNotable: boolean, isConfirmed: boolean): string {
@@ -24,7 +26,7 @@ function sightingRowClass(isNotable: boolean, isConfirmed: boolean): string {
   return 'birding-nearby-row birding-nearby-row-notable birding-nearby-row-confirmed';
 }
 
-export function SightingRow({ row, isNotable, reason, now, distanceUnit }: SightingRowProps) {
+export function SightingRow({ row, isNotable, reason, now, distanceUnit, places }: SightingRowProps) {
   const { comName, howMany, locName, obsDt, subId } = row.item;
   const isConfirmed = isNotable && isConfirmedReport(row.item);
   return (
@@ -37,6 +39,27 @@ export function SightingRow({ row, isNotable, reason, now, distanceUnit }: Sight
           {locName}, {sightingAgeText(obsDt, now) ?? obsDt}
         </div>
         {reason && <div className="birding-nearby-reason">{reason}</div>}
+      </a>
+      <PlaceWhere row={row} placeName={locName} distanceUnit={distanceUnit} />
+      {places}
+    </li>
+  );
+}
+
+interface SpeciesPlaceRowProps {
+  readonly row: NearbyRow<EbirdObservation>;
+  readonly now: Date;
+  readonly distanceUnit: DistanceUnit;
+}
+
+/** One place a species was reported, under that species's row. */
+export function SpeciesPlaceRow({ row, now, distanceUnit }: SpeciesPlaceRowProps) {
+  const { howMany, locName, obsDt, subId } = row.item;
+  return (
+    <li className="birding-nearby-row">
+      <a className="birding-nearby-place" href={ebirdChecklistUrl(subId)} target="_blank" rel="noreferrer">
+        <strong>{locName}</strong> <span className="birding-nearby-count">{howMany ?? 'X'}</span>
+        <div className="birding-nearby-detail">{sightingAgeText(obsDt, now) ?? obsDt}</div>
       </a>
       <PlaceWhere row={row} placeName={locName} distanceUnit={distanceUnit} />
     </li>

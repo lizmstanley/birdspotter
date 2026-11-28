@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { describeError } from './describeError.ts';
 import { EbirdKeyRejectedError, EbirdKeyUnsendableError, EbirdUnreachableError } from './errors.ts';
 import {
@@ -6,6 +6,7 @@ import {
   fetchHotspotsInCircle,
   fetchRecentNotableSightingsInCircle,
   fetchRecentSightingsInCircle,
+  fetchRecentSpeciesSightingsInCircle,
   type EbirdHotspot,
   type EbirdList,
   type EbirdObservation,
@@ -35,6 +36,9 @@ interface Sightings {
   readonly notable: readonly EbirdObservation[];
 }
 
+/** Fetches the latest report of one species at each place, over the same search as the sightings. */
+export type SpeciesPlacesFetcher = (speciesCode: string) => Promise<EbirdList<EbirdObservation>>;
+
 export interface NearbyData extends Sightings {
   readonly hotspots: readonly EbirdHotspot[];
   readonly error: string | null;
@@ -46,6 +50,8 @@ export interface NearbyData extends Sightings {
   readonly sightingsFetchedAt: number | null;
   /** When eBird sent the hotspots shown, in epoch milliseconds, or null when none are held. */
   readonly hotspotsFetchedAt: number | null;
+  /** Null while there is no search. A new function each time the sightings are due again. */
+  readonly fetchSpeciesPlaces: SpeciesPlacesFetcher | null;
 }
 
 interface Fetched<Data> {
@@ -117,6 +123,14 @@ export function useNearbyData(
     return loadInto(setSightings, request, fetched, NO_SIGHTINGS);
   }, [apiKey, hasQuery, lng, lat, radiusMiles, backDays, sightingsFetchCount, refreshMs]);
 
+  const fetchSpeciesPlaces = useCallback(
+    (speciesCode: string) =>
+      fetchRecentSpeciesSightingsInCircle(apiKey, speciesCode, lat, lng, radiusMiles, backDays, refreshMs),
+    // sightingsFetchCount is not read, but a new count must give a new function, so open places refresh with the list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [apiKey, lat, lng, radiusMiles, backDays, refreshMs, sightingsFetchCount]
+  );
+
   const sightingsOutcome = sightings ?? NO_OUTCOME;
   const hotspotsOutcome = hotspots ?? NO_OUTCOME;
   const sightingsDelay = sightingsDelayMs(sightingsOutcome, refreshMs);
@@ -136,6 +150,7 @@ export function useNearbyData(
     hasNoSignal: sightingsOutcome.hasNoSignal || hotspotsOutcome.hasNoSignal,
     sightingsFetchedAt: sightings?.fetchedAt ?? null,
     hotspotsFetchedAt: hotspots?.fetchedAt ?? null,
+    fetchSpeciesPlaces: hasQuery ? fetchSpeciesPlaces : null,
   };
 }
 

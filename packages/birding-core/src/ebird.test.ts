@@ -5,10 +5,12 @@ import {
   fetchHotspotsInCircle,
   fetchRecentNotableSightingsInCircle,
   fetchRecentSightingsInCircle,
+  fetchRecentSpeciesSightingsInCircle,
   isConfirmedReport,
   isSendableEbirdKey,
   recentNotableSightingsUrl,
   recentSightingsUrl,
+  recentSpeciesSightingsUrl,
 } from './ebird.ts';
 import { forgetRecentCopies } from './ebirdCache.ts';
 import {
@@ -146,6 +148,36 @@ test('notable sightings come from the notable endpoint with simple detail, unrev
   assert.equal(url.searchParams.get('back'), '30');
   assert.equal(url.searchParams.get('dist'), new URL(recentSightingsUrl(44.8, -93.3, 15)).searchParams.get('dist'));
   assert.equal(new URL(recentNotableSightingsUrl(44.8, -93.3, 15, 0)).searchParams.get('back'), '1');
+});
+
+test('the places of one species come from its own endpoint, over the same search as the regular sightings', () => {
+  const url = new URL(recentSpeciesSightingsUrl('rebnut', 44.8, -93.3, 15, 45));
+  const regular = new URL(recentSightingsUrl(44.8, -93.3, 15, 45));
+  assert.equal(url.pathname, '/v2/data/obs/geo/recent/rebnut');
+  assert.deepEqual([...url.searchParams], [...regular.searchParams]);
+});
+
+test('a species code is escaped so it stays one path segment', () => {
+  assert.equal(new URL(recentSpeciesSightingsUrl('a/b?c', 44.8, -93.3, 15, 7)).pathname, '/v2/data/obs/geo/recent/a%2Fb%3Fc');
+});
+
+test('the places of a species are saved, and the saved copy is shown with no signal', async (t) => {
+  const elsewhere = { ...SIGHTING, locId: 'L2', locName: 'Lake Nokomis', subId: 'S2' };
+  const fetchMock = t.mock.method(globalThis, 'fetch', respondWith([SIGHTING, elsewhere]));
+  const fetched = await fetchRecentSpeciesSightingsInCircle('key', 'rebnut', 44.8, -93.3, RADIUS_MILES, 7);
+  assert.deepEqual(fetched.items, [SIGHTING, elsewhere]);
+  assert.equal(fetchMock.mock.callCount(), 1);
+
+  fetchMock.mock.mockImplementation(async () => {
+    throw new TypeError('Failed to fetch');
+  });
+  const saved = await fetchRecentSpeciesSightingsInCircle('key', 'rebnut', 44.8, -93.3, RADIUS_MILES, 7, 0);
+  assert.deepEqual(saved.items, [SIGHTING, elsewhere]);
+  assert.equal(saved.isNoSignalCopy, true);
+  await assert.rejects(
+    fetchRecentSpeciesSightingsInCircle('key', 'amerob', 44.8, -93.3, RADIUS_MILES, 7),
+    (err) => err instanceof EbirdUnreachableError && err.endpoint === 'species sightings'
+  );
 });
 
 test('a report is confirmed only when eBird marks it valid', () => {
