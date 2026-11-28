@@ -16,6 +16,7 @@ import {
 } from './nearby.ts';
 import { SightingRow } from './NearbyRows.tsx';
 import { EbirdCredit, NearbyStatus } from './NearbyStatus.tsx';
+import { SpeciesPlaces, type PlacesSource } from './SpeciesPlaces.tsx';
 import { useMinuteClock } from './useMinuteClock.ts';
 import type { NearbyData } from './useNearbyData.ts';
 
@@ -59,8 +60,37 @@ function RowGroups<T extends Place>({ rows, titles, renderRow }: RowGroupsProps<
   );
 }
 
-function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean, now: Date): ReactNode {
-  return <SightingRow key={`${row.item.subId}-${row.item.speciesCode}`} row={row} isNotable={isNotable} now={now} />;
+interface SightingContext {
+  readonly placesSource: PlacesSource | null;
+  readonly origin: LngLat;
+  readonly isInRegion: RegionTest | null;
+  readonly now: Date;
+}
+
+function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean, context: SightingContext): ReactNode {
+  const { placesSource, origin, isInRegion, now } = context;
+  const places = placesSource && (
+    <SpeciesPlaces
+      speciesCode={row.item.speciesCode}
+      source={placesSource}
+      origin={origin}
+      isInRegion={isInRegion}
+      now={now}
+    />
+  );
+  return (
+    <SightingRow
+      key={row.item.speciesCode}
+      row={row}
+      isNotable={isNotable}
+      now={now}
+      places={places}
+    />
+  );
+}
+
+function regularPlacesSource(data: NearbyData): PlacesSource | null {
+  return data.fetchSpeciesPlaces && { kind: 'fetched', fetchPlaces: data.fetchSpeciesPlaces };
 }
 
 /** Notable sightings, then other recent sightings, each nearest first, with those in the region ahead of the rest. */
@@ -83,6 +113,8 @@ export function NearbyPanel({
   const [search, setSearch] = useState('');
   const searchKey = speciesSearchKey(search);
   const shown = useMemo(() => findSpecies(sightings, searchKey), [sightings, searchKey]);
+  const notablePlaces: PlacesSource = { kind: 'notable', reports: data.notable };
+  const regularPlaces = regularPlacesSource(data);
 
   return (
     <section className="birding-panel birding-nearby" aria-label="Sightings">
@@ -113,7 +145,11 @@ export function NearbyPanel({
           {shown.notable.length > 0 && (
             <>
               <h2>Notable sightings</h2>
-              <RowGroups rows={shown.notable} titles={groupTitles} renderRow={(row) => renderSighting(row, true, now)} />
+              <RowGroups
+                rows={shown.notable}
+                titles={groupTitles}
+                renderRow={(row) => renderSighting(row, true, { placesSource: notablePlaces, origin, isInRegion, now })}
+              />
             </>
           )}
           {!isRecentSightingsHidden(shown, search) && (
@@ -122,7 +158,11 @@ export function NearbyPanel({
               {shown.regular.length === 0 && !data.isLoading && data.sightingsFetchedAt !== null && (
                 <p>{noRecentSightingsText(shown, search)}</p>
               )}
-              <RowGroups rows={shown.regular} titles={groupTitles} renderRow={(row) => renderSighting(row, false, now)} />
+              <RowGroups
+                rows={shown.regular}
+                titles={groupTitles}
+                renderRow={(row) => renderSighting(row, false, { placesSource: regularPlaces, origin, isInRegion, now })}
+              />
             </>
           )}
         </>

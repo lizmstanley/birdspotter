@@ -113,6 +113,22 @@ export function groupSightings<T extends Sighting>(
   return { notable: firstNotable, regular: regular.filter((row) => !notableSpecies.has(row.item.speciesCode)) };
 }
 
+interface PlaceReport {
+  readonly locId: string;
+  /** eBird's local date and time, as `YYYY-MM-DD HH:mm` or `YYYY-MM-DD`, so later sorts after earlier. */
+  readonly obsDt: string;
+}
+
+/** @returns one report for each place, the latest there */
+export function latestAtEachPlace<T extends PlaceReport>(reports: readonly T[]): T[] {
+  const latest = new Map<string, T>();
+  for (const report of reports) {
+    const kept = latest.get(report.locId);
+    if (!kept || report.obsDt > kept.obsDt) latest.set(report.locId, report);
+  }
+  return [...latest.values()];
+}
+
 /**
  * Case, accents, spaces, and punctuation dropped, so "coopers", "red breasted", and "ruppell" find "Cooper's Hawk",
  * "Red-breasted Nuthatch", and "Rüppell's Warbler".

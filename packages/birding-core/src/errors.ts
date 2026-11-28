@@ -1,4 +1,4 @@
-export type EbirdEndpoint = 'hotspots' | 'sightings' | 'notable sightings';
+export type EbirdEndpoint = 'hotspots' | 'sightings' | 'notable sightings' | 'species sightings';
 
 export class EbirdRequestError extends Error {
   readonly endpoint: EbirdEndpoint;

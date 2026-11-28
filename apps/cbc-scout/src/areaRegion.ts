@@ -2,6 +2,7 @@ import { booleanPointInPolygon } from '@turf/boolean-point-in-polygon';
 import type { Feature, Polygon } from 'geojson';
 import { buildCirclePolygon } from '@birdspotter/birding-core/ebird.ts';
 import type { NearbyQuery, RegionTest } from '@birdspotter/birding-core/nearby.ts';
+import type { NearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import type { AreaLinkData } from '@birdspotter/cbc-manager/services/areaLink.ts';
 import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCircle.ts';
 
@@ -22,4 +23,22 @@ export function countCircleQuery(area: AreaLinkData): NearbyQuery {
 export function isInAreaTest(area: AreaLinkData, circle: Feature<Polygon>): RegionTest {
   const region = area.outline.type === 'LineString' ? circle : area.outline;
   return (place) => booleanPointInPolygon([place.lng, place.lat], region);
+}
+
+export type NearbyLists = Pick<NearbyData, 'regular' | 'notable' | 'hotspots' | 'fetchSpeciesPlaces'>;
+
+/** The lists kept to the area, including the places fetched for one species. */
+export function inAreaOnly(
+  { regular, notable, hotspots, fetchSpeciesPlaces }: NearbyLists,
+  isInArea: RegionTest
+): NearbyLists {
+  return {
+    regular: regular.filter(isInArea),
+    notable: notable.filter(isInArea),
+    hotspots: hotspots.filter(isInArea),
+    fetchSpeciesPlaces:
+      fetchSpeciesPlaces &&
+      ((speciesCode) =>
+        fetchSpeciesPlaces(speciesCode).then((places) => ({ ...places, items: places.items.filter(isInArea) }))),
+  };
 }

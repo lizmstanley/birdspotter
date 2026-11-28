@@ -128,6 +128,7 @@ button {
 
 .birding-nearby-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
@@ -231,6 +232,21 @@ a.birding-nearby-place {
 
 .birding-hotspot-species .birding-nearby-notable {
   margin-left: 6px;
+}
+
+.birding-species-places {
+  flex-basis: 100%;
+  font-size: 0.9em;
+}
+
+.birding-species-places summary {
+  cursor: pointer;
+  min-height: 44px;
+  line-height: 44px;
+}
+
+.birding-species-places .birding-nearby-row:last-child {
+  border-bottom: none;
 }
 
 .birding-nearby-distance {
