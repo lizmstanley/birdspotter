@@ -1,82 +1,116 @@
 # CLAUDE.md
 
-Three browser-only apps and a shared birding core live in one npm workspace. The root `package.json` is the workspace root and holds only the shared dev tooling; `packages/birding-core`, `apps/cbc-manager`, `apps/cbc-scout`, and `apps/birdspotter` are its workspaces. The repo root holds the shared config, the docs, the core in `packages/`, and the site pages in `site/`. One `vite.config.ts`, `tsconfig.json`, and `eslint.config.js` cover them all. There is no server. README.md covers features for users; DESIGN.md covers why the app is built this way.
-
-## The apps and the core
-
-- **Web app**, the circle manager (`apps/cbc-manager/index.html`, `apps/cbc-manager/src/`, `apps/cbc-manager/db/`), served at `cbc/manager/`: the tool for a count's compiler (the person who runs a Christmas Bird Count circle). React, with a PGlite (Postgres in WASM) database stored in IndexedDB at `idb://cbc-circle-manager-pgdata`. Its only static file, `favicon.svg`, is in `apps/cbc-manager/public/`.
-- **CBC Scout** (`apps/cbc-scout/index.html`, `apps/cbc-scout/src/`), served at `cbc/scout/`: an installable phone app for field counters. It loads areas from links or QR codes made in the web app's Share Area panel and keeps them, one active at a time, and records a party's hours and distance in a count session. No database: saved areas live in `localStorage` (`cbc_scout_areas`, `cbc_scout_active_area`), the tracking flag in `cbc_scout_tracking`, the menu's Settings screen and the Sightings days choice in `cbc_scout_settings` (`scoutSettings.ts` reads CBC Scout's own field there, the area edge cue, on by default), and the count session in `cbc_scout_session` (`countSession.ts`; once it ships, a format change bumps `SESSION_FORMAT_VERSION` and keeps a reader for the older version, so a count in progress survives an update). Its manifest, icons, and service worker are in `apps/cbc-scout/public/`. `scoutIdentity.ts` gives the core its name and its tracking and settings keys.
-- **Birdspotter** (`apps/birdspotter/index.html`, `apps/birdspotter/src/`), served at `app/`: an installable phone app for any birder. It uses the core alone, with no region. The lists follow the person, unless the birder taps Look here: the map's center then becomes a pinned query and the point rows are measured from, until Near me. The chosen place is held in React state only, so each open starts around the person; the eBird cache still holds it in its request addresses. No areas, no count session, no effort tracking. Its settings live in `lgb_settings`, including the search radius only this app shows, and its tracking flag in `lgb_tracking` (`appIdentity.ts`). Its manifest, icons, and service worker are in `apps/birdspotter/public/`; theme color `#4d7c0f`, `#365314` in the dark look. The `lgb_` keys keep its earlier name, Let's Go Birding.
-- **Site pages** (`site/index.html`, `site/cbc/index.html`, `site/privacy/index.html`): the home page, which leads with Birdspotter and lists the CBC tools, the CBC page, which links to the circle manager and CBC Scout, and the privacy page for the two phone apps, which both other pages and the core Help link to. Plain HTML with relative links, no script and no manifest, so none installs.
-- **Birding core** (`packages/birding-core/src/`, imported as `@birdspotter/birding-core/<file>`): the birding features with no Christmas Bird Count in them. The eBird client and its cache, the saved eBird key, nearby lists with their refresh timing, suggestions, directions, live location, screen wake lock, install prompts, the base map (`BirdingMap.tsx`), which also draws the eBird places the lists show and their tap popup (`mapPlaces.ts`, `placeLayers.ts`, `PlacePopup.tsx`), the screens built on them (`NearbyPanel`, `SuggestionsPanel`, `SettingsForm`, `EbirdKeyForm`, `InstallBanner`, `FirstRunScreen`), the menu bar and the full screen it opens (`BirdingBar.tsx`, with the screen list in `screens.ts`; an app may add its own screens, listed before the core's, as CBC Scout adds Your areas), the Help and About text (`Help.tsx`, `About.tsx`), and the crash screen (`CrashBoundary.tsx`), which every app wraps around its root in `main.tsx`; it is inline-styled because the circle manager loads no `birding.css`, and it touches no storage. Help takes an app's own sections as children, and `SettingsForm` an app's own controls, and the privacy page's address, which each app builds from its own `BASE_URL`. Styles are in `birding.css`, classes prefixed `birding-`; each app sets the bar color in `--birding-bar-color`. Colors that differ between the looks are custom properties on `:root`, each with a dark value in one `@media (prefers-color-scheme: dark)` block per file; the few hex values left in rules, such as the bar text and the notable and confirmed marks, are the same in both; the phone apps follow the phone's setting and have no theme choice. The dark look inverts the map canvas (`filter: invert(1) hue-rotate(180deg)`) rather than loading a dark style, so the saved street map serves both looks and the app's map layers keep their colors' hues; CBC Scout's route swatch takes the same filter to match its line. `birdingColors.test.ts`, `scoutColors.test.ts`, and `birdspotterColors.test.ts` check the WCAG AA text pairs in both looks and the route lines on the dark map, so a new color goes in as a variable with a dark value and a pair in its test. Nothing in it names count circles, count areas, count sessions, the CBC radius, or an app. The one exception is the About text, the author's bio, which names the Christmas Bird Count she compiles; the circle manager shows it too, on its Help & API Keys tab. An app passes in its name and per-app storage keys as a `BirdingApp`, a region test for "is this place in my region", and a pinned query for a fixed search, and the search radius around the person when nothing is pinned; the eBird fetchers take the radius as a required argument. The package exports every file under `src/` by path (`"./*": "./src/*"`), with no index.
-
-`npm run build` runs `tsc -b`, then `vite build --mode site`, then `vite build` for the circle manager, then `vite build --mode cbc-scout`, then `vite build --mode birdspotter`. The site pass writes the three pages to `dist/` and is the only pass that empties `dist/`. Each app pass has its own `root`, `base`, and `outDir`, so it writes to the folder it is served from (`dist/cbc/manager/`, `dist/cbc/scout/`, `dist/app/`), with its chunks in that folder's `assets/` and `import.meta.env.BASE_URL` set to its own address. Each app's `root` is its own folder, `apps/<app>/`, because Vite writes an HTML entry at its path relative to `root`. Each pass copies only its own `apps/<app>/public/` folder. No two apps share a chunk.
-
-## Where things live
-
-- `apps/cbc-manager/db/migrations/NNN_name.sql`: schema. Each circle's rows are scoped by `circle_code`, with composite foreign keys so a row cannot point at another circle's area.
-- `apps/cbc-manager/db/views.sql`: business rules as views (`v_open_areas`, `v_needs_reminder`, `v_possible_outreach`, `v_current_assignments`, `v_area_party_totals`). Re-applied on every start.
-- `apps/cbc-manager/src/db/cbcDb.ts`: `CbcDb`, the only database class the UI calls (as `LocalCbcDb` in the browser). Queries are split by concern into `circles.ts`, `areas.ts`, `roster.ts`, `seasons.ts`, `parties.ts`, `readModels.ts`, `backup.ts`.
-- `apps/cbc-manager/src/db/pgliteDb.ts`: `LocalCbcDb`, the only file that opens PGlite on IndexedDB. `src/services/autoSave.ts` keeps the Auto-Save file handle in a separate IndexedDB database, `cbc-circle-manager-autosave`. `browserMigrations.ts` bundles the SQL files with `import.meta.glob`; `testing/testDb.ts` reads the same files from disk for tests.
-- `apps/cbc-manager/src/db/migrations.ts`: runner. All pending migrations, their `schema_version` rows, and `views.sql` run in one transaction. A database newer than the app throws `SchemaTooNewError`.
-- `apps/cbc-manager/src/db/legacySingleCircle.ts`: moves the pre-multi-circle format into a circle coded `LEGACY`.
-- `packages/birding-core/src/ebird.ts`: the eBird client, with a `localStorage` cache in `ebirdCache.ts` that keeps hotspots for the local day and sightings for 6 hours at most, or less when the caller passes a maximum age, as CBC Scout does.
-- `apps/cbc-manager/src/services/`: logic, network clients, and browser storage helpers. Audubon circle search (`audubonCircles.ts`, ArcGIS) and circle page scraping (`audubonCirclePage.ts`), KML/KMZ/GeoJSON parsing, roster import checks, seasons and count dates, and the area link format (`areaLink.ts`).
-- `apps/cbc-manager/src/hooks/`: web app state and actions. `apps/cbc-manager/src/components/`: `TabContent.tsx` maps each `Tab` in `src/tabs.ts` to its component; the map is `CircleMap.tsx` with its parts in `components/map/`, and roster import is `SpreadsheetImporter.tsx` with its parts in `components/import/`.
-- `apps/cbc-scout/src/areaStartup.ts`: reads an area link from the address before React renders, then strips it from the address bar.
-- `apps/cbc-scout/src/areaLinkText.ts`: finds the payload in pasted text or a scanned QR code.
-- `apps/cbc-scout/src/areaRegion.ts`: the count circle as the pinned query, and the area test that puts places in the area first.
-- `apps/cbc-scout/src/leaderContact.ts`: link text is untrusted, so only a plain phone number or email becomes a `tel:` or `mailto:` link.
-- `packages/birding-core/src/installPrompt.ts`, `installOffer.ts`: Chrome's install prompt and the iOS share-sheet steps.
-- `apps/birdspotter/public/screenshot-*.png`, `apps/cbc-scout/public/screenshot-*.png`: the pictures Chrome's larger install sheet shows on Android, listed under `screenshots` in each manifest, 1080 by 1920 PNG with no alpha, `form_factor: "narrow"`. `scripts/screenshots/capture.ts` takes them from the built apps in headless Chrome, with made-up places, sightings, area, leader, and count from `sampleData.ts`. Retake them with `npm run screenshots` when a change visibly alters a screen they show. `site/installScreenshots.test.ts` checks each listed file against its manifest entry and Chrome's limits, not whether it is current.
-
-## Sharing code
-
-CBC Scout imports from the core and from the web app; Birdspotter imports only from the core; the web app imports from the core; the core imports from no app. CBC Scout imports these CBC files from the web app by package path, such as `@birdspotter/cbc-manager/services/areaLink.ts`:
-
-- `services/areaLink.ts`, `services/cbcCircle.ts`, `services/partyCode.ts` (the party code line that ends CBC Scout's shared totals, with its own `PARTY_CODE_FORMAT_VERSION`)
-- `components/map/mapLayers.ts` (MapLibre only, no React), `components/map/mapText.ts`
-
-The `exports` map in `apps/cbc-manager/package.json` lists only these files, so a package import of anything else, such as the database code, fails to resolve. A new shared file needs an `exports` entry.
-
-ESLint's `no-restricted-imports` in `eslint.config.js` enforces the direction. The core fails lint on a relative import that leaves the package, on another `@birdspotter/` package, and on `@electric-sql/pglite` or any of its subpaths. An app fails on `@electric-sql/pglite` and its subpaths and on any path through `src/db`. Birdspotter also fails on a relative import that leaves `apps/birdspotter/` and on any `@birdspotter/` package but the core. The circle manager fails on a relative path into another app's folder and on any `@birdspotter/` package but the core. Its block replaces the apps block, so it may import PGlite and its own `src/db`.
-
-Lint sees only static imports, not `import()` and not what an imported file imports in turn. CBC Scout must never pull in the circle manager's `src/db`, `@electric-sql/pglite`, or a web app component through a service either. `areaShare.ts`, `importPreview.ts`, `audubonImport.ts`, and `rosterSummary.ts` import from `src/db`. Those imports are `import type` today, so they add nothing to a bundle. A runtime import there would put PGlite into CBC Scout's build if CBC Scout ever imports that service.
+One npm workspace: three browser-only apps, a shared birding core, and static site pages. No server. Root `package.json` holds only shared dev tooling. One `vite.config.ts`, `tsconfig.json`, and `eslint.config.js` cover everything. README.md is for users. DESIGN.md has the reasons and the module map.
 
 ## Commands
 
 | Command | Does |
 | --- | --- |
-| `npm run dev` | Circle manager dev server at `localhost:5173/cbc/manager/` |
-| `npm run dev:cbc-scout` | CBC Scout dev server at `/cbc/scout/`, on port 5173 or the next free one. With the web app's dev server running it gets another port, a different origin, so the two do not share the eBird key in dev |
-| `npm run dev:birdspotter` | Birdspotter dev server at `/app/`, on port 5173 or the next free one, as with CBC Scout |
-| `npm run build` | The site pages and all three apps into `dist/` |
-| `npm run preview` | Serves all of `dist/` at `localhost:4173` in the site mode: the home page at `/`, Birdspotter at `/app/`, the CBC page at `/cbc/`, the privacy page at `/privacy/`, the circle manager at `/cbc/manager/`, CBC Scout at `/cbc/scout/` |
-| `npm test` | `node --test` over `packages/*/src`, `apps/*/src`, and `site`; `*.integration.test.ts` run real SQL in in-memory PGlite |
-| `npm run typecheck` | `tsc -b` for app code, then `tsconfig.tests.json` for tests and `scripts` |
-| `npm run lint` | ESLint on `packages`, `apps`, `site`, and `scripts` |
-| `npm run screenshots` | Builds, then retakes the install-sheet pictures in headless Chrome (`google-chrome`, or `CHROME_PATH`). Needs the network for map tiles |
+| `npm run dev` | Circle manager at `localhost:5173/cbc/manager/` |
+| `npm run dev:cbc-scout` | CBC Scout at `/cbc/scout/`, port 5173 or next free. A different port is a different origin, so no shared eBird key in dev |
+| `npm run dev:birdspotter` | Birdspotter at `/app/`, same port rule |
+| `npm run build` | Site pages and all three apps into `dist/` |
+| `npm run preview` | Serves `dist/` at `localhost:4173`: `/`, `/app/`, `/cbc/`, `/privacy/`, `/cbc/manager/`, `/cbc/scout/` |
+| `npm test` | `node --test` over `packages/*/src`, `apps/*/src`, `site`. `*.integration.test.ts` run real SQL in in-memory PGlite |
+| `npm run typecheck` | `tsc -b`, then `tsconfig.tests.json` for tests and `scripts` |
+| `npm run lint` | ESLint on `packages`, `apps`, `site`, `scripts` |
+| `npm run screenshots` | Builds, then retakes install-sheet pictures in headless Chrome (`google-chrome` or `CHROME_PATH`). Needs network |
 
-CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, and build on every pull request. `pr-title.yml` rejects a PR title without a Conventional Commits prefix such as `feat:` or `fix(scope):`.
+CI (`ci.yml`) runs lint, typecheck, test, build on every PR. `pr-title.yml` requires a Conventional Commits prefix (`feat:`, `fix(scope):`).
 
-## Deploy
+## The apps
 
-`.github/workflows/pages.yml` runs on push to `main`: test, then build with `GITHUB_PAGES=true`, then deploy `dist/` to GitHub Pages. That variable sets the site's base to `/birdspotter/`, the repo name, and each app's base under it; local dev and preview use `/`.
+| App | Path | Served at | Storage |
+| --- | --- | --- | --- |
+| Circle manager (compiler's web app) | `apps/cbc-manager/` | `cbc/manager/` | PGlite in IndexedDB `idb://cbc-circle-manager-pgdata`; Auto-Save handle in IndexedDB `cbc-circle-manager-autosave` |
+| CBC Scout (field counters' phone app) | `apps/cbc-scout/` | `cbc/scout/` | `localStorage`: `cbc_scout_areas`, `cbc_scout_active_area`, `cbc_scout_tracking`, `cbc_scout_settings`, `cbc_scout_session` |
+| Birdspotter (any birder's phone app) | `apps/birdspotter/` | `app/` | `localStorage`: `lgb_settings`, `lgb_tracking` |
+| Birding core | `packages/birding-core/src/` | imported as `@birdspotter/birding-core/<file>` | keys passed in by each app |
+| Site pages | `site/` | `/`, `cbc/`, `privacy/` | none. Plain HTML, relative links, no script, no manifest |
 
-The `/audubon-cbc` proxy in `vite.config.ts` exists only under `dev` and `preview`, because cbc.audubon.org sends no CORS headers. On Pages, circle details fall back to the ArcGIS search data.
+- Phone apps keep manifest, icons, service worker, and screenshots in `apps/<app>/public/`.
+- CBC Scout: identity and keys in `scoutIdentity.ts`. Birdspotter: in `appIdentity.ts`.
+- Birdspotter has no region, areas, count session, or effort tracking. Its Look here place lives in React state only; the eBird cache still holds it in its request addresses.
+- CBC Scout count session (`countSession.ts`): a format change bumps `SESSION_FORMAT_VERSION` and keeps a reader for the old version, so a count in progress survives an update.
+
+## Birding core rules
+
+- Nothing in the core names count circles, count areas, count sessions, the CBC radius, or an app. Only exception: the About text (author bio).
+- An app passes in a `BirdingApp` (name, per-app storage keys), a region test, a pinned query, and the search radius around the person when nothing is pinned. eBird fetchers take the radius as a required argument.
+- `package.json` exports every file by path (`"./*": "./src/*"`). No index file.
+- Help takes app sections as children. `SettingsForm` takes app controls. Privacy page address comes from each app's `BASE_URL`.
+- An app may add screens to the menu (`screens.ts`), listed before the core's.
+- `CrashBoundary.tsx` wraps every app root in `main.tsx`. It stays inline-styled (the circle manager loads no `birding.css`) and touches no storage.
+- Styles live in `birding.css`, classes prefixed `birding-`. Each app sets `--birding-bar-color`.
+- A color that differs between light and dark is a custom property on `:root`, with its dark value in the one `@media (prefers-color-scheme: dark)` block per file. Hex values left in rules are the same in both looks. No theme choice.
+- Dark map inverts the canvas (`filter: invert(1) hue-rotate(180deg)`), not a dark style. CBC Scout's route swatch takes the same filter.
+- A new color needs a WCAG AA pair in `birdingColors.test.ts`, `scoutColors.test.ts`, or `birdspotterColors.test.ts`.
+
+## Import boundaries
+
+- Allowed: CBC Scout imports core and web app. Birdspotter imports core only. Web app imports core. Core imports no app.
+- CBC Scout imports web app files by package path, e.g. `@birdspotter/cbc-manager/services/areaLink.ts`. Shared today: `services/areaLink.ts`, `services/cbcCircle.ts`, `services/partyCode.ts`, `components/map/mapLayers.ts`, `components/map/mapText.ts`.
+- `apps/cbc-manager/package.json` `exports` lists only those files. A new shared file needs an `exports` entry.
+- `eslint.config.js` `no-restricted-imports` enforces:
+  - Core: no relative import leaving the package, no other `@birdspotter/` package, no `@electric-sql/pglite` or subpaths.
+  - All apps (CBC Scout keeps this block as is): no `@electric-sql/pglite` or subpaths, no path through `src/db`.
+  - Birdspotter: its block replaces the apps block. No PGlite, no relative import leaving `apps/birdspotter/`, no `@birdspotter/` package but the core.
+  - Circle manager: its block replaces the apps block. May import PGlite and its own `src/db`. No relative path into another app, no `@birdspotter/` package but the core.
+- Lint sees only static imports. It misses `import()` and transitive imports. CBC Scout must never pull in `src/db`, PGlite, or a web app component through a service.
+- `areaShare.ts`, `importPreview.ts`, `audubonImport.ts`, `rosterSummary.ts` import `src/db` as `import type` only. A runtime import there puts PGlite into CBC Scout's build if Scout ever imports that service.
+
+## Build and deploy
+
+- `npm run build`: `tsc -b`, `vite build --mode site`, `vite build` (manager), `--mode cbc-scout`, `--mode birdspotter`.
+- Only the site pass empties `dist/`.
+- Each app pass has its own `root` (`apps/<app>/`), `base`, and `outDir` (`dist/cbc/manager/`, `dist/cbc/scout/`, `dist/app/`), copies only its own `public/`, and shares no chunks.
+- `pages.yml` on push to `main`: test, build with `GITHUB_PAGES=true` (base `/birdspotter/`), deploy `dist/`. Local dev and preview use `/`.
+- `/audubon-cbc` proxy in `vite.config.ts` exists only in dev and preview (no CORS on cbc.audubon.org). On Pages, circle details fall back to ArcGIS data.
 
 ## Invariants
 
-- **Base path.** URLs built at runtime use `import.meta.env.BASE_URL`, as in `AppHeader.tsx` and `apps/cbc-scout/src/main.tsx`. Each app's `BASE_URL` is its own address, not the site's. A hard-coded `/` works locally and breaks on Pages. The one exception is the `/audubon-cbc` fetch in `audubonCirclePage.ts`, which targets the dev and preview proxy.
-- **Share links point at the hosted app.** `CBC_SCOUT_URL`, `BIRDSPOTTER_URL`, and the circle manager's address in `apps/cbc-manager/src/services/shareApp.ts` are GitHub Pages addresses, even when the web app runs locally, so a link sent to a counter's phone always opens.
-- **Service worker scope.** Each phone app's `sw.js` is registered with its own `BASE_URL` as scope, `<site>cbc/scout/` or `<site>app/`, so it never controls another app. No app sits at the site root or at `cbc/`, since an installed app's scope covers every path under it. CBC Scout's worker saves its own files in the Cache API, network first, so it opens with no signal; it touches only caches named `cbc-scout-`, since the other apps share the origin's caches. Its activation keeps the saved street maps, `cbc-scout-map-v1:<area key>`, which `offlineMap.ts` writes and the worker reads when OpenFreeMap does not answer; both files hold that prefix and the build-free vector tile key, so a change to either changes both. Birdspotter's worker saves its own files the same way, in a cache named `birdspotter-`, and touches only caches with that prefix; it answers built files under `assets/` from the save first. Each fetch handler exists because Chrome offers install only when one does; do not remove it.
-- **Area link format.** The payload goes after `#` so it never reaches a server. Changing its shape means bumping `AREA_LINK_FORMAT_VERSION` in `areaLink.ts`; CBC Scout rejects versions it does not read with `UnsupportedAreaLinkVersionError`. Saved areas are stored as payloads and decoded again on start (`savedAreas.ts`), so a bump without a reader for the old version removes every counter's saved areas; the reader keeps version 1, the format before the area note. `buildAreaLink` simplifies the outline until the link fits `QR_MAX_BYTES_MEDIUM`, else throws `AreaLinkTooLargeError`. It never cuts the area note, which is at most `AREA_NOTE_MAX_LENGTH` characters. The link carries leader name, phone, and email, and the compiler's area note (`areas.counter_note`), free text that anyone with the link can read. Nothing else about people. CBC Scout shows the note as plain text and makes no link from it.
-- **Party code format.** The `Party code:` line that ends CBC Scout's shared totals (`partyCode.ts`) carries effort and the recorded route, positions only, with no species counts, no point times, and no link. `partyCodeLine` simplifies the route until the payload fits `PARTY_CODE_MAX_LENGTH`, and leaves it out when even the coarsest step does not; the reader keeps version 1, the format before the route. The route lines are packed like the area link's outline, with `packedLine.ts`. Changing its shape means bumping `PARTY_CODE_FORMAT_VERSION`; the decoder rejects versions it does not read with `UnsupportedPartyCodeVersionError`. Its party ID stays the same each time one count is shared.
-- **Storage names keep the old repo name.** `idb://cbc-circle-manager-pgdata`, `cbc-circle-manager-autosave`, every `cbc_` `localStorage` key, and the backup and Auto-Save download file names stay as they are. Browser storage belongs to the origin, so the saved data survives a path change, but a renamed store starts empty.
-- **Shared `localStorage`.** All apps run on one origin. The eBird key is `cbc_ebird_api_key` in all of them, so saving it in one sets it for the others. The eBird cache uses prefix `cbc_ebird_cache:` and on write drops entries from the day before once 6 hours old and every entry from earlier days. Per-app state, such as the tracking flag and settings, goes under keys the app passes in its `BirdingApp`, so two apps never share it.
-- **Migrations.** Add a new numbered file; never edit one that has shipped. `parseMigrationFiles` throws on a gap in numbering. `views.sql` runs on every start, so each statement must be safe to rerun.
-- **Node type stripping.** `npm test` runs `.ts` files directly in Node, with no build. Node strips types only outside `node_modules`; a core or `@birdspotter/cbc-manager` import resolves through the workspace symlink to the package's real folder, so it works. In any module a test reaches, relative and core runtime imports need the `.ts` extension, type-only imports need `import type`, and TypeScript-only runtime syntax (`enum`, constructor parameter properties) fails.
-- **PGlite stays out of pre-bundling.** `optimizeDeps.exclude` in `vite.config.ts` keeps it out; pre-bundling breaks its WASM loading.
-- **SheetJS comes from its CDN.** The circle manager's `xlsx` dependency is the tarball URL on `cdn.sheetjs.com`, because SheetJS no longer publishes to npm and the registry's last copy has open advisories. `npm audit` and Dependabot do not track a URL dependency, so check the SheetJS changelog for a new release and update by installing its tarball URL with `npm install --save <url> -w apps/cbc-manager`.
-- **Privacy page.** `site/privacy/index.html` says what Birdspotter and CBC Scout send off the phone, to whom, and when, and what the phone keeps. A change to either changes the page and its "Last changed" date in the same pull request, along with the core Help's "What stays on the phone" summary. `site/privacyPage.test.ts` fails when the phone apps' folders, the core, or the files in the circle manager's `exports` map name an outside host the page does not name in `<code>`. It sees only literal URLs in those files: not what an exported file imports, not links MapLibre or the OpenFreeMap style add (the map credits), and not new data sent to a host already named. Those still need the page edited by hand.
-- **No real data in git.** The top block of `.gitignore` excludes roster spreadsheets and backup JSON. Use made-up people in tests and samples.
+- **Base path.**
+  - Runtime URLs use `import.meta.env.BASE_URL`. Each app's `BASE_URL` is its own address, not the site's.
+  - Hard-coded `/` breaks on Pages.
+  - Only exception: the `/audubon-cbc` fetch in `audubonCirclePage.ts`.
+- **Share links point at the hosted app.** `CBC_SCOUT_URL`, `BIRDSPOTTER_URL`, and the manager address in `shareApp.ts` are GitHub Pages addresses, even in local dev.
+- **Service worker scope.**
+  - Each `sw.js` registers with its app's `BASE_URL` as scope. No app sits at the site root or `cbc/`.
+  - CBC Scout's worker caches its files network first, and touches only caches prefixed `cbc-scout-`.
+  - Activation keeps saved street maps `cbc-scout-map-v1:<area key>`. `offlineMap.ts` writes them, the worker reads them. Both hold the prefix and the vector tile key; change both together.
+  - Birdspotter's worker caches its files network first, except `assets/` cache first, and touches only caches prefixed `birdspotter-`.
+  - Never remove a fetch handler. Chrome offers install only when one exists.
+- **Area link format** (`areaLink.ts`).
+  - Payload goes after `#`, never to a server.
+  - Shape change bumps `AREA_LINK_FORMAT_VERSION`. Scout rejects unknown versions with `UnsupportedAreaLinkVersionError`.
+  - Saved areas are stored as payloads and decoded on start (`savedAreas.ts`). A bump without a reader for the old version wipes every counter's saved areas. Version 1 reader stays.
+  - `buildAreaLink` simplifies the outline to fit `QR_MAX_BYTES_MEDIUM`, else throws `AreaLinkTooLargeError`. It never cuts the area note (max `AREA_NOTE_MAX_LENGTH`).
+  - Carries only leader name, phone, email, and the area note (`areas.counter_note`, free text anyone with the link can read). Nothing else about people.
+  - Scout shows the note as plain text, never a link. `leaderContact.ts` makes `tel:`/`mailto:` only from a plain phone or email.
+- **Party code format** (`partyCode.ts`).
+  - Carries effort and route positions only. No species counts, point times, or links.
+  - `partyCodeLine` simplifies the route to fit `PARTY_CODE_MAX_LENGTH`, and drops it if the coarsest step still does not fit.
+  - Route lines pack with `packedLine.ts`, like the area outline.
+  - Shape change bumps `PARTY_CODE_FORMAT_VERSION`. Decoder rejects unknown versions with `UnsupportedPartyCodeVersionError`. Version 1 reader stays.
+  - Party ID stays the same each time one count is shared.
+- **Storage names never change.** `idb://cbc-circle-manager-pgdata`, `cbc-circle-manager-autosave`, every `cbc_` and `lgb_` key, and the backup and Auto-Save file names. A renamed store starts empty.
+- **Shared `localStorage`.** All apps share one origin.
+  - eBird key is `cbc_ebird_api_key` in every app.
+  - eBird cache (`ebirdCache.ts`) uses prefix `cbc_ebird_cache:`. Hotspots keep for the local day, sightings 6 hours max or the caller's max age. On write it drops yesterday's entries once 6 hours old and all older ones.
+  - Per-app state goes under keys from the app's `BirdingApp`, never shared.
+- **Migrations.**
+  - Add a new numbered file in `apps/cbc-manager/db/migrations/`. Never edit a shipped one. `parseMigrationFiles` throws on a numbering gap.
+  - `views.sql` runs on every start. Every statement must be safe to rerun.
+  - Rows are scoped by `circle_code` with composite foreign keys.
+- **Database access.** The UI calls only `CbcDb` (`src/db/cbcDb.ts`). Only `pgliteDb.ts` opens PGlite on IndexedDB.
+- **Node type stripping.** `npm test` runs `.ts` directly in Node. In any module a test reaches:
+  - Relative and core runtime imports need the `.ts` extension.
+  - Type-only imports need `import type`.
+  - No TypeScript-only runtime syntax (`enum`, constructor parameter properties).
+- **PGlite stays out of pre-bundling.** Keep it in `optimizeDeps.exclude` in `vite.config.ts`. Pre-bundling breaks its WASM.
+- **SheetJS comes from its CDN.** `xlsx` is a `cdn.sheetjs.com` tarball URL, because SheetJS no longer publishes to npm and the npm copy has open advisories. npm audit and Dependabot do not track it. Update with `npm install --save <url> -w apps/cbc-manager` after checking the SheetJS changelog.
+- **Privacy page** (`site/privacy/index.html`).
+  - A change to what Birdspotter or CBC Scout sends off the phone or keeps updates, in the same PR: the page, its "Last changed" date, and the core Help's "What stays on the phone".
+  - `site/privacyPage.test.ts` catches only literal outside hosts in phone app folders, the core, and the manager's exported files. It misses transitive imports, MapLibre and OpenFreeMap links, and new data sent to a known host. Check those by hand.
+- **Install screenshots.** Retake with `npm run screenshots` when a change visibly alters a screen they show. 1080x1920 PNG, no alpha, `form_factor: "narrow"`. Sample data lives in `scripts/screenshots/sampleData.ts`.
+- **No real data in git.** `.gitignore` top block excludes roster spreadsheets and backup JSON. Use made-up people in tests and samples.
