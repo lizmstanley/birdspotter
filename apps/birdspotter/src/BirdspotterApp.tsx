@@ -26,7 +26,6 @@ type Panel = 'sightings' | 'hotspots';
 
 // The privacy page sits at the site root, one folder above app/.
 const PRIVACY_URL = `${import.meta.env.BASE_URL}../privacy/`;
-const DEFAULT_BACK_DAYS = 7;
 
 interface BirdspotterAppProps {
   readonly installPrompt: InstallPromptStore;
@@ -45,14 +44,13 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
   const [screen, setScreen] = useState<Screen | null>(null);
   const [settings, setSettings] = useState(() => readSettings(storage, BIRDSPOTTER.settingsStorageKey));
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
-  const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
   // Above both tabs, so Sightings and Hotspots share one load.
   const nearby = useNearbyData(
     ebirdApiKey,
     chosenPlace ? { center: chosenPlace, radiusMiles: settings.radiusMiles } : null,
     live.position,
     settings.radiusMiles,
-    backDays,
+    settings.backDays,
     settings.refreshMinutes * 60 * 1000
   );
   const takeMap = useCallback((ready: ReadyMap | null) => {
@@ -122,8 +120,8 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               data={nearby}
               live={live}
               origin={origin}
-              backDays={backDays}
-              onBackDaysChange={setBackDays}
+              backDays={settings.backDays}
+              onBackDaysChange={(backDays) => changeSettings({ ...settings, backDays })}
               refreshMinutes={settings.refreshMinutes}
               onFixKey={() => setScreen('ebird-key')}
             />
@@ -134,7 +132,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               data={nearby}
               live={live}
               origin={origin}
-              backDays={backDays}
+              backDays={settings.backDays}
               refreshMinutes={settings.refreshMinutes}
               onFixKey={() => setScreen('ebird-key')}
             />
