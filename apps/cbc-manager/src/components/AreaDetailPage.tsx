@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import type { AreaOption, AssignmentRow } from '../db/pgliteDb';
+import type { AreaOption, AreaPartyTotals, AssignmentRow, Party } from '../db/pgliteDb';
 import type { AreaLinkData } from '../services/areaLink';
 import { areaDisplayName } from './map/mapText';
+import { AreaPartiesCard } from './AreaPartiesCard';
 import { CounterNoteEditor } from './CounterNoteEditor';
 import { countingSince } from './PersonHistoryDialog';
 import { ShareAreaPanel } from './ShareAreaPanel';
@@ -27,6 +28,14 @@ interface Props {
   onToggleCounted: (areaCode: string, isCounted: boolean) => Promise<void>;
   onToggleResultsReceived: (areaCode: string, received: boolean) => Promise<void>;
   onSaveCounterNote: (areaCode: string, note: string) => Promise<void>;
+  /** This area's parties for the current season, by start time */
+  parties: Party[];
+  partyTotals: AreaPartyTotals | null;
+  defaultPartyDate: string;
+  /** Counted and not counted, so a party can move to any of the circle's areas */
+  everyArea: AreaOption[];
+  onSaveParty: (party: Party) => Promise<boolean>;
+  onRemoveParty: (party: Party) => void;
 }
 
 export function AreaDetailPage({
@@ -49,6 +58,12 @@ export function AreaDetailPage({
   onToggleCounted,
   onToggleResultsReceived,
   onSaveCounterNote,
+  parties,
+  partyTotals,
+  defaultPartyDate,
+  everyArea,
+  onSaveParty,
+  onRemoveParty,
 }: Props) {
   const areaAssignments = assignments.filter(
     (a) => (a.area ?? '').toUpperCase() === areaCode.toUpperCase()
@@ -167,6 +182,17 @@ export function AreaDetailPage({
           onSave={onSaveCounterNote}
         />
       </div>
+
+      <AreaPartiesCard
+        areaTitle={title}
+        areaCode={areaInfo?.code ?? areaCode}
+        parties={parties}
+        totals={partyTotals}
+        defaultDate={defaultPartyDate}
+        allAreas={everyArea}
+        onSaveParty={onSaveParty}
+        onRemoveParty={onRemoveParty}
+      />
 
       <div className="card">
         <h2>Counters Assigned to {title} ({areaAssignments.length})</h2>

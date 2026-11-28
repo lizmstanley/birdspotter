@@ -160,3 +160,31 @@ export interface BoundaryInput {
   geometry: unknown;
   isOuterCircle?: boolean;
 }
+
+/** One party's line of the count sheet. */
+export interface Party {
+  readonly party_id: string;
+  readonly area_code: string;
+  /** Milliseconds since the epoch */
+  readonly start_time: number;
+  /** Milliseconds since the epoch */
+  readonly stop_time: number;
+  readonly participants: number;
+  readonly car_hours: number;
+  readonly foot_hours: number;
+  readonly feeder_hours: number;
+  readonly car_miles: number;
+  readonly foot_miles: number;
+}
+
+/** An area's effort for the season, summed over its parties. */
+export interface AreaPartyTotals {
+  readonly area: string;
+  readonly parties: number;
+  readonly participants: number;
+  readonly car_hours: number;
+  readonly foot_hours: number;
+  readonly feeder_hours: number;
+  readonly car_miles: number;
+  readonly foot_miles: number;
+}

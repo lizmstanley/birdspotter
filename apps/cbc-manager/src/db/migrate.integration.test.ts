@@ -38,7 +38,7 @@ async function openUnversionedClient(): Promise<PGlite> {
 test('a new database applies every migration and the views', async () => {
   const { client } = await openTestDb();
   assert.deepEqual(await versionsOf(client), migrations.map((m) => m.version));
-  assert.equal(await scalar(client, `SELECT COUNT(*)::INT FROM information_schema.views WHERE table_schema = 'public'`), 4);
+  assert.equal(await scalar(client, `SELECT COUNT(*)::INT FROM information_schema.views WHERE table_schema = 'public'`), 5);
 });
 
 test('opening an up-to-date database again keeps its data and versions', async () => {

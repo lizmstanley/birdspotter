@@ -208,7 +208,8 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           <li>
             <strong>Party hours and miles:</strong> <strong>Start count</strong> records the route and
             sorts each stretch into travel by vehicle or by foot. After <strong>Stop count</strong>,{' '}
-            <strong>Share totals</strong> sends the party&apos;s line of the count sheet as text.
+            <strong>Share totals</strong> sends the party&apos;s line of the count sheet as text. Enter it
+            under <strong>Add Party</strong> on the area&apos;s page, which sums the area&apos;s parties.
           </li>
           <li>
             <strong>Settings:</strong> in the menu, choose how often to check eBird for new sightings:

@@ -205,3 +205,20 @@ FROM person_lists pl
 WHERE (NOT pl.is_on_list AND pl.audubon_email IS NOT NULL)
    OR (pl.is_on_list AND pl.off_list_emails IS NOT NULL)
 ORDER BY reason, last_year_counted DESC NULLS LAST, pl.full_name;
+
+-- The count sheet's effort for each area and season, summed over the area's parties.
+-- A person in two parties counts once in each.
+CREATE OR REPLACE VIEW public.v_area_party_totals AS
+SELECT
+    pt.circle_code,
+    pt.count_year,
+    pt.area_code AS area,
+    COUNT(*)::INT AS parties,
+    SUM(pt.participants)::INT AS participants,
+    SUM(pt.car_hours)::FLOAT8 AS car_hours,
+    SUM(pt.foot_hours)::FLOAT8 AS foot_hours,
+    SUM(pt.feeder_hours)::FLOAT8 AS feeder_hours,
+    SUM(pt.car_miles)::FLOAT8 AS car_miles,
+    SUM(pt.foot_miles)::FLOAT8 AS foot_miles
+FROM public.parties pt
+GROUP BY pt.circle_code, pt.count_year, pt.area_code;

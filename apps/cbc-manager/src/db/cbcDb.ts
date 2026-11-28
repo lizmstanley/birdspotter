@@ -4,12 +4,14 @@ import * as backup from './backup.ts';
 import * as circles from './circles.ts';
 import { DatabaseNotOpenError } from './errors.ts';
 import { migrate, type Migration } from './migrations.ts';
+import * as parties from './parties.ts';
 import * as readModels from './readModels.ts';
 import * as roster from './roster.ts';
 import * as seasons from './seasons.ts';
 import type {
   AreaBoundaryRow,
   AreaOption,
+  AreaPartyTotals,
   AssignmentRow,
   BoundaryInput,
   CircleInfoInput,
@@ -17,6 +19,7 @@ import type {
   ImportedParticipantRow,
   ImportOptions,
   OpenAreaRow,
+  Party,
   PersonHistory,
   PossibleOutreachRow,
   ReminderRow,
@@ -131,6 +134,22 @@ export class CbcDb {
 
   clearCircleBoundaries(circleCode: string): Promise<void> {
     return areas.clearCircleBoundaries(this.db, circleCode);
+  }
+
+  getCurrentParties(circleCode: string): Promise<Party[]> {
+    return parties.getCurrentParties(this.db, circleCode);
+  }
+
+  getCurrentPartyTotals(circleCode: string): Promise<AreaPartyTotals[]> {
+    return parties.getCurrentPartyTotals(this.db, circleCode);
+  }
+
+  saveParty(circleCode: string, party: Party): Promise<void> {
+    return parties.saveParty(this.db, circleCode, party);
+  }
+
+  deleteParty(circleCode: string, partyId: string): Promise<void> {
+    return parties.deleteParty(this.db, circleCode, partyId);
   }
 
   clearCircleRoster(circleCode: string): Promise<void> {

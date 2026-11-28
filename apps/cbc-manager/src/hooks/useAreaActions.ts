@@ -1,3 +1,5 @@
+import type { Party } from '../db/pgliteDb';
+import { describeError } from '../services/describeError';
 import type { ParsedAreaBoundary } from '../services/kmlParser';
 import { failuresToError, type ActionContext } from './actionContext';
 
@@ -84,12 +86,42 @@ export function useAreaActions(
     });
   }
 
+  /** @returns whether the party was saved */
+  async function saveParty(party: Party): Promise<boolean> {
+    if (!activeCircle) return false;
+    try {
+      await db.saveParty(activeCircle.code, party);
+    } catch (err) {
+      setError(describeError(err));
+      return false;
+    }
+    await reload();
+    flash(`Saved the party in "${party.area_code}".`);
+    return true;
+  }
+
+  function removeParty(party: Party) {
+    if (!activeCircle) return;
+    const code = activeCircle.code;
+    confirm({
+      title: `Remove this party from "${party.area_code}"?`,
+      message: `Its hours, miles, and participants leave the area's totals for this season.`,
+      confirmLabel: 'Remove Party',
+      onConfirm: () =>
+        attempt(async () => {
+          await db.deleteParty(code, party.party_id);
+          await reload();
+          flash(`Removed the party from "${party.area_code}".`);
+        }),
+    });
+  }
+
   function deleteArea(areaCode: string) {
     if (!activeCircle) return;
     const code = activeCircle.code;
     confirm({
       title: `Remove "${areaCode}" from ${code}?`,
-      message: `This removes "${areaCode}" from ${code}'s area list and unassigns any counters currently assigned to it. Any KML map outline will remain on the map.`,
+      message: `This removes "${areaCode}" from ${code}'s area list and unassigns any counters currently assigned to it. Its parties are removed from every season. Any KML map outline will remain on the map.`,
       confirmLabel: `Remove ${areaCode}`,
       onConfirm: () =>
         attempt(async () => {
@@ -100,5 +132,16 @@ export function useAreaActions(
     });
   }
 
-  return { reassign, changeCenter, importBoundaries, clearBoundaries, toggleResultsReceived, toggleAreaCounted, saveCounterNote, deleteArea };
+  return {
+    reassign,
+    changeCenter,
+    importBoundaries,
+    clearBoundaries,
+    toggleResultsReceived,
+    toggleAreaCounted,
+    saveCounterNote,
+    saveParty,
+    removeParty,
+    deleteArea,
+  };
 }

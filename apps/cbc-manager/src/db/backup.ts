@@ -16,6 +16,7 @@ const BACKUP_TABLES = [
   'notes',
   'circle_boundaries',
   'area_results',
+  'parties',
 ] as const;
 
 type BackupTable = (typeof BACKUP_TABLES)[number];
@@ -74,7 +75,7 @@ function optionalBoolean(value: unknown): boolean | null {
 }
 
 export async function exportJsonBackup(db: PGlite): Promise<string> {
-  const [circles, areas, people, emails, years, participations, notes, boundaries, areaResults] = await Promise.all([
+  const [circles, areas, people, emails, years, participations, notes, boundaries, areaResults, parties] = await Promise.all([
     db.query('SELECT * FROM public.saved_circles ORDER BY name'),
     db.query('SELECT * FROM public.areas ORDER BY circle_code, sort_order, code'),
     db.query('SELECT * FROM public.people ORDER BY circle_code, id'),
@@ -84,6 +85,7 @@ export async function exportJsonBackup(db: PGlite): Promise<string> {
     db.query('SELECT * FROM public.notes ORDER BY circle_code, id'),
     db.query('SELECT * FROM public.circle_boundaries ORDER BY circle_code, sort_order, area_code'),
     db.query('SELECT * FROM public.area_results ORDER BY circle_code, count_year, area_code'),
+    db.query('SELECT * FROM public.parties ORDER BY circle_code, count_year, area_code, start_time, party_id'),
   ]);
   return JSON.stringify(
     {
@@ -97,6 +99,7 @@ export async function exportJsonBackup(db: PGlite): Promise<string> {
       notes: notes.rows,
       circle_boundaries: boundaries.rows,
       area_results: areaResults.rows,
+      parties: parties.rows,
     },
     null,
     2
@@ -141,6 +144,7 @@ async function restoreCircles(tx: Transaction, circles: readonly BackupRow[]): P
     );
     await deleteRosterRows(tx, code);
     await tx.query('DELETE FROM public.area_results WHERE circle_code = $1', [code]);
+    await tx.query('DELETE FROM public.parties WHERE circle_code = $1', [code]);
     await tx.query('DELETE FROM public.count_years WHERE circle_code = $1', [code]);
   }
   return restored;
@@ -338,6 +342,32 @@ async function restoreNotes(
   }
 }
 
+async function restoreParties(tx: Transaction, parties: readonly BackupRow[]): Promise<void> {
+  for (const p of parties) {
+    await tx.query(
+      `INSERT INTO public.parties (
+          circle_code, count_year, party_id, area_code, start_time, stop_time, participants,
+          car_hours, foot_hours, feeder_hours, car_miles, foot_miles
+       ) VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (circle_code, count_year, party_id) DO NOTHING`,
+      [
+        String(p.circle_code),
+        Number(p.count_year),
+        String(p.party_id),
+        String(p.area_code),
+        String(p.start_time),
+        String(p.stop_time),
+        Number(p.participants),
+        Number(p.car_hours),
+        Number(p.foot_hours),
+        Number(p.feeder_hours),
+        Number(p.car_miles),
+        Number(p.foot_miles),
+      ]
+    );
+  }
+}
+
 async function restoreBoundaries(tx: Transaction, boundaries: readonly BackupRow[]): Promise<void> {
   for (const b of boundaries) {
     await tx.query(
@@ -366,6 +396,7 @@ export async function importJsonBackup(db: PGlite, jsonText: string): Promise<{ 
     await restoreCountYears(tx, data.count_years ?? []);
     await restoreAreas(tx, areas);
     await restoreAreaResults(tx, data.area_results, areas);
+    await restoreParties(tx, data.parties ?? []);
     const idMap = await restorePeople(tx, data.people ?? []);
     await restoreEmails(tx, data.person_emails ?? [], idMap);
     const participations = await restoreParticipations(tx, data.participations ?? [], idMap);

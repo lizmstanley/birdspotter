@@ -262,3 +262,37 @@ test('restoring a backup from before seasons clears results the app had marked',
     [false, false]
   );
 });
+
+const PAPER_PARTY = {
+  party_id: 'paper-1',
+  area_code: '1A',
+  start_time: Date.parse('2026-12-19T07:30:00-05:00'),
+  stop_time: Date.parse('2026-12-19T16:15:00-05:00'),
+  participants: 3,
+  car_hours: 4.25,
+  foot_hours: 3.5,
+  feeder_hours: 0,
+  car_miles: 41.2,
+  foot_miles: 2.75,
+};
+
+test('parties survive a backup and restore', async () => {
+  const source = await seededDb();
+  await source.db.saveParty(CIRCLE, PAPER_PARTY);
+  const target = await openTestDb();
+
+  await target.db.importJsonBackup(await source.db.exportJsonBackup());
+
+  assert.deepEqual(await target.db.getCurrentParties(CIRCLE), [PAPER_PARTY]);
+});
+
+test('a restore replaces the circle parties with the backup parties', async () => {
+  const { db } = await seededDb();
+  await db.saveParty(CIRCLE, PAPER_PARTY);
+  const backup = await db.exportJsonBackup();
+  await db.saveParty(CIRCLE, { ...PAPER_PARTY, party_id: 'paper-2' });
+
+  await db.importJsonBackup(backup);
+
+  assert.deepEqual((await db.getCurrentParties(CIRCLE)).map((p) => p.party_id), ['paper-1']);
+});

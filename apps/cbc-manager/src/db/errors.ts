@@ -106,3 +106,13 @@ export class BackupFormatError extends Error {
     this.name = 'BackupFormatError';
   }
 }
+
+export class NoCurrentSeasonError extends Error {
+  readonly circleCode: string;
+
+  constructor(circleCode: string) {
+    super('parties: the circle has no current season to save the party in.');
+    this.circleCode = circleCode;
+    this.name = 'NoCurrentSeasonError';
+  }
+}
