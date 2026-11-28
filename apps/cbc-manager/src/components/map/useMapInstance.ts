@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from '@birdspotter/birding-core/basemap.ts';
+import { setUpMapWorker } from '@birdspotter/birding-core/mapWorker.ts';
 import { addAreaLayers, addCircleLayers } from './mapLayers.ts';
 import { useLatest } from '@birdspotter/birding-core/useLatest.ts';
 
@@ -27,6 +28,7 @@ export function useMapInstance({ centerLat, centerLng, onPinDragged, onMapNotice
     setMapReady(false);
     const center = centerRef.current;
 
+    setUpMapWorker();
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: BASEMAP_STYLE_URL,
