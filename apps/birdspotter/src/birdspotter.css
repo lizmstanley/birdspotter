@@ -1,8 +1,21 @@
 :root {
-  color-scheme: light;
+  --birding-bar-color: #4d7c0f;
+  --birdspotter-tab-mark: #4d7c0f;
+  --birdspotter-place-bg: #ecfccb;
+  --birdspotter-place-text: #365314;
+  color-scheme: light dark;
   font-family: system-ui, -apple-system, sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--birding-bg);
+  color: var(--birding-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --birding-bar-color: #365314;
+    --birdspotter-tab-mark: #a3e635;
+    --birdspotter-place-bg: #1a2e05;
+    --birdspotter-place-text: #d9f99d;
+  }
 }
 
 html,
@@ -13,7 +26,6 @@ body,
 }
 
 .birdspotter {
-  --birding-bar-color: #4d7c0f;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -25,26 +37,26 @@ body,
 .birdspotter-error {
   margin: 0;
   padding: 8px 16px;
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--birding-error-bg);
+  color: var(--birding-error-text);
 }
 
 .birdspotter-tabs {
   display: flex;
-  border-top: 1px solid #cbd5e1;
+  border-top: 1px solid var(--birding-border);
 }
 
 .birdspotter-tabs button {
   flex: 1;
   border: 0;
   border-bottom: 3px solid transparent;
-  background: #f1f5f9;
+  background: var(--birding-tab-bg);
   font-weight: 600;
 }
 
 .birdspotter-tabs button[aria-pressed='true'] {
-  border-bottom-color: #4d7c0f;
-  background: #f8fafc;
+  border-bottom-color: var(--birdspotter-tab-mark);
+  background: var(--birding-bg);
 }
 
 .birdspotter-map {
@@ -59,10 +71,10 @@ body,
   position: absolute;
   bottom: 12px;
   left: 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--birding-border);
   border-radius: 6px;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--birding-surface);
+  color: var(--birding-text);
   font-weight: 600;
   box-shadow: 0 1px 4px rgb(15 23 42 / 25%);
 }
@@ -72,8 +84,8 @@ body,
   align-items: center;
   gap: 12px;
   padding: 4px 16px;
-  background: #ecfccb;
-  color: #365314;
+  background: var(--birdspotter-place-bg);
+  color: var(--birdspotter-place-text);
 }
 
 .birdspotter-place p {
