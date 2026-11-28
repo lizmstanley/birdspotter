@@ -34,7 +34,6 @@ const SCOUT_SCREENS: readonly AppScreen<'areas'>[] = [{ id: 'areas', title: 'You
 
 // The privacy page sits at the site root, two folders above cbc/scout/.
 const PRIVACY_URL = `${import.meta.env.BASE_URL}../../privacy/`;
-const DEFAULT_BACK_DAYS = 7;
 
 interface CbcScoutAppProps {
   readonly installPrompt: InstallPromptStore;
@@ -103,7 +102,6 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   const panel = chosenPanel === 'notes' && !area ? 'sightings' : chosenPanel;
   const [settings, setSettings] = useState(() => readSettings(storage, CBC_SCOUT.settingsStorageKey));
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
-  const [backDays, setBackDays] = useState(DEFAULT_BACK_DAYS);
   const circleQuery = useMemo(() => (area ? countCircleQuery(area) : null), [area]);
   // Above the tabs, so Sightings and Hotspots share one load. With no area, the search is the size of a count circle.
   const nearby = useNearbyData(
@@ -111,7 +109,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
     circleQuery,
     live.position,
     CBC_CIRCLE_RADIUS_MILES,
-    backDays,
+    settings.backDays,
     settings.refreshMinutes * 60 * 1000
   );
   const isInArea = useMemo(() => (area ? isInAreaTest(area, countCircle(area)) : null), [area]);
@@ -176,8 +174,8 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
           groupTitles={isRoute ? ROUTE_GROUP_TITLES : null}
           data={areaData}
           live={live}
-          backDays={backDays}
-          onBackDaysChange={setBackDays}
+          backDays={settings.backDays}
+          onBackDaysChange={(backDays) => changeSettings({ ...settings, backDays })}
           refreshMinutes={settings.refreshMinutes}
           onFixKey={() => setScreen('ebird-key')}
         />
@@ -187,7 +185,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
           isInRegion={isInArea}
           data={areaData}
           live={live}
-          backDays={backDays}
+          backDays={settings.backDays}
           refreshMinutes={settings.refreshMinutes}
           onFixKey={() => setScreen('ebird-key')}
         />
