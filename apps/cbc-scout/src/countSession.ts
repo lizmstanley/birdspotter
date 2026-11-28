@@ -49,7 +49,8 @@ export interface LocationFix extends RoutePoint {
 
 export const SESSION_STORAGE_KEY = 'cbc_scout_session';
 const SESSION_FORMAT_VERSION = 1;
-const MAX_ACCURACY_M = 50;
+/** Fixes worse than this are too rough to trust for miles or for which side of an edge the counter is on. */
+export const MAX_ACCURACY_M = 50;
 const MIN_STEP_M = 20;
 const EARTH_RADIUS_M = 6_371_000;
 const COORDINATE_DECIMALS = 6;

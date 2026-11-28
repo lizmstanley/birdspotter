@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   RADIUS_MILE_CHOICES,
   radiusText,
@@ -14,9 +15,11 @@ interface SettingsFormProps {
   /** Shows the search radius, for an app that searches around the person with no area of its own. */
   readonly isRadiusShown: boolean;
   readonly onChange: (settings: BirdingSettings) => void;
+  /** An app's own settings, after the shared ones. */
+  readonly children?: ReactNode;
 }
 
-export function SettingsForm({ appName, settings, isSaved, isRadiusShown, onChange }: SettingsFormProps) {
+export function SettingsForm({ appName, settings, isSaved, isRadiusShown, onChange, children }: SettingsFormProps) {
   function pickRefresh(value: string): void {
     const refreshMinutes = REFRESH_MINUTE_CHOICES.find((choice) => String(choice) === value);
     if (refreshMinutes !== undefined) onChange({ ...settings, refreshMinutes });
@@ -51,6 +54,7 @@ export function SettingsForm({ appName, settings, isSaved, isRadiusShown, onChan
           <p>A wider search lists more places and uses more data.</p>
         </>
       )}
+      {children}
       {!isSaved && (
         <p className="birding-settings-error" role="alert">
           Your browser blocked saving settings. They work until you close {appName}.
