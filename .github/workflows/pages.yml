@@ -3,14 +3,17 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    paths: [.github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A pull request dry run gets its own group, so it never queues behind or cancels a deploy.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('pages-{0}', github.ref) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -32,6 +35,7 @@ jobs:
           path: dist
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10

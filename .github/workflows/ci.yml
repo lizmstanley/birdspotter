@@ -21,6 +21,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: node scripts/check-maplibre-pins.ts
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
