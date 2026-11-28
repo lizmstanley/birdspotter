@@ -1,5 +1,7 @@
 import { EBIRD_SITE_URL } from './ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
+import type { LngLat } from './nearby.ts';
+import { nearbyProgressText } from './nearbyProgress.ts';
 import type { KeyProblem } from './nearbyRefresh.ts';
 import { noSignalText } from './noSignalText.ts';
 import { refreshIntervalText, type RefreshMinutes } from './settings.ts';
@@ -8,13 +10,9 @@ import type { NearbyData } from './useNearbyData.ts';
 interface NearbyStatusProps {
   readonly data: NearbyData;
   readonly live: LiveLocation;
+  /** The point the rows are measured from, or null when none is known yet. */
+  readonly origin: LngLat | null;
   readonly onFixKey: () => void;
-}
-
-function waitingText(live: LiveLocation): string {
-  if (live.error) return live.error;
-  if (live.isTracking) return 'Finding your location…';
-  return 'Turn on location with the location button on the map to see what is nearby.';
 }
 
 const KEY_PROBLEM_TEXT: Readonly<Record<KeyProblem, string>> = {
@@ -23,7 +21,8 @@ const KEY_PROBLEM_TEXT: Readonly<Record<KeyProblem, string>> = {
 };
 
 /** The eBird load's errors, and why no rows show yet. */
-export function NearbyStatus({ data, live, onFixKey }: NearbyStatusProps) {
+export function NearbyStatus({ data, live, origin, onFixKey }: NearbyStatusProps) {
+  const progressText = nearbyProgressText(origin, live, data.isLoading);
   return (
     <>
       {data.keyProblem && (
@@ -40,8 +39,7 @@ export function NearbyStatus({ data, live, onFixKey }: NearbyStatusProps) {
         </p>
       )}
       {data.hasNoSignal && <p role="status">{noSignalText(data.sightingsFetchedAt, data.hotspotsFetchedAt)}</p>}
-      {!live.position && <p role="status">{waitingText(live)}</p>}
-      {live.position && data.isLoading && <p role="status">Loading eBird data…</p>}
+      {progressText && <p role="status">{progressText}</p>}
     </>
   );
 }

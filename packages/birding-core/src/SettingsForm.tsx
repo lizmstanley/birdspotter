@@ -40,7 +40,7 @@ export function SettingsForm({ appName, settings, isSaved, isRadiusShown, onChan
       <p>Checking less often uses less data and battery.</p>
       {isRadiusShown && (
         <>
-          <label htmlFor="birding-radius">Search around you</label>
+          <label htmlFor="birding-radius">Search radius</label>
           <select id="birding-radius" value={settings.radiusMiles} onChange={(event) => pickRadius(event.target.value)}>
             {RADIUS_MILE_CHOICES.map((miles) => (
               <option key={miles} value={miles}>

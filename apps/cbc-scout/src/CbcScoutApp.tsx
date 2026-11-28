@@ -174,6 +174,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
           groupTitles={isRoute ? ROUTE_GROUP_TITLES : null}
           data={areaData}
           live={live}
+          origin={live.position}
           backDays={settings.backDays}
           onBackDaysChange={(backDays) => changeSettings({ ...settings, backDays })}
           refreshMinutes={settings.refreshMinutes}
@@ -185,6 +186,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
           isInRegion={isInArea}
           data={areaData}
           live={live}
+          origin={live.position}
           backDays={settings.backDays}
           refreshMinutes={settings.refreshMinutes}
           onFixKey={() => setScreen('ebird-key')}

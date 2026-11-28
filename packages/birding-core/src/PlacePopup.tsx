@@ -4,7 +4,8 @@ import { PlaceWhere } from './NearbyRows.tsx';
 
 interface PlacePopupProps {
   readonly place: MapPlace;
-  readonly position: LngLat;
+  /** The point the distance and direction are measured from. */
+  readonly origin: LngLat;
 }
 
 function speciesText(place: MapPlace): string | null {
@@ -16,10 +17,10 @@ function speciesText(place: MapPlace): string | null {
 }
 
 /** What a tapped map place shows: its name, the notable species there, the other species count, and the way there. */
-export function PlacePopup({ place, position }: PlacePopupProps) {
+export function PlacePopup({ place, origin }: PlacePopupProps) {
   const placeAt: LngLat = [place.lng, place.lat];
-  const miles = distanceMiles(position, placeAt);
-  const row = { item: place, miles, direction: directionTo(position, placeAt, miles), isInRegion: false };
+  const miles = distanceMiles(origin, placeAt);
+  const row = { item: place, miles, direction: directionTo(origin, placeAt, miles), isInRegion: false };
   const text = speciesText(place);
   return (
     <div className="birding-place-popup">

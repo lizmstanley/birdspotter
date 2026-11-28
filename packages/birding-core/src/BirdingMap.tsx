@@ -32,25 +32,25 @@ interface BirdingMapProps {
   readonly onReady: (ready: ReadyMap | null) => void;
   /** The eBird data the lists show, drawn as places. */
   readonly data: Pick<NearbyData, 'hotspots' | 'regular' | 'notable'>;
-  /** The person's position; with none, no places show, as the lists show no rows. */
-  readonly position: LngLat | null;
+  /** The point the lists measure from, which the popup measures from too; with none, no places show, as the lists show no rows. */
+  readonly origin: LngLat | null;
 }
 
 /**
  * The base map with zoom buttons, a location button that follows the person, and the eBird places: grouped when
  * close, notable ones in amber, and a popup for a tapped place.
  */
-export function BirdingMap({ addLayers, onReady, data, position }: BirdingMapProps) {
+export function BirdingMap({ addLayers, onReady, data, origin }: BirdingMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const latestAddLayers = useLatest(addLayers);
   const [ready, setReady] = useState<ReadyMap | null>(null);
   const [pickedLocId, setPickedLocId] = useState<string | null>(null);
   const [popupNode] = useState(() => document.createElement('div'));
-  const hasPosition = position !== null;
+  const hasOrigin = origin !== null;
   const { hotspots, regular, notable } = data;
   const places = useMemo(
-    () => (hasPosition ? mapPlaces(hotspots, regular, notable) : []),
-    [hasPosition, hotspots, regular, notable]
+    () => (hasOrigin ? mapPlaces(hotspots, regular, notable) : []),
+    [hasOrigin, hotspots, regular, notable]
   );
   const picked = places.find((place) => place.locId === pickedLocId) ?? null;
   // A refresh that drops the picked place closes its popup.
@@ -113,7 +113,7 @@ export function BirdingMap({ addLayers, onReady, data, position }: BirdingMapPro
   return (
     <>
       <div ref={containerRef} className="birding-map" />
-      {picked && position && createPortal(<PlacePopup place={picked} position={position} />, popupNode)}
+      {picked && origin && createPortal(<PlacePopup place={picked} origin={origin} />, popupNode)}
     </>
   );
 }

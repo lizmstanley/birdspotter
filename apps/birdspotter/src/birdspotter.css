@@ -46,3 +46,37 @@ body,
   border-bottom-color: #4d7c0f;
   background: #f8fafc;
 }
+
+.birdspotter-map {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.birdspotter-look-here {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 25%);
+}
+
+.birdspotter-place {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 16px;
+  background: #ecfccb;
+  color: #365314;
+}
+
+.birdspotter-place p {
+  flex: 1;
+  margin: 0;
+}

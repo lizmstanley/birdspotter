@@ -12,7 +12,7 @@ export type RegionTest = (place: Place) => boolean;
 export interface NearbyRow<T extends Place> {
   readonly item: T;
   readonly miles: number;
-  /** Which way the place lies from the person, or null when too close for one to mean anything. */
+  /** Which way the place lies from the point rows are measured from, or null when too close for one to mean anything. */
   readonly direction: CompassPoint | null;
   readonly isInRegion: boolean;
 }
