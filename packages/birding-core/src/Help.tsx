@@ -27,6 +27,18 @@ export function Help({ appName, privacyUrl, children }: HelpProps) {
         a <strong>Directions</strong> link. It opens Apple Maps on iPhone and iPad, and Google Maps everywhere else.
       </p>
 
+      <h2>What the map shows</h2>
+      <p>
+        Once location is on, the map shows a dot for each place in the lists: green for a hotspot, blue for a place
+        with sightings, and a larger amber dot with a dark ring for a place with a notable sighting. Close places
+        join into one larger gray dot until you zoom in. Tap it to zoom in. It is amber when it holds a notable place.
+      </p>
+      <p>
+        Tap a place to see its name, the notable species there, how many other species were reported, its distance
+        and direction, and a <strong>Directions</strong> link. The dots stay with no signal for as long as the lists
+        keep their data.
+      </p>
+
       <h2>The eBird key</h2>
       <p>
         {appName} uses your own free eBird API key. Sign in to eBird and request one on the{' '}

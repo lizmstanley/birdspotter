@@ -4,6 +4,7 @@ import type { Feature, FeatureCollection, GeoJSON, Polygon } from 'geojson';
 import { BirdingMap, showStartView, type ReadyMap } from '@birdspotter/birding-core/BirdingMap.tsx';
 import type { LiveLocation } from '@birdspotter/birding-core/locationTracking.ts';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
+import type { NearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import { addCircleLayers, CIRCLE_SOURCE } from '@birdspotter/cbc-manager/components/map/mapLayers.ts';
 import type { AreaLinkData, AreaOutlineGeometry } from '@birdspotter/cbc-manager/services/areaLink.ts';
 import { areaName } from './areaName.ts';
@@ -55,6 +56,8 @@ function setSourceData(map: maplibregl.Map, sourceId: string, data: GeoJSON): vo
 interface ScoutMapProps {
   readonly area: AreaLinkData | null;
   readonly live: LiveLocation;
+  /** The eBird data the lists show, kept to the area as they keep it. */
+  readonly data: NearbyData;
   /** Receives the map's location control once the map has loaded, and null when the map is removed. */
   readonly onLocationControl: (control: maplibregl.GeolocateControl | null) => void;
   readonly storage: KeyValueStorage | null;
@@ -76,10 +79,10 @@ function locationLine(
 }
 
 /**
- * Shows the area's circle and outline, zoomed to the outline, the person's live location, and the count's route;
- * with no area, the start view, the location, and the route.
+ * Shows the area's circle and outline, zoomed to the outline, the person's live location, the count's route, and the
+ * eBird places; with no area, the start view, the location, the route, and the places.
  */
-export function ScoutMap({ area, live, onLocationControl, storage, setError, setNotice }: ScoutMapProps) {
+export function ScoutMap({ area, live, data, onLocationControl, storage, setError, setNotice }: ScoutMapProps) {
   const [ready, setReady] = useState<ReadyMap | null>(null);
   const circle = useMemo(() => (area ? countCircle(area) : null), [area]);
   const line = locationLine(live, area, circle);
@@ -112,7 +115,7 @@ export function ScoutMap({ area, live, onLocationControl, storage, setError, set
           {line.text}
         </p>
       )}
-      <BirdingMap addLayers={addScoutLayers} onReady={setReady} />
+      <BirdingMap addLayers={addScoutLayers} onReady={setReady} data={data} position={live.position} />
       <SessionPanel
         session={count.session}
         stretches={stretches}

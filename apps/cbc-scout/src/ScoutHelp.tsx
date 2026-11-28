@@ -15,8 +15,8 @@ export function ScoutHelp() {
       </p>
       <p>
         With an area loaded, the map shows the count circle and the area&apos;s outline. <strong>Sightings</strong>{' '}
-        and <strong>Hotspots</strong> list only what is in your area. With a route line instead of a shape, they cover
-        the whole circle.
+        and <strong>Hotspots</strong> list only what is in your area, and the map shows only those places. With a route
+        line instead of a shape, both cover the whole circle.
       </p>
 
       <h2>The street map with no signal</h2>

@@ -61,7 +61,7 @@ interface PlaceWhereProps {
   readonly placeName: string;
 }
 
-function PlaceWhere({ row, placeName }: PlaceWhereProps) {
+export function PlaceWhere({ row, placeName }: PlaceWhereProps) {
   const distance = formatDistance(row.miles);
   return (
     <div className="birding-nearby-where">

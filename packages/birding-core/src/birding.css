@@ -371,3 +371,38 @@ a.birding-nearby-place {
 .birding-help h2:first-child {
   margin-top: 0;
 }
+
+.birding-place-popup {
+  padding-right: 20px;
+  font-size: 0.95rem;
+}
+
+.birding-place-popup p {
+  margin: 6px 0;
+}
+
+.birding-place-popup .birding-nearby-where {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.birding-place-kind {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Overrides the 44px button rule above, which would cover the popup text. */
+.birding-map .maplibregl-popup-close-button {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  font-size: 1.4rem;
+}
