@@ -9,6 +9,12 @@ export interface ColumnMapping {
   noteCol: string;
 }
 
+/** @returns true when every header in the file feeds a field and an email column is chosen. */
+export function isEveryHeaderMapped(headers: string[], mapping: ColumnMapping): boolean {
+  const mapped = new Set(Object.values(mapping));
+  return mapping.emailCol !== '' && headers.every((h) => mapped.has(h));
+}
+
 /** Per column: the text found in the file -> the app value the user chose for it. */
 export type ValueMap = Record<string, string>;
 
