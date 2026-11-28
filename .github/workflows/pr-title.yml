@@ -9,6 +9,7 @@ permissions: {}
 jobs:
   title:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - name: Check for a semantic prefix
         env:
