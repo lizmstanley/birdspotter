@@ -13,5 +13,9 @@
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "screenshot-sightings.png", "sizes": "1080x1920", "type": "image/png", "form_factor": "narrow", "label": "Map of nearby birding places, with notable sightings listed below" },
+    { "src": "screenshot-hotspots.png", "sizes": "1080x1920", "type": "image/png", "form_factor": "narrow", "label": "Hotspots to visit nearby, with how far each is and directions" }
   ]
 }

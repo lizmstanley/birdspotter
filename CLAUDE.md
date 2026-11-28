@@ -28,6 +28,7 @@ Three browser-only apps and a shared birding core live in one npm workspace. The
 - `apps/cbc-scout/src/areaRegion.ts`: the count circle as the pinned query, and the area test that puts places in the area first.
 - `apps/cbc-scout/src/leaderContact.ts`: link text is untrusted, so only a plain phone number or email becomes a `tel:` or `mailto:` link.
 - `packages/birding-core/src/installPrompt.ts`, `installOffer.ts`: Chrome's install prompt and the iOS share-sheet steps.
+- `apps/birdspotter/public/screenshot-*.png`, `apps/cbc-scout/public/screenshot-*.png`: the pictures Chrome's larger install sheet shows on Android, listed under `screenshots` in each manifest, 1080 by 1920 PNG with no alpha, `form_factor: "narrow"`. `scripts/screenshots/capture.ts` takes them from the built apps in headless Chrome, with made-up places, sightings, area, leader, and count from `sampleData.ts`. Retake them with `npm run screenshots` when a change visibly alters a screen they show. `site/installScreenshots.test.ts` checks each listed file against its manifest entry and Chrome's limits, not whether it is current.
 
 ## Sharing code
 
@@ -52,8 +53,9 @@ Lint sees only static imports, not `import()` and not what an imported file impo
 | `npm run build` | The site pages and all three apps into `dist/` |
 | `npm run preview` | Serves all of `dist/` at `localhost:4173` in the site mode: the home page at `/`, Birdspotter at `/app/`, the CBC page at `/cbc/`, the privacy page at `/privacy/`, the circle manager at `/cbc/manager/`, CBC Scout at `/cbc/scout/` |
 | `npm test` | `node --test` over `packages/*/src`, `apps/*/src`, and `site`; `*.integration.test.ts` run real SQL in in-memory PGlite |
-| `npm run typecheck` | `tsc -b` for app code, then `tsconfig.tests.json` for tests |
-| `npm run lint` | ESLint on `packages`, `apps`, and `site` |
+| `npm run typecheck` | `tsc -b` for app code, then `tsconfig.tests.json` for tests and `scripts` |
+| `npm run lint` | ESLint on `packages`, `apps`, `site`, and `scripts` |
+| `npm run screenshots` | Builds, then retakes the install-sheet pictures in headless Chrome (`google-chrome`, or `CHROME_PATH`). Needs the network for map tiles |
 
 CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, and build on every pull request. `pr-title.yml` rejects a PR title without a Conventional Commits prefix such as `feat:` or `fix(scope):`.
 
