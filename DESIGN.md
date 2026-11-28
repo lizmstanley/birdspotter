@@ -73,7 +73,7 @@ Audubon sets the count window every year (Dec 14 to Jan 5), so the app has no "s
 Data is organized by season where it differs each year:
 - Participations (RSVP, area, counter type) and notes with a year.
 - Results received: `area_results`, one row per area and season. A new season starts empty and old seasons keep their record.
-- Parties: `parties`, one row per party (a phone or a paper report) and season, keyed by party ID. The area totals are a view over them, so fixing or removing one party fixes the totals. Participants are summed over parties, so a person in two parties counts twice. A new season starts empty.
+- Parties: `parties`, one row per party (a phone or a paper report) and season, keyed by party ID. The area totals are a view over them, so fixing or removing one party fixes the totals. Participants are summed over parties, so a person in two parties counts twice. A new season starts empty. A party can hold its route, a GeoJSON MultiLineString with one line per track, in `route_geojson`, as area outlines are held. Editing the party's totals or moving it to another season keeps the route.
 - Count date: kept on the circle for the current season, saved onto the season when it ends. It must be a real day in the season's window, Dec 14 to Jan 5. A date from Audubon or ArcGIS outside the window is not used.
 
 Data that carries over: people, areas, pinned notes. At rollover the compiler chooses whether last season's assignments carry over. Confirmed and undecided people who had an area keep it, with RSVP reset to no response. Everyone else has no record yet and shows up for a reminder.

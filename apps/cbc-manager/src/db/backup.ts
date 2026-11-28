@@ -347,8 +347,8 @@ async function restoreParties(tx: Transaction, parties: readonly BackupRow[]): P
     await tx.query(
       `INSERT INTO public.parties (
           circle_code, count_year, party_id, area_code, start_time, stop_time, participants,
-          car_hours, foot_hours, feeder_hours, car_miles, foot_miles
-       ) VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10, $11, $12)
+          car_hours, foot_hours, feeder_hours, car_miles, foot_miles, route_geojson
+       ) VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10, $11, $12, $13::jsonb)
        ON CONFLICT (circle_code, count_year, party_id) DO NOTHING`,
       [
         String(p.circle_code),
@@ -363,6 +363,7 @@ async function restoreParties(tx: Transaction, parties: readonly BackupRow[]): P
         Number(p.feeder_hours),
         Number(p.car_miles),
         Number(p.foot_miles),
+        p.route_geojson == null ? null : JSON.stringify(p.route_geojson),
       ]
     );
   }

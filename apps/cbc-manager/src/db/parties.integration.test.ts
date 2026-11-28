@@ -194,3 +194,72 @@ test('a party ID is found only in its own circle', async () => {
 
   assert.equal(await db.findParty('MNBL', 'a'), null);
 });
+
+const ROUTE = {
+  type: 'MultiLineString',
+  coordinates: [
+    [[-86.5, 39.1], [-86.49, 39.11]],
+    [[-86.48, 39.12], [-86.47, 39.12]],
+  ],
+};
+
+async function setRoute(client: PGlite, partyId: string, route: unknown): Promise<void> {
+  await client.query('UPDATE public.parties SET route_geojson = $2::jsonb WHERE party_id = $1', [
+    partyId,
+    JSON.stringify(route),
+  ]);
+}
+
+function routeOf(client: PGlite, partyId: string): Promise<unknown> {
+  return scalar(client, 'SELECT route_geojson FROM public.parties WHERE party_id = $1', [partyId]);
+}
+
+test('a party added by hand has no route', async () => {
+  const { db, client } = await dbWithCircle();
+
+  await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
+
+  assert.equal(await routeOf(client, 'a'), null);
+});
+
+test('fixing a party totals by hand keeps its route', async () => {
+  const { db, client } = await dbWithCircle();
+  await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
+  await setRoute(client, 'a', ROUTE);
+
+  await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z', { car_miles: 12 }));
+
+  assert.deepEqual(await routeOf(client, 'a'), ROUTE);
+});
+
+test('a party moved to another season keeps its route', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+  await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
+  await setRoute(client, 'a', ROUTE);
+  await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
+
+  await db.savePartyInSeason(CIRCLE, season + 1, party('a', '1A', '2026-12-19T07:00:00Z'));
+
+  assert.equal((await db.findParty(CIRCLE, 'a'))?.count_year, season + 1);
+  assert.deepEqual(await routeOf(client, 'a'), ROUTE);
+});
+
+test('a route that is not a MultiLineString is refused', async () => {
+  const { db, client } = await dbWithCircle();
+  await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
+  const notRoutes = [
+    { type: 'LineString', coordinates: [[0, 0], [1, 1]] },
+    { type: 'MultiLineString' },
+    'MultiLineString',
+    { type: 'MultiLineString', coordinates: [1, 2] },
+    { type: 'MultiLineString', coordinates: [[[0, 0]]] },
+    { type: 'MultiLineString', coordinates: [[[0, 0], [1]]] },
+    { type: 'MultiLineString', coordinates: [[[0, 0], ['1', 1]]] },
+  ];
+
+  for (const route of notRoutes) {
+    await assert.rejects(setRoute(client, 'a', route), /route_geojson_check/);
+  }
+  assert.equal(await routeOf(client, 'a'), null);
+});

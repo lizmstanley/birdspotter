@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import type { PGlite } from '@electric-sql/pglite';
 import assert from 'node:assert/strict';
 import { BackupFormatError } from './errors.ts';
 import { openTestDb, scalar } from './testing/testDb.ts';
@@ -295,4 +296,34 @@ test('a restore replaces the circle parties with the backup parties', async () =
   await db.importJsonBackup(backup);
 
   assert.deepEqual((await db.getCurrentParties(CIRCLE)).map((p) => p.party_id), ['paper-1']);
+});
+
+const ROUTE = { type: 'MultiLineString', coordinates: [[[-86.5, 39.1], [-86.49, 39.11]]] };
+
+function routeOf(client: PGlite, partyId: string): Promise<unknown> {
+  return scalar(client, 'SELECT route_geojson FROM public.parties WHERE party_id = $1', [partyId]);
+}
+
+test('a party route survives a backup and restore', async () => {
+  const source = await seededDb();
+  await source.db.saveParty(CIRCLE, PAPER_PARTY);
+  await source.client.query('UPDATE public.parties SET route_geojson = $1::jsonb', [JSON.stringify(ROUTE)]);
+  const target = await openTestDb();
+
+  await target.db.importJsonBackup(await source.db.exportJsonBackup());
+
+  assert.deepEqual(await routeOf(target.client, PAPER_PARTY.party_id), ROUTE);
+});
+
+test('a backup from before routes restores its parties with no route', async () => {
+  const source = await seededDb();
+  await source.db.saveParty(CIRCLE, PAPER_PARTY);
+  const backup = JSON.parse(await source.db.exportJsonBackup());
+  for (const row of backup.parties) delete row.route_geojson;
+  const target = await openTestDb();
+
+  await target.db.importJsonBackup(JSON.stringify(backup));
+
+  assert.deepEqual(await target.db.getCurrentParties(CIRCLE), [PAPER_PARTY]);
+  assert.equal(await routeOf(target.client, PAPER_PARTY.party_id), null);
 });
