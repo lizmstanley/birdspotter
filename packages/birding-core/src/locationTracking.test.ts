@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { SetStateAction } from 'react';
-import type { GeolocateControl } from 'maplibre-gl';
+import {
+  Event as MapLibreEvent,
+  type GeolocateControl,
+  type GeolocateErrorEvent,
+  type GeolocatePositionEvent,
+} from 'maplibre-gl';
 import { LOCATION_UNAVAILABLE_MESSAGE } from './locationHelp.ts';
 import type { BirdingApp } from './birdingApp.ts';
 import { followLocationControl, NOT_TRACKING, type LiveLocation } from './locationTracking.ts';
@@ -193,4 +198,20 @@ test('does not start tracking on show when the control was still setting up and 
   control._watchState = 'OFF';
   showPage();
   assert.equal(control.triggerCount, 0);
+});
+
+/** Holds each field as an enumerable getter on its prototype, as the browser's GeolocationPosition and its error do. */
+function browserStyleObject(fields: Record<string, unknown>): object {
+  const prototype = {};
+  for (const [key, value] of Object.entries(fields)) {
+    Object.defineProperty(prototype, key, { get: () => value, enumerable: true });
+  }
+  return Object.create(prototype);
+}
+
+test("MapLibre's location events keep the fields of the browser's position and error", () => {
+  const coords = { longitude: -71.1, latitude: 42.3, accuracy: 8 };
+  const located = new MapLibreEvent('geolocate', browserStyleObject({ coords, timestamp: 1234 })) as unknown as GeolocatePositionEvent;
+  const failed = new MapLibreEvent('error', browserStyleObject({ code: 1 })) as unknown as GeolocateErrorEvent;
+  assert.deepEqual([located.coords, located.timestamp, failed.code], [coords, 1234, 1]);
 });

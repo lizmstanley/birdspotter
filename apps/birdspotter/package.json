@@ -6,7 +6,7 @@
   "type": "module",
   "dependencies": {
     "@birdspotter/birding-core": "*",
-    "maplibre-gl": "^5.1.0",
+    "maplibre-gl": "6.19.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   }
