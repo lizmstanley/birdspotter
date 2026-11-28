@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { decodePartyCode } from '@birdspotter/cbc-manager/services/partyCode.ts';
-import { startSession, withFeederHours, withParticipants } from './countSession.ts';
+import { startSession, withBreak, withFeederHours, withFix, withParticipants } from './countSession.ts';
 import { sessionSummaryText } from './sessionSummary.ts';
-import { MINUTE_MS, START_TIME } from './testing/routeFixtures.ts';
+import { fixAt, MINUTE_MS, START_TIME } from './testing/routeFixtures.ts';
 
 process.env.TZ = 'America/Chicago';
 
@@ -49,8 +49,25 @@ test('writes the count sheet fields in the sheet order, with the area and a gap 
     feederHours: 0.5,
     carMiles: 41.86,
     footMiles: 3.2,
+    route: [],
   });
   assert.doesNotMatch(text, /:\/\//);
+});
+
+test('puts each recorded run in the party code as its own line, so no line crosses a gap', () => {
+  let session = startSession(START_TIME, null, PARTY_ID);
+  for (const [metersNorth, minutes] of [[0, 1], [100, 2], [200, 3]]) session = withFix(session, fixAt(metersNorth, minutes));
+  session = withBreak(session);
+  session = withFix(session, fixAt(900, 20));
+  session = withBreak(session);
+  for (const [metersNorth, minutes] of [[1500, 30], [1600, 31]]) session = withFix(session, fixAt(metersNorth, minutes));
+  const text = sessionSummaryText({ ...session, stopTime: START_TIME + 40 * MINUTE_MS }, TOTALS, 'mi');
+  const route = partyCodeOf(text).route;
+  assert.deepEqual(
+    route.map((line) => line.length),
+    [3, 2]
+  );
+  assert.deepEqual(route[1][0], [fixAt(1500, 30).lng, Math.round(fixAt(1500, 30).lat * 1e5) / 1e5]);
 });
 
 test('leaves out the area lines with no area and the gap note with no gaps', () => {

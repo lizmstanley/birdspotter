@@ -4,6 +4,7 @@ import type { LineString, MultiPolygon, Polygon, Position } from 'geojson';
 import { isLatitude, isLongitude } from '@birdspotter/birding-core/coordinates.ts';
 import { isRecord } from '@birdspotter/birding-core/http.ts';
 import { fromBase64Url, toBase64Url } from './base64Url.ts';
+import { isDeltaList, packLine, SIMPLIFY_TOLERANCES_DEGREES, toScaled, unpackLine } from './packedLine.ts';
 
 export type AreaOutlineGeometry = Polygon | MultiPolygon | LineString;
 
@@ -43,12 +44,9 @@ export const AREA_NOTE_MAX_LENGTH = 300;
 const FORMAT_VERSION_WITHOUT_NOTE = 1;
 const READABLE_FORMAT_VERSIONS: readonly unknown[] = [FORMAT_VERSION_WITHOUT_NOTE, AREA_LINK_FORMAT_VERSION];
 
-// 1e-5 degrees is about 1 m, finer than a phone's location fix.
-const COORDINATE_SCALE = 1e5;
 const MAX_OUTLINE_POINTS = 20_000;
 const MIN_RING_POINTS = 4;
 const MIN_LINE_POINTS = 2;
-const SIMPLIFY_TOLERANCES_DEGREES = [0, 0.00001, 0.00002, 0.00005, 0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01];
 
 const TYPE_CODES = { Polygon: 'P', MultiPolygon: 'M', LineString: 'L' } as const;
 type TypeCode = (typeof TYPE_CODES)[keyof typeof TYPE_CODES];
@@ -135,36 +133,9 @@ export function toAreaOutlineGeometry(geometry: { readonly type: string; readonl
   return null;
 }
 
-function toScaled(value: number): number {
-  return Math.round(value * COORDINATE_SCALE);
-}
-
-function packLine(line: readonly Position[]): number[] {
-  const deltas: number[] = [];
-  let prevX = 0;
-  let prevY = 0;
-  for (const position of line) {
-    const x = toScaled(position[0]);
-    const y = toScaled(position[1]);
-    deltas.push(x - prevX, y - prevY);
-    prevX = x;
-    prevY = y;
-  }
-  return deltas;
-}
-
-function unpackLine(deltas: readonly number[]): Position[] {
-  const line: Position[] = [];
-  let x = 0;
-  let y = 0;
-  for (let i = 0; i < deltas.length; i += 2) {
-    x += deltas[i];
-    y += deltas[i + 1];
-    const lng = x / COORDINATE_SCALE;
-    const lat = y / COORDINATE_SCALE;
-    if (!isLongitude(lng) || !isLatitude(lat)) throw new InvalidAreaLinkError('position off the globe');
-    line.push([lng, lat]);
-  }
+function readLine(deltas: readonly number[]): Position[] {
+  const line = unpackLine(deltas);
+  if (!line) throw new InvalidAreaLinkError('position off the globe');
   return line;
 }
 
@@ -203,7 +174,7 @@ export function encodeAreaLink(data: AreaLinkData): string {
     a: data.areaCode,
     ...(data.areaLabel ? { b: data.areaLabel } : {}),
     t: TYPE_CODES[data.outline.type],
-    p: geometryParts(data.outline).map((part) => part.map(packLine)),
+    p: geometryParts(data.outline).map((part) => part.map((line) => packLine(line))),
     ...(data.leaders.length > 0 ? { l: data.leaders.map(packLeader) } : {}),
     ...(note ? { m: note } : {}),
   };
@@ -216,10 +187,6 @@ function isText(value: unknown): value is string {
 
 function isOptionalText(value: unknown): value is string | undefined {
   return value === undefined || isText(value);
-}
-
-function isDeltaList(value: unknown): value is number[] {
-  return Array.isArray(value) && value.length >= 2 && value.length % 2 === 0 && value.every(Number.isSafeInteger);
 }
 
 function isPackedParts(value: unknown): value is number[][][] {
@@ -278,7 +245,7 @@ function readOutline(type: unknown, parts: unknown): AreaOutlineGeometry {
   if (!isTypeCode(type) || !isPackedParts(parts)) throw new InvalidAreaLinkError('missing outline');
   const outline = partsToGeometry(
     type,
-    parts.map((part) => part.map(unpackLine))
+    parts.map((part) => part.map(readLine))
   );
   if (!outline) throw new InvalidAreaLinkError('malformed outline');
   if (countPoints(outline) > MAX_OUTLINE_POINTS) throw new InvalidAreaLinkError('too many points');
@@ -298,7 +265,7 @@ export function decodeAreaLink(payload: string): AreaLinkData {
     throw new InvalidAreaLinkError('missing circle or area');
   }
   if (!isDeltaList(packed.o) || packed.o.length !== 2) throw new InvalidAreaLinkError('missing circle center');
-  const [lng, lat] = unpackLine(packed.o)[0];
+  const [lng, lat] = readLine(packed.o)[0];
   const note = readNote(packed.v, packed.m);
   return {
     circleCode: packed.c,
