@@ -15,9 +15,9 @@ export function Help({ appName, privacyUrl, children }: HelpProps) {
       <h2>What the lists show</h2>
       <p>
         <strong>Sightings</strong> lists notable sightings, then recent sightings, nearest first.
-        Pick how many days back, from 1 to 30. Notable sightings include reports still waiting for review. One an
-        eBird reviewer has confirmed is marked <strong>Confirmed</strong>. Each sighting says how long ago it was reported
-        and links to its eBird checklist.
+        Pick how many days back, from 1 to 30. {appName} keeps that choice until you change it. Notable sightings
+        include reports still waiting for review. One an eBird reviewer has confirmed is marked{' '}
+        <strong>Confirmed</strong>. Each sighting says how long ago it was reported and links to its eBird checklist.
       </p>
       <p>
         <strong>Hotspots</strong> lists <strong>Hotspots to visit</strong>, ranked by the species reported there.
@@ -79,12 +79,12 @@ export function Help({ appName, privacyUrl, children }: HelpProps) {
 
       <h2>What stays on the phone</h2>
       <p>
-        {appName} has no account and no server of its own. The phone keeps the eBird key, your settings, whether
-        location is on, {appName}&apos;s own files, and copies of recent eBird results. {appName} sends the key,
-        the place to search, and the days back to eBird, and map views to OpenFreeMap for the map. GitHub, which hosts
-        the site, sends {appName}&apos;s files. Each of them sees your phone&apos;s IP address. Nothing goes to any other
-        server. <strong>Directions</strong> and checklist links open Apple Maps, Google Maps, or eBird only when
-        tapped.
+        {appName} has no account and no server of its own. The phone keeps the eBird key, your settings and days
+        back, whether location is on, {appName}&apos;s own files, and copies of recent eBird results. {appName} sends
+        the key, the place to search, and the days back to eBird, and map views to OpenFreeMap for the map. GitHub,
+        which hosts the site, sends {appName}&apos;s files. Each of them sees your phone&apos;s IP address. Nothing
+        goes to any other server. <strong>Directions</strong> and checklist links open Apple Maps, Google Maps, or
+        eBird only when tapped.
       </p>
       <p>
         <a href={privacyUrl} target="_blank" rel="noreferrer">

@@ -8,14 +8,23 @@ export type RefreshMinutes = (typeof REFRESH_MINUTE_CHOICES)[number];
 export const RADIUS_MILE_CHOICES = [2, 5, NEARBY_RADIUS_MILES, 10, 15, 25] as const;
 export type RadiusMiles = (typeof RADIUS_MILE_CHOICES)[number];
 
+// eBird returns sightings from at most 30 days back.
+export const BACK_DAY_CHOICES: readonly number[] = Array.from({ length: 30 }, (_, index) => index + 1);
+
 export interface BirdingSettings {
   /** How often the Sightings list checks eBird, and how old a saved eBird copy may be. */
   readonly refreshMinutes: RefreshMinutes;
   /** How far around the person the lists look, in an app that shows the choice. */
   readonly radiusMiles: RadiusMiles;
+  /** How many days back the Sightings list and the Hotspots ranking go. */
+  readonly backDays: number;
 }
 
-export const DEFAULT_SETTINGS: BirdingSettings = { refreshMinutes: 30, radiusMiles: NEARBY_RADIUS_MILES };
+export const DEFAULT_SETTINGS: BirdingSettings = {
+  refreshMinutes: 30,
+  radiusMiles: NEARBY_RADIUS_MILES,
+  backDays: 7,
+};
 
 function isRefreshMinutes(value: unknown): value is RefreshMinutes {
   return REFRESH_MINUTE_CHOICES.some((choice) => choice === value);
@@ -23,6 +32,10 @@ function isRefreshMinutes(value: unknown): value is RefreshMinutes {
 
 function isRadiusMiles(value: unknown): value is RadiusMiles {
   return RADIUS_MILE_CHOICES.some((choice) => choice === value);
+}
+
+function isBackDays(value: unknown): value is number {
+  return BACK_DAY_CHOICES.some((choice) => choice === value);
 }
 
 /** @returns the saved settings, with the default for any value that is missing, unreadable, or not a choice */
@@ -36,9 +49,11 @@ export function readSettings(storage: KeyValueStorage | null, storageKey: string
   if (typeof saved !== 'object' || saved === null) return DEFAULT_SETTINGS;
   const refreshMinutes = 'refreshMinutes' in saved ? saved.refreshMinutes : null;
   const radiusMiles = 'radiusMiles' in saved ? saved.radiusMiles : null;
+  const backDays = 'backDays' in saved ? saved.backDays : null;
   return {
     refreshMinutes: isRefreshMinutes(refreshMinutes) ? refreshMinutes : DEFAULT_SETTINGS.refreshMinutes,
     radiusMiles: isRadiusMiles(radiusMiles) ? radiusMiles : DEFAULT_SETTINGS.radiusMiles,
+    backDays: isBackDays(backDays) ? backDays : DEFAULT_SETTINGS.backDays,
   };
 }
 

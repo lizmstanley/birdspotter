@@ -1,14 +1,12 @@
 import { useMemo, type ReactNode } from 'react';
 import type { EbirdObservation } from './ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
-import type { RefreshMinutes } from './settings.ts';
+import { BACK_DAY_CHOICES, type RefreshMinutes } from './settings.ts';
 import { groupSightings, sortNearby, type NearbyRow, type Place, type RegionTest } from './nearby.ts';
 import { SightingRow } from './NearbyRows.tsx';
 import { EbirdCredit, NearbyStatus } from './NearbyStatus.tsx';
 import { useMinuteClock } from './useMinuteClock.ts';
 import type { NearbyData } from './useNearbyData.ts';
-
-const BACK_DAY_CHOICES = Array.from({ length: 30 }, (_, index) => index + 1);
 
 /** Headings for the places in the region and the rest. */
 export interface GroupTitles {
