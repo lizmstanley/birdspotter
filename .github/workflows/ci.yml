@@ -67,9 +67,45 @@ jobs:
           advanced-security: false
           annotations: true
 
+  # Also runs on push to main, so each PR compares against the report the latest green main run uploaded.
+  size:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Download the size report from the latest green main run
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          run_id=$(gh run list --repo "$REPO" --workflow ci.yml --branch main --event push --status success \
+            --limit 1 --json databaseId --jq '.[0].databaseId // empty') || run_id=""
+          if [ -z "$run_id" ] || ! gh run download "$run_id" --repo "$REPO" --name bundle-size --dir "$RUNNER_TEMP/main"; then
+            echo "No size report from main, so the summary leaves out the change column."
+          fi
+      - run: node scripts/bundle-size.ts --report "$RUNNER_TEMP/bundle-size.json" --baseline "$RUNNER_TEMP/main/bundle-size.json"
+      - if: github.event_name == 'push'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bundle-size
+          path: ${{ runner.temp }}/bundle-size.json
+          if-no-files-found: error
+
   ci-ok:
     if: always()
-    needs: [check, dependency-review, workflow-lint]
+    needs: [check, dependency-review, workflow-lint, size]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

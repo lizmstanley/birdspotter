@@ -11,7 +11,7 @@ One npm workspace: three browser-only apps, a shared birding core, and static si
 | `npm run dev:birdspotter` | Birdspotter at `/app/`, same port rule |
 | `npm run build` | Site pages and all three apps into `dist/` |
 | `npm run preview` | Serves `dist/` at `localhost:4173`: `/`, `/app/`, `/cbc/`, `/privacy/`, `/cbc/manager/`, `/cbc/scout/` |
-| `npm test` | `node --test` over `packages/*/src`, `apps/*/src`, `site`. `*.integration.test.ts` run real SQL in in-memory PGlite |
+| `npm test` | `node --test` over `packages/*/src`, `apps/*/src`, `site`, `scripts`. `*.integration.test.ts` run real SQL in in-memory PGlite |
 | `npm run typecheck` | `tsc -b`, then `tsconfig.tests.json` for tests and `scripts` |
 | `npm run lint` | ESLint on `packages`, `apps`, `site`, `scripts` |
 | `npm run screenshots` | Builds, then retakes install-sheet pictures in headless Chrome (`google-chrome` or `CHROME_PATH`). Needs network |
@@ -21,6 +21,7 @@ CI (`ci.yml`) on every PR:
 - `check`: `npm ci`, `npm audit signatures`, `scripts/check-maplibre-pins.ts`, lint, typecheck, test, build. The pin check fails when the workspaces name different `maplibre-gl` versions.
 - `dependency-review`: fails on an added dependency with a `moderate` or worse advisory, or a license outside its allow-list. A new license needs a reviewed edit to that list. Workspace packages are exempt. A package with no license data passes; check it by hand.
 - `workflow-lint`: actionlint and zizmor over `.github/`, also on push to `main`. Fix a finding; an ignore goes in a zizmor config with its reason. Dependabot skips `docker://` refs, so the actionlint image digest is updated by hand.
+- `size`: builds, then `scripts/bundle-size.ts` measures the gzip JS and CSS each app's `index.html` loads and fails when an app is over its budget in `scripts/bundle-size-budget.json`. Its step summary shows each app's size, budget, and change from the report the latest green `main` run uploaded. Also runs on push to `main` to upload that report. Raising a budget is a reviewed edit to the budget file; set it to the new size plus about 10 percent.
 - `ci-ok`: needs every other job and fails when one failed or was cancelled. The `main` ruleset requires `ci-ok` and `title`. Never put a path filter on the `ci.yml` trigger; skip inside a job, so `ci-ok` always reports.
 
 `pr-title.yml` requires a Conventional Commits prefix (`feat:`, `fix(scope):`). `pages.yml` builds without deploying on a PR that changes it. `labels.yml` labels every PR: area from paths (`.github/labeler.yml`), one `type:` label (plus `breaking` for `!`) from the title. It runs on `pull_request_target` so Dependabot PRs get labels, and never checks out PR code. The label set is `.github/labels.json`; `npm run labels` creates or updates it in the repo. A label change edits the file, then reruns it.
