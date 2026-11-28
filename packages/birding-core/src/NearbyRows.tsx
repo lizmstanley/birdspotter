@@ -6,6 +6,7 @@ import {
   type EbirdObservation,
 } from './ebird.ts';
 import { directionsUrl } from './directions.ts';
+import type { DistanceUnit } from './distanceUnit.ts';
 import { formatDistance, type NearbyRow, type Place } from './nearby.ts';
 import { sightingAgeText } from './sightingAge.ts';
 
@@ -14,6 +15,7 @@ interface SightingRowProps {
   readonly isNotable: boolean;
   readonly reason?: string;
   readonly now: Date;
+  readonly distanceUnit: DistanceUnit;
 }
 
 function sightingRowClass(isNotable: boolean, isConfirmed: boolean): string {
@@ -22,7 +24,7 @@ function sightingRowClass(isNotable: boolean, isConfirmed: boolean): string {
   return 'birding-nearby-row birding-nearby-row-notable birding-nearby-row-confirmed';
 }
 
-export function SightingRow({ row, isNotable, reason, now }: SightingRowProps) {
+export function SightingRow({ row, isNotable, reason, now, distanceUnit }: SightingRowProps) {
   const { comName, howMany, locName, obsDt, subId } = row.item;
   const isConfirmed = isNotable && isConfirmedReport(row.item);
   return (
@@ -36,7 +38,7 @@ export function SightingRow({ row, isNotable, reason, now }: SightingRowProps) {
         </div>
         {reason && <div className="birding-nearby-reason">{reason}</div>}
       </a>
-      <PlaceWhere row={row} placeName={locName} />
+      <PlaceWhere row={row} placeName={locName} distanceUnit={distanceUnit} />
     </li>
   );
 }
@@ -44,16 +46,17 @@ export function SightingRow({ row, isNotable, reason, now }: SightingRowProps) {
 interface HotspotRowProps {
   readonly row: NearbyRow<EbirdHotspot>;
   readonly reason?: ReactNode;
+  readonly distanceUnit: DistanceUnit;
 }
 
-export function HotspotRow({ row, reason }: HotspotRowProps) {
+export function HotspotRow({ row, reason, distanceUnit }: HotspotRowProps) {
   return (
     <li className="birding-nearby-row">
       <div className="birding-nearby-place">
         <strong>{row.item.locName}</strong>
         {reason && <div className="birding-nearby-reason">{reason}</div>}
       </div>
-      <PlaceWhere row={row} placeName={row.item.locName} />
+      <PlaceWhere row={row} placeName={row.item.locName} distanceUnit={distanceUnit} />
     </li>
   );
 }
@@ -61,10 +64,11 @@ export function HotspotRow({ row, reason }: HotspotRowProps) {
 interface PlaceWhereProps {
   readonly row: NearbyRow<Place>;
   readonly placeName: string;
+  readonly distanceUnit: DistanceUnit;
 }
 
-export function PlaceWhere({ row, placeName }: PlaceWhereProps) {
-  const distance = formatDistance(row.miles);
+export function PlaceWhere({ row, placeName, distanceUnit }: PlaceWhereProps) {
+  const distance = formatDistance(row.miles, distanceUnit);
   return (
     <div className="birding-nearby-where">
       <span className="birding-nearby-distance">{row.direction ? `${distance} ${row.direction}` : distance}</span>

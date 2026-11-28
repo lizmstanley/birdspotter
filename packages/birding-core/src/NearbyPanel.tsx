@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
+import type { DistanceUnit } from './distanceUnit.ts';
 import type { EbirdObservation } from './ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
 import { BACK_DAY_CHOICES, type RefreshMinutes } from './settings.ts';
@@ -22,6 +23,7 @@ interface NearbyPanelProps {
   readonly live: LiveLocation;
   /** The point the rows are measured from, or null to show no rows yet. */
   readonly origin: LngLat | null;
+  readonly distanceUnit: DistanceUnit;
   readonly backDays: number;
   readonly onBackDaysChange: (backDays: number) => void;
   readonly refreshMinutes: RefreshMinutes;
@@ -48,8 +50,21 @@ function RowGroups<T extends Place>({ rows, titles, renderRow }: RowGroupsProps<
   );
 }
 
-function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean, now: Date): ReactNode {
-  return <SightingRow key={`${row.item.subId}-${row.item.speciesCode}`} row={row} isNotable={isNotable} now={now} />;
+function renderSighting(
+  row: NearbyRow<EbirdObservation>,
+  isNotable: boolean,
+  now: Date,
+  distanceUnit: DistanceUnit
+): ReactNode {
+  return (
+    <SightingRow
+      key={`${row.item.subId}-${row.item.speciesCode}`}
+      row={row}
+      isNotable={isNotable}
+      now={now}
+      distanceUnit={distanceUnit}
+    />
+  );
 }
 
 /** Notable sightings, then other recent sightings, each nearest first, with those in the region ahead of the rest. */
@@ -59,6 +74,7 @@ export function NearbyPanel({
   data,
   live,
   origin,
+  distanceUnit,
   backDays,
   onBackDaysChange,
   refreshMinutes,
@@ -88,14 +104,22 @@ export function NearbyPanel({
           {sightings.notable.length > 0 && (
             <>
               <h2>Notable sightings</h2>
-              <RowGroups rows={sightings.notable} titles={groupTitles} renderRow={(row) => renderSighting(row, true, now)} />
+              <RowGroups
+                rows={sightings.notable}
+                titles={groupTitles}
+                renderRow={(row) => renderSighting(row, true, now, distanceUnit)}
+              />
             </>
           )}
           <h2>Recent sightings</h2>
           {sightings.regular.length === 0 && !data.isLoading && data.sightingsFetchedAt !== null && (
             <p>{sightings.notable.length > 0 ? 'No other' : 'No'} sightings reported here in that time.</p>
           )}
-          <RowGroups rows={sightings.regular} titles={groupTitles} renderRow={(row) => renderSighting(row, false, now)} />
+          <RowGroups
+            rows={sightings.regular}
+            titles={groupTitles}
+            renderRow={(row) => renderSighting(row, false, now, distanceUnit)}
+          />
         </>
       )}
       <EbirdCredit refreshMinutes={refreshMinutes} hasNoSignal={data.hasNoSignal} />

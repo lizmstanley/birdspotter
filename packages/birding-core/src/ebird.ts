@@ -1,6 +1,7 @@
 import { circle } from '@turf/circle';
 import { forgetRecentCopies, readRecentCopy, readTodaysCopy, saveTodaysCopy, type SavedItems } from './ebirdCache.ts';
 import { isLatitude, isLongitude } from './coordinates.ts';
+import { KM_PER_MILE } from './distanceUnit.ts';
 import {
   EbirdKeyRejectedError,
   EbirdKeyUnsendableError,
@@ -191,7 +192,7 @@ function fetchObservations(
 }
 
 function searchDistanceKm(radiusMiles: number): string {
-  return Math.min(50, Math.max(1, radiusMiles * 1.609344)).toFixed(2);
+  return Math.min(50, Math.max(1, radiusMiles * KM_PER_MILE)).toFixed(2);
 }
 
 /** @param maxAgeMs how old a saved copy may be; omitted, any copy saved today is used */

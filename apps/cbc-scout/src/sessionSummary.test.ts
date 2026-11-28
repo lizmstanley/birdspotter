@@ -20,7 +20,7 @@ function partyCodeOf(text: string): ReturnType<typeof decodePartyCode> {
 test('writes the count sheet fields in the sheet order, with the area and a gap note', () => {
   const started = startSession(START_TIME, { name: 'Bloomington: Area 12, Richfield', code: '12', circleCode: 'MNBL' }, PARTY_ID);
   const session = { ...withFeederHours(withParticipants(started, 3), 0.5), stopTime: START_TIME + 570 * MINUTE_MS };
-  const text = sessionSummaryText(session, TOTALS);
+  const text = sessionSummaryText(session, TOTALS, 'mi');
   assert.equal(
     text.split('\n').slice(0, -1).join('\n'),
     [
@@ -55,9 +55,21 @@ test('writes the count sheet fields in the sheet order, with the area and a gap 
 
 test('leaves out the area lines with no area and the gap note with no gaps', () => {
   const session = { ...startSession(START_TIME, null), stopTime: START_TIME + MINUTE_MS };
-  const text = sessionSummaryText(session, { ...TOTALS, gapMiles: 0 });
+  const text = sessionSummaryText(session, { ...TOTALS, gapMiles: 0 }, 'mi');
   assert.doesNotMatch(text, /Area #|Bloomington|gaps/);
   assert.match(text, /^Participants: 1$/m);
   assert.match(text, /^Hours feeder watching: 0\.00$/m);
   assert.equal(partyCodeOf(text).area, null);
+});
+
+test('in kilometers, names the unit on each distance line and keeps miles in the party code', () => {
+  const session = { ...startSession(START_TIME, null, PARTY_ID), stopTime: START_TIME + MINUTE_MS };
+  const text = sessionSummaryText(session, TOTALS, 'km');
+  assert.match(text, /^Km by vehicle: 67\.36$/m);
+  assert.match(text, /^Km by foot: 5\.15$/m);
+  assert.match(text, /^1\.62 of these kilometers are straight lines across gaps in the route\.$/m);
+  assert.doesNotMatch(text, /Miles|miles/);
+  const code = partyCodeOf(text);
+  assert.equal(code.carMiles, 41.86);
+  assert.equal(code.footMiles, 3.2);
 });

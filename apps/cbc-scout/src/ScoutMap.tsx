@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import type { Feature, FeatureCollection, GeoJSON, Polygon } from 'geojson';
 import { BirdingMap, showStartView, type ReadyMap } from '@birdspotter/birding-core/BirdingMap.tsx';
+import type { DistanceUnit } from '@birdspotter/birding-core/distanceUnit.ts';
 import type { LiveLocation } from '@birdspotter/birding-core/locationTracking.ts';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import type { NearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
@@ -63,6 +64,7 @@ interface ScoutMapProps {
   readonly storage: KeyValueStorage | null;
   readonly setError: (message: string | null) => void;
   readonly setNotice: (message: string | null) => void;
+  readonly distanceUnit: DistanceUnit;
 }
 
 /** @returns the location line's text and whether it is an error, or null when there is nothing to say */
@@ -82,7 +84,16 @@ function locationLine(
  * Shows the area's circle and outline, zoomed to the outline, the person's live location, the count's route, and the
  * eBird places; with no area, the start view, the location, the route, and the places.
  */
-export function ScoutMap({ area, live, data, onLocationControl, storage, setError, setNotice }: ScoutMapProps) {
+export function ScoutMap({
+  area,
+  live,
+  data,
+  onLocationControl,
+  storage,
+  setError,
+  setNotice,
+  distanceUnit,
+}: ScoutMapProps) {
   const [ready, setReady] = useState<ReadyMap | null>(null);
   const circle = useMemo(() => (area ? countCircle(area) : null), [area]);
   const line = locationLine(live, area, circle);
@@ -115,7 +126,13 @@ export function ScoutMap({ area, live, data, onLocationControl, storage, setErro
           {line.text}
         </p>
       )}
-      <BirdingMap addLayers={addScoutLayers} onReady={setReady} data={data} origin={live.position} />
+      <BirdingMap
+        addLayers={addScoutLayers}
+        onReady={setReady}
+        data={data}
+        origin={live.position}
+        distanceUnit={distanceUnit}
+      />
       <SessionPanel
         session={count.session}
         stretches={stretches}
@@ -129,6 +146,7 @@ export function ScoutMap({ area, live, data, onLocationControl, storage, setErro
         onSetFeederHours={count.setFeederHours}
         setError={setError}
         setNotice={setNotice}
+        distanceUnit={distanceUnit}
       />
     </>
   );

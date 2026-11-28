@@ -24,12 +24,19 @@ test('one degree of latitude is about 69 miles, and one of longitude shrinks awa
 });
 
 test('shows one decimal under 10 miles and whole miles from 10 up', () => {
-  assert.equal(formatDistance(0.04), '0.0 mi');
-  assert.equal(formatDistance(2.36), '2.4 mi');
-  assert.equal(formatDistance(9.94), '9.9 mi');
-  assert.equal(formatDistance(9.96), '10 mi');
-  assert.equal(formatDistance(10), '10 mi');
-  assert.equal(formatDistance(12.6), '13 mi');
+  assert.equal(formatDistance(0.04, 'mi'), '0.0 mi');
+  assert.equal(formatDistance(2.36, 'mi'), '2.4 mi');
+  assert.equal(formatDistance(9.94, 'mi'), '9.9 mi');
+  assert.equal(formatDistance(9.96, 'mi'), '10 mi');
+  assert.equal(formatDistance(10, 'mi'), '10 mi');
+  assert.equal(formatDistance(12.6, 'mi'), '13 mi');
+});
+
+test('in kilometers, converts first, then shows one decimal under 10 km and whole kilometers from 10 up', () => {
+  assert.equal(formatDistance(1, 'km'), '1.6 km');
+  assert.equal(formatDistance(6.2, 'km'), '10 km');
+  assert.equal(formatDistance(6.1, 'km'), '9.8 km');
+  assert.equal(formatDistance(25, 'km'), '40 km');
 });
 
 const here: [number, number] = [-93.25, 45.02];

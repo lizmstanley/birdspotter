@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { GeolocateControl } from 'maplibre-gl';
 import { About } from '@birdspotter/birding-core/About.tsx';
 import { BirdingBar, BirdingScreen } from '@birdspotter/birding-core/BirdingBar.tsx';
+import { localeDistanceUnit } from '@birdspotter/birding-core/distanceUnit.ts';
 import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
 import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
@@ -100,7 +101,9 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   const area = activeArea?.data ?? null;
   // Notes belong to an area, so with none loaded the tab is gone and Sightings shows.
   const panel = chosenPanel === 'notes' && !area ? 'sightings' : chosenPanel;
-  const [settings, setSettings] = useState(() => readSettings(storage, CBC_SCOUT.settingsStorageKey));
+  const [settings, setSettings] = useState(() =>
+    readSettings(storage, CBC_SCOUT.settingsStorageKey, localeDistanceUnit(navigator.language))
+  );
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
   const circleQuery = useMemo(() => (area ? countCircleQuery(area) : null), [area]);
   // Above the tabs, so Sightings and Hotspots share one load. With no area, the search is the size of a count circle.
@@ -153,6 +156,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
         storage={storage}
         setError={setError}
         setNotice={setNotice}
+        distanceUnit={settings.distanceUnit}
       />
       <div className="scout-tabs">
         <button type="button" aria-pressed={panel === 'sightings'} onClick={() => setPanel('sightings')}>
@@ -175,6 +179,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
           data={areaData}
           live={live}
           origin={live.position}
+          distanceUnit={settings.distanceUnit}
           backDays={settings.backDays}
           onBackDaysChange={(backDays) => changeSettings({ ...settings, backDays })}
           refreshMinutes={settings.refreshMinutes}
@@ -187,6 +192,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
           data={areaData}
           live={live}
           origin={live.position}
+          distanceUnit={settings.distanceUnit}
           backDays={settings.backDays}
           refreshMinutes={settings.refreshMinutes}
           onFixKey={() => setScreen('ebird-key')}
@@ -231,8 +237,8 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
             />
           )}
           {screen === 'help' && (
-            <Help appName={CBC_SCOUT.name} privacyUrl={PRIVACY_URL}>
-              <ScoutHelp />
+            <Help appName={CBC_SCOUT.name} privacyUrl={PRIVACY_URL} distanceUnit={settings.distanceUnit}>
+              <ScoutHelp distanceUnit={settings.distanceUnit} />
             </Help>
           )}
           {screen === 'about' && <About />}

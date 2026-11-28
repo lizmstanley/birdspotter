@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import * as maplibregl from 'maplibre-gl';
 import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from './basemap.ts';
+import type { DistanceUnit } from './distanceUnit.ts';
 import { mapPlaces, placeFeatures } from './mapPlaces.ts';
 import { setUpMapWorker } from './mapWorker.ts';
 import type { LngLat } from './nearby.ts';
@@ -34,13 +35,14 @@ interface BirdingMapProps {
   readonly data: Pick<NearbyData, 'hotspots' | 'regular' | 'notable'>;
   /** The point the lists measure from, which the popup measures from too; with none, no places show, as the lists show no rows. */
   readonly origin: LngLat | null;
+  readonly distanceUnit: DistanceUnit;
 }
 
 /**
  * The base map with zoom buttons, a location button that follows the person, and the eBird places: grouped when
  * close, notable ones in amber, and a popup for a tapped place.
  */
-export function BirdingMap({ addLayers, onReady, data, origin }: BirdingMapProps) {
+export function BirdingMap({ addLayers, onReady, data, origin, distanceUnit }: BirdingMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const latestAddLayers = useLatest(addLayers);
   const [ready, setReady] = useState<ReadyMap | null>(null);
@@ -113,7 +115,9 @@ export function BirdingMap({ addLayers, onReady, data, origin }: BirdingMapProps
   return (
     <>
       <div ref={containerRef} className="birding-map" />
-      {picked && origin && createPortal(<PlacePopup place={picked} origin={origin} />, popupNode)}
+      {picked &&
+        origin &&
+        createPortal(<PlacePopup place={picked} origin={origin} distanceUnit={distanceUnit} />, popupNode)}
     </>
   );
 }
