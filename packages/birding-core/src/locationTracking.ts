@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { GeolocateControl } from 'maplibre-gl';
+import type { GeolocateControl, GeolocateErrorEvent, GeolocatePositionEvent } from 'maplibre-gl';
 import type { BirdingApp } from './birdingApp.ts';
 import { LOCATION_UNAVAILABLE_MESSAGE, locationDeniedMessage } from './locationHelp.ts';
 import type { KeyValueStorage } from './storage.ts';
@@ -82,11 +82,11 @@ export function followLocationControl(
     setLive(NOT_TRACKING);
   }
 
-  function handleLocation(position: GeolocationPosition): void {
+  function handleLocation(position: GeolocatePositionEvent): void {
     setLive({ position: [position.coords.longitude, position.coords.latitude], isTracking: true, error: null });
   }
 
-  function handleError(error: GeolocationPositionError): void {
+  function handleError(error: GeolocateErrorEvent): void {
     if (error.code !== PERMISSION_DENIED) {
       setLive((current) => ({ ...current, error: LOCATION_UNAVAILABLE_MESSAGE }));
       return;

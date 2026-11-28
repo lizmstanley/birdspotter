@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from './basemap.ts';
+import { setUpMapWorker } from './mapWorker.ts';
 import { useLatest } from './useLatest.ts';
 
 const START_CENTER: [number, number] = [-96, 39];
@@ -33,6 +34,7 @@ export function BirdingMap({ addLayers, onReady }: BirdingMapProps) {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    setUpMapWorker();
     const map = new maplibregl.Map({ container, style: BASEMAP_STYLE_URL, center: START_CENTER, zoom: START_ZOOM });
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
     // Added before load: its setup waits only on a permissions query, so it is done before a saved tracking state restarts it.

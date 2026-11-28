@@ -1,4 +1,4 @@
-import type { GeolocateControl } from 'maplibre-gl';
+import type { GeolocateControl, GeolocatePositionEvent } from 'maplibre-gl';
 import type { LocationFix } from './countSession.ts';
 import { startTracking } from '@birdspotter/birding-core/locationTracking.ts';
 
@@ -13,7 +13,7 @@ export function recordFromLocationControl(
   onFix: (fix: LocationFix) => void,
   onBreak: () => void
 ): () => void {
-  function handleLocation(position: GeolocationPosition): void {
+  function handleLocation(position: GeolocatePositionEvent): void {
     const { longitude, latitude, accuracy } = position.coords;
     onFix({ lng: longitude, lat: latitude, time: position.timestamp, accuracy });
   }
