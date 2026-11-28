@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { describeError } from '../services/describeError';
 import type { AreaOption, AssignmentRow, ImportedParticipantRow, ImportOptions } from '../db/pgliteDb';
 import { ImportHelp } from './import/ImportHelp';
@@ -23,21 +23,27 @@ export function SpreadsheetImporter({ circleCode, assignments, areas, onImport, 
   const form = useRosterImportForm(areas);
   const [status, setStatus] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const latestFileRef = useRef(0);
 
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    const input = e.target;
+    const request = ++latestFileRef.current;
     setStatus(null);
     form.startFile(file.name);
     try {
       const parsed = await readFirstSheet(file);
+      if (request !== latestFileRef.current) return;
       if (parsed === null) {
         setStatus(`${file.name} has no sheets.`);
         return;
       }
       form.loadRows(parsed);
     } catch (err) {
-      setStatus(`Could not read ${file.name}: ${describeError(err)}`);
+      if (request === latestFileRef.current) setStatus(`Could not read ${file.name}: ${describeError(err)}`);
+    } finally {
+      input.value = '';
     }
   }
 
