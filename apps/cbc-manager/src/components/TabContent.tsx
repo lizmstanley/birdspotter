@@ -141,6 +141,8 @@ function MapTab({ circle, data, notCountedAreas, areaActions, circleActions, ebi
       areaBoundaries={data.areaBoundaries}
       areaParticipantCounts={areaParticipantCounts}
       notCountedAreaCodes={notCountedAreas.map((a) => a.code)}
+      partyRoutes={data.partyRoutes}
+      partyCount={data.parties.length}
       onCenterChange={(lat, lng) => void areaActions.changeCenter(lat, lng)}
       onSelectArea={(code, label) => onOpenArea(code, label, 'map')}
       onImportBoundaries={areaActions.importBoundaries}

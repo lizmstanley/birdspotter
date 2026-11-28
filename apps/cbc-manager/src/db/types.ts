@@ -1,3 +1,5 @@
+import type { MultiLineString } from 'geojson';
+
 export interface SavedCircle {
   code: string;
   name: string;
@@ -175,6 +177,15 @@ export interface Party {
   readonly feeder_hours: number;
   readonly car_miles: number;
   readonly foot_miles: number;
+}
+
+/** Where a party went, as a GeoJSON MultiLineString with one line per recorded track. */
+export interface PartyRoute {
+  readonly party_id: string;
+  readonly area_code: string;
+  /** Milliseconds since the epoch */
+  readonly start_time: number;
+  readonly route_geojson: MultiLineString;
 }
 
 export interface SeasonParty extends Party {

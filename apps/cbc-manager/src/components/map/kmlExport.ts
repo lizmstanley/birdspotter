@@ -6,10 +6,12 @@ import {
   type EbirdObservation,
 } from '@birdspotter/birding-core/ebird.ts';
 import type { GeoJsonGeometry } from '../../services/kmlParser.ts';
+import { clockTime } from '../../services/partyForm.ts';
 import { buildAreaFeatures } from './areaFeatures.ts';
+import { ROUTE_COLOR, ROUTE_LINE_WIDTH } from './mapLayers.ts';
 import type { WithArea } from './EbirdTables.tsx';
 import { areaDisplayName, areaLabel, escapeHtml } from './mapText.ts';
-import type { AreaBoundaryItem } from './types.ts';
+import type { AreaBoundaryItem, PartyRouteItem } from './types.ts';
 
 type Position = readonly number[];
 
@@ -24,11 +26,13 @@ export interface MapKmlInput {
   readonly circle: KmlCircle | null;
   readonly areas: readonly AreaBoundaryItem[];
   readonly notCountedAreaCodes: readonly string[];
+  readonly routes: readonly PartyRouteItem[];
   readonly hotspots: readonly WithArea<EbirdHotspot>[];
   readonly sightings: readonly WithArea<EbirdObservation>[];
 }
 
 const CIRCLE_STYLE_ID = 'circle';
+const ROUTE_STYLE_ID = 'route';
 const HOTSPOT_STYLE_ID = 'hotspot';
 const SIGHTING_STYLE_ID = 'sighting';
 const EBIRD_CREDIT_HTML = `<p>Data: <a href="${EBIRD_SITE_URL}">eBird.org</a></p>`;
@@ -113,6 +117,17 @@ function areasKml(areas: readonly AreaBoundaryItem[], notCountedAreaCodes: reado
   return { styles, folder: folder('Areas', placemarks) };
 }
 
+function routePlacemark(route: PartyRouteItem): string {
+  const lines = route.route_geojson.coordinates
+    .map((line) => `<LineString><coordinates>${coordinatesText(line)}</coordinates></LineString>`)
+    .join('');
+  return placemark(
+    `${areaDisplayName(route.area_code)} party, ${clockTime(route.start_time)}`,
+    ROUTE_STYLE_ID,
+    `<MultiGeometry>${lines}</MultiGeometry>`
+  );
+}
+
 function areaLineHtml(area: string | null, hasAreas: boolean): string {
   return hasAreas ? `<p>Area: ${escapeHtml(areaLabel(area))}</p>` : '';
 }
@@ -139,12 +154,13 @@ function sightingPlacemark(s: WithArea<EbirdObservation>, hasAreas: boolean): st
   return placemark(s.comName, SIGHTING_STYLE_ID, pointKml(s.lng, s.lat), description);
 }
 
-/** @returns a KML document of the given circle, areas, hotspots, and sightings, one folder per layer */
+/** @returns a KML document of the given circle, areas, party routes, hotspots, and sightings, one folder per layer */
 export function buildMapKml(input: MapKmlInput): string {
   const hasAreas = input.areas.length > 0;
   const areas = areasKml(input.areas, input.notCountedAreaCodes);
   const styles = [
     `<Style id="${CIRCLE_STYLE_ID}"><LineStyle><color>${toKmlColor('#1d4ed8', 1)}</color><width>3</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>`,
+    `<Style id="${ROUTE_STYLE_ID}"><LineStyle><color>${toKmlColor(ROUTE_COLOR, 1)}</color><width>${ROUTE_LINE_WIDTH}</width></LineStyle></Style>`,
     iconStyle(HOTSPOT_STYLE_ID, toKmlColor('#059669', 1), 'https://maps.google.com/mapfiles/kml/shapes/binoculars.png'),
     iconStyle(SIGHTING_STYLE_ID, toKmlColor('#d97706', 1), 'https://maps.google.com/mapfiles/kml/shapes/birds.png'),
     ...areas.styles,
@@ -152,6 +168,7 @@ export function buildMapKml(input: MapKmlInput): string {
   const body = [
     circleFolder(input.circle),
     areas.folder,
+    folder('Party Routes', input.routes.map(routePlacemark)),
     folder('eBird Hotspots', input.hotspots.map((h) => hotspotPlacemark(h, hasAreas))),
     folder('Recent eBird Sightings', input.sightings.map((s) => sightingPlacemark(s, hasAreas))),
   ].join('');

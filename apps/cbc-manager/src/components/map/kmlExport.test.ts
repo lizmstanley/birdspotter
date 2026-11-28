@@ -7,6 +7,7 @@ const EMPTY: MapKmlInput = {
   circle: null,
   areas: [],
   notCountedAreaCodes: [],
+  routes: [],
   hotspots: [],
   sightings: [],
 };
@@ -118,4 +119,40 @@ test('a layer with nothing in it writes no folder', () => {
   const kml = buildMapKml(EMPTY);
   assert.equal(kml.includes('<Folder>'), false);
   assert.match(kml, /^<\?xml version="1.0" encoding="UTF-8"\?>\n<kml xmlns="http:\/\/www.opengis.net\/kml\/2.2">/);
+});
+
+test('each party route is one placemark with a line per track, named for its area and start', () => {
+  const start = new Date(2026, 11, 19, 7, 5).getTime();
+  const kml = buildMapKml({
+    ...EMPTY,
+    routes: [
+      {
+        area_code: '3',
+        start_time: start,
+        route_geojson: {
+          type: 'MultiLineString',
+          coordinates: [
+            [
+              [-93.2, 45.1],
+              [-93.21, 45.11],
+            ],
+            [
+              [-93.3, 45.2],
+              [-93.31, 45.21],
+            ],
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.equal(placemarkCount(kml), 1);
+  assert.ok(kml.includes('<Folder><name>Party Routes</name>'));
+  assert.ok(kml.includes('<name>Area 3 party, 07:05</name>'));
+  assert.ok(
+    kml.includes(
+      '<MultiGeometry><LineString><coordinates>-93.2,45.1 -93.21,45.11</coordinates></LineString>' +
+        '<LineString><coordinates>-93.3,45.2 -93.31,45.21</coordinates></LineString></MultiGeometry>'
+    )
+  );
 });

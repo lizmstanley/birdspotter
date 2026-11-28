@@ -8,6 +8,7 @@ import {
   partyCodesInText,
   partyFromEffort,
   readPastedParty,
+  routeFromEffort,
   SEVERAL_PARTIES_MESSAGE,
   UNREADABLE_PARTY_MESSAGE,
 } from './pastedParty.ts';
@@ -124,4 +125,23 @@ test('a party row takes every value from the code and the chosen area', () => {
     car_miles: 41.5,
     foot_miles: 3.2,
   });
+});
+
+test('the route is kept as one MultiLineString, one line per track', () => {
+  const tracks = [
+    [
+      [-93.25, 44.95],
+      [-93.24, 44.96],
+    ],
+    [
+      [-93.2, 44.9],
+      [-93.21, 44.91],
+    ],
+  ];
+
+  assert.deepEqual(routeFromEffort({ ...EFFORT, route: tracks }), { type: 'MultiLineString', coordinates: tracks });
+});
+
+test('a code with no route gives no route', () => {
+  assert.equal(routeFromEffort({ ...EFFORT, route: [] }), null);
 });

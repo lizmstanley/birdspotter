@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { MultiLineString } from 'geojson';
 import { useLatest } from '@birdspotter/birding-core/useLatest.ts';
 import type { AreaOption, Party, SeasonParty } from '../db/pgliteDb';
 import { describeError } from '../services/describeError';
 import { isoDay } from '../services/countDay';
 import { clockTime } from '../services/partyForm';
 import type { PartyEffort } from '../services/partyCode';
-import { partyFromEffort, readPastedParty } from '../services/pastedParty';
+import { partyFromEffort, readPastedParty, routeFromEffort } from '../services/pastedParty';
 
 interface Props {
   circleCode: string;
@@ -14,7 +15,7 @@ interface Props {
   /** Newest first */
   seasons: number[];
   onFindParty: (partyId: string) => Promise<SeasonParty | null>;
-  onSave: (season: number, party: Party) => Promise<boolean>;
+  onSave: (season: number, party: Party, route: MultiLineString | null) => Promise<boolean>;
 }
 
 function amount(value: number): string {
@@ -63,8 +64,8 @@ export function PastePartyCard({ circleCode, areas, seasons, onFindParty, onSave
           areas={areas}
           seasons={seasons}
           onFindParty={onFindParty}
-          onSave={async (season, party) => {
-            if (await onSave(season, party)) setText('');
+          onSave={async (season, party, route) => {
+            if (await onSave(season, party, route)) setText('');
           }}
           onCancel={() => setText('')}
         />
@@ -80,7 +81,7 @@ interface PreviewProps {
   areas: AreaOption[];
   seasons: number[];
   onFindParty: (partyId: string) => Promise<SeasonParty | null>;
-  onSave: (season: number, party: Party) => Promise<void>;
+  onSave: (season: number, party: Party, route: MultiLineString | null) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -124,7 +125,7 @@ function PastedPartyPreview({
   async function save() {
     if (!canSave || season === null) return;
     setIsSaving(true);
-    await onSave(season, partyFromEffort(effort, areaCode));
+    await onSave(season, partyFromEffort(effort, areaCode), routeFromEffort(effort));
     setIsSaving(false);
   }
 

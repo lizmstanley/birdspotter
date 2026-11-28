@@ -1,3 +1,4 @@
+import type { MultiLineString } from 'geojson';
 import type { Party, SeasonParty } from '../db/pgliteDb';
 import { describeError } from '../services/describeError';
 import type { ParsedAreaBoundary } from '../services/kmlParser';
@@ -101,10 +102,10 @@ export function useAreaActions(
   }
 
   /** @returns whether the party was saved */
-  async function savePastedParty(season: number, party: Party): Promise<boolean> {
+  async function savePastedParty(season: number, party: Party, route: MultiLineString | null): Promise<boolean> {
     if (!activeCircle) return false;
     try {
-      await db.savePartyInSeason(activeCircle.code, season, party);
+      await db.savePartyInSeason(activeCircle.code, season, party, route);
     } catch (err) {
       setError(describeError(err));
       return false;
