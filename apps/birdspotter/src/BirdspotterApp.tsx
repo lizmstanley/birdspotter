@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { GeolocateControl } from 'maplibre-gl';
+import type { GeolocateControl, Map as MapLibreMap } from 'maplibre-gl';
 import { About } from '@birdspotter/birding-core/About.tsx';
 import { BirdingBar, BirdingScreen } from '@birdspotter/birding-core/BirdingBar.tsx';
 import { BirdingMap, type ReadyMap } from '@birdspotter/birding-core/BirdingMap.tsx';
@@ -8,6 +8,7 @@ import { FirstRunScreen } from '@birdspotter/birding-core/FirstRunScreen.tsx';
 import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
+import type { LngLat } from '@birdspotter/birding-core/nearby.ts';
 import { NearbyPanel } from '@birdspotter/birding-core/NearbyPanel.tsx';
 import type { Screen } from '@birdspotter/birding-core/screens.ts';
 import { readSettings, writeSettings, type BirdingSettings } from '@birdspotter/birding-core/settings.ts';
@@ -18,6 +19,8 @@ import { useEbirdKey } from '@birdspotter/birding-core/useEbirdKey.ts';
 import { useLiveLocation } from '@birdspotter/birding-core/useLiveLocation.ts';
 import { useNearbyData } from '@birdspotter/birding-core/useNearbyData.ts';
 import { BIRDSPOTTER } from './appIdentity.ts';
+import { BirdspotterHelp } from './BirdspotterHelp.tsx';
+import { useChosenPlaceMarker } from './useChosenPlaceMarker.ts';
 
 type Panel = 'sightings' | 'hotspots';
 
@@ -33,8 +36,11 @@ interface BirdspotterAppProps {
 export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) {
   const [error, setError] = useState<string | null>(null);
   const { ebirdApiKey, saveEbirdKey } = useEbirdKey(setError);
+  const [map, setMap] = useState<MapLibreMap | null>(null);
   const [locationControl, setLocationControl] = useState<GeolocateControl | null>(null);
   const live = useLiveLocation(locationControl, storage, BIRDSPOTTER);
+  const [chosenPlace, setChosenPlace] = useState<LngLat | null>(null);
+  const origin = chosenPlace ?? live.position;
   const [panel, setPanel] = useState<Panel>('sightings');
   const [screen, setScreen] = useState<Screen | null>(null);
   const [settings, setSettings] = useState(() => readSettings(storage, BIRDSPOTTER.settingsStorageKey));
@@ -43,13 +49,23 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
   // Above both tabs, so Sightings and Hotspots share one load.
   const nearby = useNearbyData(
     ebirdApiKey,
-    null,
+    chosenPlace ? { center: chosenPlace, radiusMiles: settings.radiusMiles } : null,
     live.position,
     settings.radiusMiles,
     backDays,
     settings.refreshMinutes * 60 * 1000
   );
-  const takeMap = useCallback((ready: ReadyMap | null) => setLocationControl(ready?.locationControl ?? null), []);
+  const takeMap = useCallback((ready: ReadyMap | null) => {
+    setMap(ready?.map ?? null);
+    setLocationControl(ready?.locationControl ?? null);
+  }, []);
+  useChosenPlaceMarker(map, chosenPlace);
+
+  function lookAtMapCenter(): void {
+    if (!map) return;
+    const { lng, lat } = map.getCenter();
+    setChosenPlace([lng, lat]);
+  }
 
   function changeSettings(next: BirdingSettings): void {
     setSettings(next);
@@ -77,7 +93,20 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               {live.error}
             </p>
           )}
-          <BirdingMap onReady={takeMap} data={nearby} position={live.position} />
+          <div className="birdspotter-map">
+            <BirdingMap onReady={takeMap} data={nearby} origin={origin} />
+            <button type="button" className="birdspotter-look-here" disabled={!map} onClick={lookAtMapCenter}>
+              Look here
+            </button>
+          </div>
+          {chosenPlace && (
+            <div className="birdspotter-place" role="status">
+              <p>The lists are around the place marked on the map.</p>
+              <button type="button" onClick={() => setChosenPlace(null)}>
+                Near me
+              </button>
+            </div>
+          )}
           <div className="birdspotter-tabs">
             <button type="button" aria-pressed={panel === 'sightings'} onClick={() => setPanel('sightings')}>
               Sightings
@@ -92,6 +121,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               groupTitles={null}
               data={nearby}
               live={live}
+              origin={origin}
               backDays={backDays}
               onBackDaysChange={setBackDays}
               refreshMinutes={settings.refreshMinutes}
@@ -103,6 +133,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               isInRegion={null}
               data={nearby}
               live={live}
+              origin={origin}
               backDays={backDays}
               refreshMinutes={settings.refreshMinutes}
               onFixKey={() => setScreen('ebird-key')}
@@ -126,7 +157,11 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               onChange={changeSettings}
             />
           )}
-          {screen === 'help' && <Help appName={BIRDSPOTTER.name} privacyUrl={PRIVACY_URL} />}
+          {screen === 'help' && (
+            <Help appName={BIRDSPOTTER.name} privacyUrl={PRIVACY_URL}>
+              <BirdspotterHelp />
+            </Help>
+          )}
           {screen === 'about' && <About />}
         </BirdingScreen>
       )}

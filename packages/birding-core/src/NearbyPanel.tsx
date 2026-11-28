@@ -2,7 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import type { EbirdObservation } from './ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
 import type { RefreshMinutes } from './settings.ts';
-import { groupSightings, sortNearby, type NearbyRow, type Place, type RegionTest } from './nearby.ts';
+import { groupSightings, sortNearby, type LngLat, type NearbyRow, type Place, type RegionTest } from './nearby.ts';
 import { SightingRow } from './NearbyRows.tsx';
 import { EbirdCredit, NearbyStatus } from './NearbyStatus.tsx';
 import { useMinuteClock } from './useMinuteClock.ts';
@@ -22,6 +22,8 @@ interface NearbyPanelProps {
   readonly groupTitles: GroupTitles | null;
   readonly data: NearbyData;
   readonly live: LiveLocation;
+  /** The point the rows are measured from, or null to show no rows yet. */
+  readonly origin: LngLat | null;
   readonly backDays: number;
   readonly onBackDaysChange: (backDays: number) => void;
   readonly refreshMinutes: RefreshMinutes;
@@ -58,17 +60,17 @@ export function NearbyPanel({
   groupTitles,
   data,
   live,
+  origin,
   backDays,
   onBackDaysChange,
   refreshMinutes,
   onFixKey,
 }: NearbyPanelProps) {
-  const { position } = live;
   const now = useMinuteClock();
   const sightings = useMemo(() => {
-    if (!position) return groupSightings<EbirdObservation>([], []);
-    return groupSightings(sortNearby(data.regular, position, isInRegion), sortNearby(data.notable, position, isInRegion));
-  }, [data.regular, data.notable, position, isInRegion]);
+    if (!origin) return groupSightings<EbirdObservation>([], []);
+    return groupSightings(sortNearby(data.regular, origin, isInRegion), sortNearby(data.notable, origin, isInRegion));
+  }, [data.regular, data.notable, origin, isInRegion]);
 
   return (
     <section className="birding-panel birding-nearby" aria-label="Sightings">
@@ -82,8 +84,8 @@ export function NearbyPanel({
           ))}
         </select>
       </label>
-      <NearbyStatus data={data} live={live} onFixKey={onFixKey} />
-      {position && (
+      <NearbyStatus data={data} live={live} origin={origin} onFixKey={onFixKey} />
+      {origin && (
         <>
           {sightings.notable.length > 0 && (
             <>

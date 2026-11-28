@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ebirdChecklistUrl, type EbirdObservation } from './ebird.ts';
-import type { RegionTest } from './nearby.ts';
+import type { LngLat, RegionTest } from './nearby.ts';
 import type { LiveLocation } from './locationTracking.ts';
 import { HotspotRow } from './NearbyRows.tsx';
 import { EbirdCredit, NearbyStatus } from './NearbyStatus.tsx';
@@ -13,6 +13,8 @@ interface SuggestionsPanelProps {
   readonly isInRegion: RegionTest | null;
   readonly data: NearbyData;
   readonly live: LiveLocation;
+  /** The point the rows are measured from, or null to show no rows yet. */
+  readonly origin: LngLat | null;
   readonly backDays: number;
   readonly refreshMinutes: RefreshMinutes;
   readonly onFixKey: () => void;
@@ -44,11 +46,10 @@ function HotspotSpecies({ species, notableSpecies }: HotspotSpeciesProps) {
 }
 
 /** Hotspots worth a stop, each with the species reported there, from the sightings and hotspots already loaded. */
-export function SuggestionsPanel({ isInRegion, data, live, backDays, refreshMinutes, onFixKey }: SuggestionsPanelProps) {
-  const { position } = live;
+export function SuggestionsPanel({ isInRegion, data, live, origin, backDays, refreshMinutes, onFixKey }: SuggestionsPanelProps) {
   const hotspots = useMemo(
-    () => (position ? hotspotsToVisit(data.hotspots, [...data.regular, ...data.notable], position, isInRegion) : []),
-    [data.hotspots, data.regular, data.notable, position, isInRegion]
+    () => (origin ? hotspotsToVisit(data.hotspots, [...data.regular, ...data.notable], origin, isInRegion) : []),
+    [data.hotspots, data.regular, data.notable, origin, isInRegion]
   );
   const notableSpecies = useMemo(() => new Set(data.notable.map((sighting) => sighting.speciesCode)), [data.notable]);
 
@@ -57,8 +58,8 @@ export function SuggestionsPanel({ isInRegion, data, live, backDays, refreshMinu
       <p className="birding-nearby-detail">
         From sightings in the last {backDays === 1 ? 'day' : `${backDays} days`}. Change that on the Sightings tab.
       </p>
-      <NearbyStatus data={data} live={live} onFixKey={onFixKey} />
-      {position && (
+      <NearbyStatus data={data} live={live} origin={origin} onFixKey={onFixKey} />
+      {origin && (
         <>
           <h2>Hotspots to visit</h2>
           {hotspots.length === 0 && !data.isLoading && data.hotspotsFetchedAt !== null && <p>No eBird hotspots here.</p>}

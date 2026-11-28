@@ -115,7 +115,7 @@ export function ScoutMap({ area, live, data, onLocationControl, storage, setErro
           {line.text}
         </p>
       )}
-      <BirdingMap addLayers={addScoutLayers} onReady={setReady} data={data} position={live.position} />
+      <BirdingMap addLayers={addScoutLayers} onReady={setReady} data={data} origin={live.position} />
       <SessionPanel
         session={count.session}
         stretches={stretches}
