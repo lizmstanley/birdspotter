@@ -7,11 +7,13 @@ import {
 } from './ebird.ts';
 import { directionsUrl } from './directions.ts';
 import { formatDistance, type NearbyRow, type Place } from './nearby.ts';
+import { sightingAgeText } from './sightingAge.ts';
 
 interface SightingRowProps {
   readonly row: NearbyRow<EbirdObservation>;
   readonly isNotable: boolean;
   readonly reason?: string;
+  readonly now: Date;
 }
 
 function sightingRowClass(isNotable: boolean, isConfirmed: boolean): string {
@@ -20,7 +22,7 @@ function sightingRowClass(isNotable: boolean, isConfirmed: boolean): string {
   return 'birding-nearby-row birding-nearby-row-notable birding-nearby-row-confirmed';
 }
 
-export function SightingRow({ row, isNotable, reason }: SightingRowProps) {
+export function SightingRow({ row, isNotable, reason, now }: SightingRowProps) {
   const { comName, howMany, locName, obsDt, subId } = row.item;
   const isConfirmed = isNotable && isConfirmedReport(row.item);
   return (
@@ -30,7 +32,7 @@ export function SightingRow({ row, isNotable, reason }: SightingRowProps) {
         {isConfirmed && <span className="birding-nearby-confirmed">Confirmed</span>}
         <strong>{comName}</strong> <span className="birding-nearby-count">{howMany ?? 'X'}</span>
         <div className="birding-nearby-detail">
-          {locName}, {obsDt}
+          {locName}, {sightingAgeText(obsDt, now) ?? obsDt}
         </div>
         {reason && <div className="birding-nearby-reason">{reason}</div>}
       </a>
