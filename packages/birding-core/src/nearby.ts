@@ -114,6 +114,38 @@ export function groupSightings<T extends Sighting>(
 }
 
 /**
+ * Case, accents, spaces, and punctuation dropped, so "coopers", "red breasted", and "ruppell" find "Cooper's Hawk",
+ * "Red-breasted Nuthatch", and "Rüppell's Warbler".
+ */
+export function speciesSearchKey(text: string): string {
+  return text.normalize('NFD').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+/**
+ * @param searchKey from speciesSearchKey; empty keeps every row
+ * @returns only the rows whose common name holds the key, in the same order
+ */
+export function findSpecies<T extends Sighting & { readonly comName: string }>(
+  groups: SightingGroups<T>,
+  searchKey: string
+): SightingGroups<T> {
+  if (searchKey === '') return groups;
+  const isMatch = (row: NearbyRow<T>): boolean => speciesSearchKey(row.item.comName).includes(searchKey);
+  return { notable: groups.notable.filter(isMatch), regular: groups.regular.filter(isMatch) };
+}
+
+/** A search that matches only notable sightings hides Recent sightings, so the tab does not say nothing was reported. */
+export function isRecentSightingsHidden(shown: SightingGroups<Sighting>, search: string): boolean {
+  return speciesSearchKey(search) !== '' && shown.regular.length === 0 && shown.notable.length > 0;
+}
+
+/** The line Recent sightings shows when it has no rows. */
+export function noRecentSightingsText(shown: SightingGroups<Sighting>, search: string): string {
+  if (speciesSearchKey(search) !== '') return `No species matching "${search.trim()}" reported here in that time.`;
+  return `${shown.notable.length > 0 ? 'No other' : 'No'} sightings reported here in that time.`;
+}
+
+/**
  * With a pinned query, that query, so every place in it is listed wherever the person stands.
  * With none, a radius around where the person was at the last query, moved once they are half the radius
  * away, so places within half the radius of them are always listed.
