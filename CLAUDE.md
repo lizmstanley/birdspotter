@@ -15,8 +15,8 @@ Three browser-only apps and a shared birding core live in one npm workspace. The
 ## Where things live
 
 - `apps/cbc-manager/db/migrations/NNN_name.sql`: schema. Each circle's rows are scoped by `circle_code`, with composite foreign keys so a row cannot point at another circle's area.
-- `apps/cbc-manager/db/views.sql`: business rules as views (`v_open_areas`, `v_needs_reminder`, `v_possible_outreach`, `v_current_assignments`). Re-applied on every start.
-- `apps/cbc-manager/src/db/cbcDb.ts`: `CbcDb`, the only database class the UI calls (as `LocalCbcDb` in the browser). Queries are split by concern into `circles.ts`, `areas.ts`, `roster.ts`, `seasons.ts`, `readModels.ts`, `backup.ts`.
+- `apps/cbc-manager/db/views.sql`: business rules as views (`v_open_areas`, `v_needs_reminder`, `v_possible_outreach`, `v_current_assignments`, `v_area_party_totals`). Re-applied on every start.
+- `apps/cbc-manager/src/db/cbcDb.ts`: `CbcDb`, the only database class the UI calls (as `LocalCbcDb` in the browser). Queries are split by concern into `circles.ts`, `areas.ts`, `roster.ts`, `seasons.ts`, `parties.ts`, `readModels.ts`, `backup.ts`.
 - `apps/cbc-manager/src/db/pgliteDb.ts`: `LocalCbcDb`, the only file that opens PGlite on IndexedDB. `src/services/autoSave.ts` keeps the Auto-Save file handle in a separate IndexedDB database, `cbc-circle-manager-autosave`. `browserMigrations.ts` bundles the SQL files with `import.meta.glob`; `testing/testDb.ts` reads the same files from disk for tests.
 - `apps/cbc-manager/src/db/migrations.ts`: runner. All pending migrations, their `schema_version` rows, and `views.sql` run in one transaction. A database newer than the app throws `SchemaTooNewError`.
 - `apps/cbc-manager/src/db/legacySingleCircle.ts`: moves the pre-multi-circle format into a circle coded `LEGACY`.

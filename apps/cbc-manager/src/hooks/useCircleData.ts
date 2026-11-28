@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   AreaBoundaryRow,
   AreaOption,
+  AreaPartyTotals,
   AssignmentRow,
   LocalCbcDb,
   OpenAreaRow,
+  Party,
   PossibleOutreachRow,
   ReminderRow,
   SavedCircle,
@@ -20,6 +22,8 @@ export interface ActiveCircleData {
   outreach: PossibleOutreachRow[];
   areas: AreaOption[];
   areaBoundaries: AreaBoundaryRow[];
+  parties: Party[];
+  partyTotals: AreaPartyTotals[];
 }
 
 const NO_CIRCLE_DATA: ActiveCircleData = {
@@ -29,6 +33,8 @@ const NO_CIRCLE_DATA: ActiveCircleData = {
   outreach: [],
   areas: [],
   areaBoundaries: [],
+  parties: [],
+  partyTotals: [],
 };
 
 export function pickActiveCircle(circles: readonly SavedCircle[]): SavedCircle | null {
@@ -36,15 +42,17 @@ export function pickActiveCircle(circles: readonly SavedCircle[]): SavedCircle |
 }
 
 async function loadActiveCircleData(db: LocalCbcDb, code: string): Promise<ActiveCircleData> {
-  const [assignments, openAreas, reminders, outreach, areas, areaBoundaries] = await Promise.all([
+  const [assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyTotals] = await Promise.all([
     db.getAssignments(code),
     db.getOpenAreas(code),
     db.getNeedsReminder(code),
     db.getPossibleOutreach(code),
     db.getAreas(code),
     db.getCircleBoundaries(code),
+    db.getCurrentParties(code),
+    db.getCurrentPartyTotals(code),
   ]);
-  return { assignments, openAreas, reminders, outreach, areas, areaBoundaries };
+  return { assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyTotals };
 }
 
 /** @param onSettled runs after every load, whether it worked or not */

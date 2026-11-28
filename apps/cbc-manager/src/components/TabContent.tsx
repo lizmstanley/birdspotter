@@ -5,6 +5,7 @@ import type { ActiveCircleData } from '../hooks/useCircleData';
 import type { useCircleActions } from '../hooks/useCircleActions';
 import type { useRosterActions } from '../hooks/useRosterActions';
 import { buildAreaLinkData } from '../services/areaShare';
+import { countDateInSeason } from '../services/countDay';
 import { countCountersByArea } from '../services/rosterSummary';
 import { AREA_RETURN_LABELS, type AreaReturnTab, type SelectedArea, type Tab } from '../tabs';
 import { AllAreasPage } from './AllAreasPage';
@@ -156,6 +157,10 @@ function AreaDetail({
   const selectedCode = selectedArea.code.toUpperCase();
   const areaInfo = data.areas.find((a) => a.code.toUpperCase() === selectedCode) ?? null;
   const counterNote = areaInfo?.counter_note ?? null;
+  const areaParties = data.parties.filter((p) => p.area_code.toUpperCase() === selectedCode);
+  const partyTotals = data.partyTotals.find((t) => t.area.toUpperCase() === selectedCode) ?? null;
+  const countDate =
+    circle.current_year === null ? null : countDateInSeason(circle.count_date, circle.current_year);
   const areaLinkData = useMemo(
     () => buildAreaLinkData(circle, data.areaBoundaries, data.assignments, selectedArea.code, counterNote),
     [circle, data.areaBoundaries, data.assignments, selectedArea.code, counterNote]
@@ -181,6 +186,12 @@ function AreaDetail({
       onToggleCounted={areaActions.toggleAreaCounted}
       onToggleResultsReceived={areaActions.toggleResultsReceived}
       onSaveCounterNote={areaActions.saveCounterNote}
+      parties={areaParties}
+      partyTotals={partyTotals}
+      defaultPartyDate={countDate ?? ''}
+      everyArea={data.areas}
+      onSaveParty={areaActions.saveParty}
+      onRemoveParty={areaActions.removeParty}
     />
   );
 }

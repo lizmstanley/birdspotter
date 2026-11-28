@@ -31,7 +31,7 @@ Trade-off: data lives in one browser. Export Backup and Auto-Save cover that. Cl
 - One active circle: partial unique index.
 - One current season per circle: partial unique index.
 - Everything is scoped by `circle_code`, with composite foreign keys so a row cannot point at another circle's area.
-- Business views hold the rules: `v_open_areas`, `v_needs_reminder`, `v_possible_outreach`, `v_current_assignments`.
+- Business views hold the rules: `v_open_areas`, `v_needs_reminder`, `v_possible_outreach`, `v_current_assignments`, `v_area_party_totals`.
 
 Why: one definition of "open area" or "needs a reminder", tested once, used by every screen. The integration tests assert these rules against real Postgres.
 
@@ -73,6 +73,7 @@ Audubon sets the count window every year (Dec 14 to Jan 5), so the app has no "s
 Data is organized by season where it differs each year:
 - Participations (RSVP, area, counter type) and notes with a year.
 - Results received: `area_results`, one row per area and season. A new season starts empty and old seasons keep their record.
+- Parties: `parties`, one row per party (a phone or a paper report) and season, keyed by party ID. The area totals are a view over them, so fixing or removing one party fixes the totals. Participants are summed over parties, so a person in two parties counts twice. A new season starts empty.
 - Count date: kept on the circle for the current season, saved onto the season when it ends. It must be a real day in the season's window, Dec 14 to Jan 5. A date from Audubon or ArcGIS outside the window is not used.
 
 Data that carries over: people, areas, pinned notes. At rollover the compiler chooses whether last season's assignments carry over. Confirmed and undecided people who had an area keep it, with RSVP reset to no response. Everyone else has no record yet and shows up for a reminder.
