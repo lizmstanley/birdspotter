@@ -19,6 +19,20 @@ export function ScoutHelp() {
         line instead of a shape, both cover the whole circle.
       </p>
 
+      <h2>Crossing your area&apos;s edge</h2>
+      <p>
+        With an area loaded and location on, the phone buzzes or beeps when you cross the edge of your area or the
+        circle: once when you walk in toward your area, twice when you walk out of it or out of the circle. It waits
+        until you are clearly past the edge, so standing on it or walking along it sets off nothing, and the line above
+        the map changes at the same time. An iPhone beeps instead of buzzing, and not with its ringer on silent. To
+        turn it off, open <strong>Settings</strong> from the menu.
+      </p>
+      <p>
+        It works only while CBC Scout is open and the screen is on. A running count keeps the screen on; without one,
+        the screen locks as usual and the cue stops. After CBC Scout opens, or the screen comes back on, the cue
+        starts once you tap anywhere on it.
+      </p>
+
       <h2>The street map with no signal</h2>
       <p>
         The street map needs a signal to draw, unless you save it first. With a signal, open{' '}

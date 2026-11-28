@@ -10,11 +10,12 @@ import type { AreaLinkData, AreaOutlineGeometry } from '@birdspotter/cbc-manager
 import { areaName } from './areaName.ts';
 import { outlineBox } from './areaOutline.ts';
 import { countCircle } from './areaRegion.ts';
-import { areaStatusAt, areaStatusText } from './areaStatus.ts';
+import { areaStatusAt, areaStatusText, type AreaStatus } from './areaStatus.ts';
 import { addRouteLayers, ROUTE_SOURCE, routeFeatures } from './routeLayers.ts';
 import { SessionPanel } from './SessionPanel.tsx';
 import { sessionStretches } from './sessionStretches.ts';
 import { useCountSession } from './useCountSession.ts';
+import { useSettledAreaStatus } from './useSettledAreaStatus.ts';
 
 const AREA_SOURCE = 'scout-area';
 const AREA_COLOR = '#15803d';
@@ -61,6 +62,8 @@ interface ScoutMapProps {
   /** Receives the map's location control once the map has loaded, and null when the map is removed. */
   readonly onLocationControl: (control: maplibregl.GeolocateControl | null) => void;
   readonly storage: KeyValueStorage | null;
+  /** Buzzes or beeps when the counter's settled status changes. */
+  readonly isEdgeCueOn: boolean;
   readonly setError: (message: string | null) => void;
   readonly setNotice: (message: string | null) => void;
 }
@@ -69,11 +72,14 @@ interface ScoutMapProps {
 function locationLine(
   live: LiveLocation,
   area: AreaLinkData | null,
-  circle: Feature<Polygon> | null
+  circle: Feature<Polygon> | null,
+  settled: AreaStatus | null
 ): { readonly text: string; readonly isError: boolean } | null {
   if (live.error) return { text: live.error, isError: true };
   if (!area || !circle || !live.isTracking) return null;
+  if (settled) return { text: areaStatusText(settled), isError: false };
   if (!live.position) return { text: 'Finding your location…', isError: false };
+  // Until a fix is good enough to settle on, the line shows the latest one.
   const [lng, lat] = live.position;
   return { text: areaStatusText(areaStatusAt(area, circle, lng, lat)), isError: false };
 }
@@ -82,14 +88,30 @@ function locationLine(
  * Shows the area's circle and outline, zoomed to the outline, the person's live location, the count's route, and the
  * eBird places; with no area, the start view, the location, the route, and the places.
  */
-export function ScoutMap({ area, live, data, onLocationControl, storage, setError, setNotice }: ScoutMapProps) {
+export function ScoutMap({
+  area,
+  live,
+  data,
+  onLocationControl,
+  storage,
+  isEdgeCueOn,
+  setError,
+  setNotice,
+}: ScoutMapProps) {
   const [ready, setReady] = useState<ReadyMap | null>(null);
   const circle = useMemo(() => (area ? countCircle(area) : null), [area]);
-  const line = locationLine(live, area, circle);
-  const count = useCountSession({ control: ready?.locationControl ?? null, storage, setError });
+  const locationControl = ready?.locationControl ?? null;
+  const settled = useSettledAreaStatus({
+    control: locationControl,
+    area,
+    circle,
+    isTracking: live.isTracking,
+    isCueOn: isEdgeCueOn,
+  });
+  const line = locationLine(live, area, circle, settled);
+  const count = useCountSession({ control: locationControl, storage, setError });
   const stretches = useMemo(() => (count.session ? sessionStretches(count.session) : []), [count.session]);
 
-  const locationControl = ready?.locationControl ?? null;
   useEffect(() => {
     onLocationControl(locationControl);
     return () => onLocationControl(null);
