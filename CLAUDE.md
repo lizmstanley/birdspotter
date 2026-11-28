@@ -16,7 +16,9 @@ One npm workspace: three browser-only apps, a shared birding core, and static si
 | `npm run lint` | ESLint on `packages`, `apps`, `site`, `scripts` |
 | `npm run screenshots` | Builds, then retakes install-sheet pictures in headless Chrome (`google-chrome` or `CHROME_PATH`). Needs network |
 
-CI (`ci.yml`) runs lint, typecheck, test, build on every PR. `pr-title.yml` requires a Conventional Commits prefix (`feat:`, `fix(scope):`).
+CI (`ci.yml`) runs `scripts/check-maplibre-pins.ts`, lint, typecheck, test, build on every PR. The pin check fails when the workspaces name different `maplibre-gl` versions. `pr-title.yml` requires a Conventional Commits prefix (`feat:`, `fix(scope):`). `pages.yml` builds without deploying on a PR that changes it.
+
+Dependabot (`dependabot.yml`) runs weekly with a cooldown. npm groups minor and patch updates as `react`, `maplibre`, `turf`, `lint`, `build`, and security fixes as `security`; each npm major version update gets its own PR. birding-core repeats its `maplibre-gl` peer as a dev dependency, because Dependabot rewrites a peer only next to a matching dev dependency. Actions updates, majors too, come as one `actions` PR.
 
 Releases: `release.yml` runs release-please on push to `main` (`release-please-config.json`, `.release-please-manifest.json`). It keeps one open release PR that bumps the root version and writes `CHANGELOG.md` from squash titles on `main`. Merging it tags `v<version>` and publishes the GitHub release. Never edit `CHANGELOG.md` or the version by hand. The release PR runs no CI (opened with `GITHUB_TOKEN`), so it merges with the ruleset bypass. Needs two repo settings: "Allow GitHub Actions to create and approve pull requests" on, and squash merge title set to the PR title (`squash_merge_commit_title: PR_TITLE`), since `pr-title.yml` checks only the PR title.
 
