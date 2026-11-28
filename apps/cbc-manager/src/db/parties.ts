@@ -107,16 +107,31 @@ export async function saveParty(db: PGlite, circleCode: string, party: Party): P
 
 /**
  * Saves the party in `season` of the circle, replacing the party with the same ID in whichever season holds it.
+ * A party moved from another season keeps its route.
  * The area must be one of the circle's areas and the season one of its seasons; the foreign keys refuse others.
  */
 export async function savePartyInSeason(db: PGlite, circleCode: string, season: number, party: Party): Promise<void> {
   await db.transaction(async (tx) => {
+    await upsertParty(tx, circleCode, season, party.area_code, party);
+    await tx.query(
+      `UPDATE public.parties target
+       SET route_geojson = (
+         SELECT moved.route_geojson
+         FROM public.parties moved
+         WHERE moved.circle_code = $1 AND moved.party_id = $2 AND moved.count_year <> $3
+           AND moved.route_geojson IS NOT NULL
+         ORDER BY moved.count_year DESC
+         LIMIT 1
+       )
+       WHERE target.circle_code = $1 AND target.party_id = $2 AND target.count_year = $3
+         AND target.route_geojson IS NULL`,
+      [circleCode, party.party_id, season]
+    );
     await tx.query('DELETE FROM public.parties WHERE circle_code = $1 AND party_id = $2 AND count_year <> $3', [
       circleCode,
       party.party_id,
       season,
     ]);
-    await upsertParty(tx, circleCode, season, party.area_code, party);
   });
 }
 

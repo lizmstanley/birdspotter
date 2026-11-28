@@ -255,7 +255,8 @@ birdspotter/
 │   │   │   │   ├── 002_catch_up_unversioned_databases.sql
 │   │   │   │   ├── 003_area_results_by_season.sql
 │   │   │   │   ├── 004_area_counter_note.sql
-│   │   │   │   └── 005_parties.sql
+│   │   │   │   ├── 005_parties.sql
+│   │   │   │   └── 006_party_routes.sql
 │   │   │   └── views.sql            # Assignments, open areas, reminders, outreach, party totals (re-applied on every start)
 │   │   ├── src/
 │   │   │   ├── db/
