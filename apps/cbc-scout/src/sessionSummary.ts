@@ -43,6 +43,7 @@ function partyEffort(session: StoppedSession, totals: SessionTotals): PartyEffor
     feederHours: session.feederHours,
     carMiles: totals.carMiles,
     footMiles: totals.footMiles,
+    route: session.tracks.map((track) => track.map((point) => [point.lng, point.lat])),
   };
 }
 
