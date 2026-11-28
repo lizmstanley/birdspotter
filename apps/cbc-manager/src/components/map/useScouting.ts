@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   searchAudubonCircles,
   withAudubonPageDetails,
   type AudubonCircleResult,
 } from '../../services/audubonCircles.ts';
+import { describeError } from '../../services/describeError.ts';
 import type { ScoutTarget } from './types.ts';
 
 interface ScoutingOptions {
@@ -17,8 +18,10 @@ export function useScouting({ setStatus, clearEbirdResults }: ScoutingOptions) {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<AudubonCircleResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const latestPreviewRef = useRef(0);
 
   function exit() {
+    latestPreviewRef.current += 1;
     setTarget(null);
     setResults([]);
     setError(null);
@@ -55,9 +58,12 @@ export function useScouting({ setStatus, clearEbirdResults }: ScoutingOptions) {
   }
 
   async function preview(result: AudubonCircleResult) {
+    const request = ++latestPreviewRef.current;
     setIsSearching(true);
+    setError(null);
     try {
       const r = await withAudubonPageDetails(result);
+      if (request !== latestPreviewRef.current) return;
       setTarget({
         code: r.code,
         name: r.name,
@@ -75,6 +81,8 @@ export function useScouting({ setStatus, clearEbirdResults }: ScoutingOptions) {
       setStatus(
         `Scouting ${r.code} — ${r.name}. Drag the red pin to test new circle placements, then click "Load Hotspots & Sightings".`
       );
+    } catch (err) {
+      if (request === latestPreviewRef.current) setError(describeError(err));
     } finally {
       setIsSearching(false);
     }

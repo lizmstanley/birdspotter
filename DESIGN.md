@@ -122,6 +122,35 @@ Rejected: saving tiles as the counter pans, which leaves parts of the area blank
 
 The repo is one npm workspace, so the core changes with its apps in one pull request and needs no release. Lint stops the core from importing an app, stops a phone app from importing the web app's database, and stops Birdspotter from importing anything but the core.
 
+### Module map
+
+Circle manager (`apps/cbc-manager/`):
+
+- `db/migrations/NNN_name.sql`: schema. `db/views.sql`: business rules as views (`v_open_areas`, `v_needs_reminder`, `v_possible_outreach`, `v_current_assignments`, `v_area_party_totals`).
+- `src/db/cbcDb.ts`: `CbcDb`. Queries split by concern into `circles.ts`, `areas.ts`, `roster.ts`, `seasons.ts`, `parties.ts`, `readModels.ts`, `backup.ts`.
+- `src/db/pgliteDb.ts`: `LocalCbcDb` on IndexedDB. `browserMigrations.ts` bundles the SQL with `import.meta.glob`; `testing/testDb.ts` reads the same files from disk.
+- `src/db/migrations.ts`: runner. Pending migrations, their `schema_version` rows, and `views.sql` run in one transaction. A database newer than the app throws `SchemaTooNewError`.
+- `src/db/legacySingleCircle.ts`: moves the pre-multi-circle format into a circle coded `LEGACY`.
+- `src/services/`: logic, network clients, browser storage helpers. Audubon circle search (`audubonCircles.ts`, ArcGIS), circle page scraping (`audubonCirclePage.ts`), KML/KMZ/GeoJSON parsing, roster import checks, seasons and count dates, the area link (`areaLink.ts`), share addresses (`shareApp.ts`), Auto-Save (`autoSave.ts`).
+- `src/hooks/`: state and actions. `src/components/TabContent.tsx` maps each `Tab` in `src/tabs.ts` to its component. The map is `CircleMap.tsx` with parts in `components/map/`; roster import is `SpreadsheetImporter.tsx` with parts in `components/import/`.
+
+CBC Scout (`apps/cbc-scout/src/`):
+
+- `areaStartup.ts`: reads an area link from the address before React renders, then strips it.
+- `areaLinkText.ts`: finds the payload in pasted text or a scanned QR code.
+- `areaRegion.ts`: the count circle as the pinned query, and the area test that puts places in the area first.
+- `savedAreas.ts`, `countSession.ts`, `scoutSettings.ts`, `offlineMap.ts`, `leaderContact.ts`, `scoutIdentity.ts`.
+
+Birding core (`packages/birding-core/src/`):
+
+- `ebird.ts` and `ebirdCache.ts`: the eBird client and its `localStorage` cache.
+- `BirdingMap.tsx`: the base map, with eBird places and their popup (`mapPlaces.ts`, `placeLayers.ts`, `PlacePopup.tsx`).
+- Screens: `NearbyPanel`, `SuggestionsPanel`, `SettingsForm`, `EbirdKeyForm`, `InstallBanner`, `FirstRunScreen`, `Help.tsx`, `About.tsx`, `CrashBoundary.tsx`.
+- `BirdingBar.tsx` and `screens.ts`: the menu bar and its full screen.
+- `installPrompt.ts`, `installOffer.ts`: Chrome's install prompt and the iOS share-sheet steps.
+
+Install screenshots: `apps/<app>/public/screenshot-*.png`, listed under `screenshots` in each manifest. `scripts/screenshots/capture.ts` takes them from the built apps in headless Chrome with made-up data from `sampleData.ts`. `site/installScreenshots.test.ts` checks each file against its manifest entry and Chrome's limits, not whether it is current.
+
 ## What would change with a server
 
 - Replace the browser client with a Postgres connection. The migrations and views carry over.

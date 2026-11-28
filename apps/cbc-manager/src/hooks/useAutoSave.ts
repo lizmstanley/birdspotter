@@ -41,11 +41,11 @@ export function useAutoSave(db: LocalCbcDb, setError: SetError, flash: Flash) {
     if (!handle) return;
     try {
       if (!(await hasPermission(handle))) {
-        setStatus('needs-permission');
+        if (handleRef.current === handle) setStatus('needs-permission');
         return;
       }
       await writeBackupFile(handle, await db.exportJsonBackup());
-      setStatus('on');
+      if (handleRef.current === handle) setStatus('on');
     } catch (err) {
       setError(`Auto-save failed: ${describeError(err)}`);
     }
