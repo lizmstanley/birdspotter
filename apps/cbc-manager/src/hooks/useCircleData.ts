@@ -88,8 +88,9 @@ export function useCircleData(db: LocalCbcDb, setError: SetError, onSettled: () 
       await db.init();
       const circles = await db.getSavedCircles();
       const current = pickActiveCircle(circles);
+      const circleData = current ? await loadActiveCircleData(db, current.code) : NO_CIRCLE_DATA;
       setSavedCircles(circles);
-      setData(current ? await loadActiveCircleData(db, current.code) : NO_CIRCLE_DATA);
+      setData(circleData);
     } catch (err) {
       setError(describeError(err));
     } finally {

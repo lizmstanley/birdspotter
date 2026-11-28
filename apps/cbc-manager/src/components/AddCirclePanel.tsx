@@ -5,6 +5,7 @@ import {
   type AudubonCircleResult,
 } from '../services/audubonCircles';
 import { parseCircleCenter } from '../services/circleCenter';
+import { describeError } from '../services/describeError';
 import { computeCollectionCenter, parseBoundaryFile, type ParsedAreaBoundary } from '../services/kmlParser';
 
 export interface NewCirclePayload {
@@ -98,6 +99,8 @@ function SearchSection({ onAdd, onStatus }: SectionProps) {
         count_date: c.countDate ?? null,
         audubon_url: c.source === 'audubon' ? c.joinUrl : null,
       });
+    } catch (err) {
+      onStatus(describeError(err));
     } finally {
       setAddingCode(null);
     }
