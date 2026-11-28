@@ -1,9 +1,20 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { DistanceUnit } from './distanceUnit.ts';
 import type { EbirdObservation } from './ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
 import { BACK_DAY_CHOICES, type RefreshMinutes } from './settings.ts';
-import { groupSightings, sortNearby, type LngLat, type NearbyRow, type Place, type RegionTest } from './nearby.ts';
+import {
+  findSpecies,
+  groupSightings,
+  isRecentSightingsHidden,
+  noRecentSightingsText,
+  sortNearby,
+  speciesSearchKey,
+  type LngLat,
+  type NearbyRow,
+  type Place,
+  type RegionTest,
+} from './nearby.ts';
 import { SightingRow } from './NearbyRows.tsx';
 import { EbirdCredit, NearbyStatus } from './NearbyStatus.tsx';
 import { useMinuteClock } from './useMinuteClock.ts';
@@ -85,6 +96,9 @@ export function NearbyPanel({
     if (!origin) return groupSightings<EbirdObservation>([], []);
     return groupSightings(sortNearby(data.regular, origin, isInRegion), sortNearby(data.notable, origin, isInRegion));
   }, [data.regular, data.notable, origin, isInRegion]);
+  const [search, setSearch] = useState('');
+  const searchKey = speciesSearchKey(search);
+  const shown = useMemo(() => findSpecies(sightings, searchKey), [sightings, searchKey]);
 
   return (
     <section className="birding-panel birding-nearby" aria-label="Sightings">
@@ -101,25 +115,40 @@ export function NearbyPanel({
       <NearbyStatus data={data} live={live} origin={origin} onFixKey={onFixKey} />
       {origin && (
         <>
-          {sightings.notable.length > 0 && (
+          <label className="birding-nearby-search">
+            Find a species
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </label>
+          {shown.notable.length > 0 && (
             <>
               <h2>Notable sightings</h2>
               <RowGroups
-                rows={sightings.notable}
+                rows={shown.notable}
                 titles={groupTitles}
                 renderRow={(row) => renderSighting(row, true, now, distanceUnit)}
               />
             </>
           )}
-          <h2>Recent sightings</h2>
-          {sightings.regular.length === 0 && !data.isLoading && data.sightingsFetchedAt !== null && (
-            <p>{sightings.notable.length > 0 ? 'No other' : 'No'} sightings reported here in that time.</p>
+          {!isRecentSightingsHidden(shown, search) && (
+            <>
+              <h2>Recent sightings</h2>
+              {shown.regular.length === 0 && !data.isLoading && data.sightingsFetchedAt !== null && (
+                <p>{noRecentSightingsText(shown, search)}</p>
+              )}
+              <RowGroups
+                rows={shown.regular}
+                titles={groupTitles}
+                renderRow={(row) => renderSighting(row, false, now, distanceUnit)}
+              />
+            </>
           )}
-          <RowGroups
-            rows={sightings.regular}
-            titles={groupTitles}
-            renderRow={(row) => renderSighting(row, false, now, distanceUnit)}
-          />
         </>
       )}
       <EbirdCredit refreshMinutes={refreshMinutes} hasNoSignal={data.hasNoSignal} />

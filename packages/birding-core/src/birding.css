@@ -108,6 +108,18 @@ button {
   font: inherit;
 }
 
+.birding-nearby-search {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.birding-nearby-search input {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
 .birding-nearby-list {
   margin: 0;
   padding: 0;

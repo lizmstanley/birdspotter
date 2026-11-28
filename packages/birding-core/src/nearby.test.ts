@@ -5,13 +5,18 @@ import {
   compassPoint,
   directionTo,
   distanceMiles,
+  findSpecies,
   formatDistance,
   groupSightings,
+  isRecentSightingsHidden,
   NEARBY_RADIUS_MILES,
   nearbyQuery,
+  noRecentSightingsText,
   sortNearby,
+  speciesSearchKey,
   type NearbyQuery,
   type RegionTest,
+  type SightingGroups,
 } from './nearby.ts';
 
 const isInRegion: RegionTest = ({ lng, lat }) => lng >= -93.3 && lng <= -93.2 && lat >= 44.9 && lat <= 45;
@@ -97,6 +102,66 @@ test('with no notable reports, every regular row stays', () => {
   const regular = sortNearby([{ speciesCode: 'bkcchi', lng: -93.25, lat: 44.95 }], here, null);
 
   assert.deepEqual(groupSightings(regular, []), { notable: [], regular });
+});
+
+test('a search key ignores case, spaces, and punctuation', () => {
+  assert.equal(speciesSearchKey(" Red-breasted  Cooper's 2 "), 'redbreastedcoopers2');
+  assert.equal(speciesSearchKey(" -' "), '');
+  assert.equal(speciesSearchKey("Rüppell's Warbler"), speciesSearchKey('ruppells warbler'));
+});
+
+test('a species search keeps only the rows whose name holds the typed text, in both lists, in order', () => {
+  const report = (speciesCode: string, comName: string, lat: number) => ({ speciesCode, comName, lng: -93.25, lat });
+  const groups = groupSightings(
+    sortNearby(
+      [
+        report('rebnut', 'Red-breasted Nuthatch', 44.92),
+        report('coohaw', "Cooper's Hawk", 44.94),
+        report('bkcchi', 'Black-capped Chickadee', 44.95),
+        report('whbnut', 'White-breasted Nuthatch', 44.93),
+      ],
+      here,
+      null
+    ),
+    sortNearby([report('pygnut', 'Pygmy Nuthatch', 44.96)], here, null)
+  );
+  const names = (rows: SightingGroups<ReturnType<typeof report>>) => ({
+    notable: rows.notable.map((row) => row.item.comName),
+    regular: rows.regular.map((row) => row.item.comName),
+  });
+
+  assert.deepEqual(names(findSpecies(groups, speciesSearchKey('NUTH'))), {
+    notable: ['Pygmy Nuthatch'],
+    regular: ['White-breasted Nuthatch', 'Red-breasted Nuthatch'],
+  });
+  assert.deepEqual(names(findSpecies(groups, speciesSearchKey('coopers'))), { notable: [], regular: ["Cooper's Hawk"] });
+  assert.deepEqual(names(findSpecies(groups, speciesSearchKey('red breasted'))), {
+    notable: [],
+    regular: ['Red-breasted Nuthatch'],
+  });
+  assert.deepEqual(names(findSpecies(groups, speciesSearchKey('owl'))), { notable: [], regular: [] });
+  assert.equal(findSpecies(groups, ''), groups);
+});
+
+test('recent sightings hide only when a search matches notable sightings alone', () => {
+  const row = sortNearby([{ speciesCode: 'snoowl', lng: -93.25, lat: 44.95 }], here, null);
+  const onlyNotable = { notable: row, regular: [] };
+
+  assert.equal(isRecentSightingsHidden(onlyNotable, 'owl'), true);
+  assert.equal(isRecentSightingsHidden(onlyNotable, ' - '), false);
+  assert.equal(isRecentSightingsHidden({ notable: [], regular: [] }, 'owl'), false);
+  assert.equal(isRecentSightingsHidden({ notable: row, regular: row }, 'owl'), false);
+});
+
+test('with no recent rows, the line names the search, or says whether anything else was reported', () => {
+  const row = sortNearby([{ speciesCode: 'snoowl', lng: -93.25, lat: 44.95 }], here, null);
+
+  assert.equal(
+    noRecentSightingsText({ notable: [], regular: [] }, ' owl '),
+    'No species matching "owl" reported here in that time.'
+  );
+  assert.equal(noRecentSightingsText({ notable: row, regular: [] }, ''), 'No other sightings reported here in that time.');
+  assert.equal(noRecentSightingsText({ notable: [], regular: [] }, ' - '), 'No sightings reported here in that time.');
 });
 
 test('with a pinned query, that query is used wherever the person is', () => {
