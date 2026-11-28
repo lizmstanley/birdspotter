@@ -1,0 +1,34 @@
+app:birdspotter:
+  - changed-files:
+      - any-glob-to-any-file: apps/birdspotter/**
+
+app:cbc-scout:
+  - changed-files:
+      - any-glob-to-any-file: apps/cbc-scout/**
+
+app:cbc-manager:
+  - changed-files:
+      - any-glob-to-any-file: apps/cbc-manager/**
+
+pkg:birding-core:
+  - changed-files:
+      - any-glob-to-any-file: packages/birding-core/**
+
+area:site:
+  - changed-files:
+      - any-glob-to-any-file: site/**
+
+area:ci:
+  - changed-files:
+      - any-glob-to-any-file: .github/**
+
+area:docs:
+  - changed-files:
+      - any-glob-to-any-file: ['*.md', 'docs/**']
+
+area:tooling:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: scripts/**
+      - changed-files:
+          - all-globs-to-any-file: ['*', '!*.md']

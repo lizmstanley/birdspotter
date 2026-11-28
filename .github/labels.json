@@ -1,0 +1,22 @@
+[
+  { "name": "app:birdspotter", "color": "1d76db", "description": "Birdspotter app (apps/birdspotter)" },
+  { "name": "app:cbc-scout", "color": "0e8a16", "description": "CBC Scout app (apps/cbc-scout)" },
+  { "name": "app:cbc-manager", "color": "5319e7", "description": "Circle manager app (apps/cbc-manager)" },
+  { "name": "pkg:birding-core", "color": "b60205", "description": "Shared birding core (packages/birding-core)" },
+  { "name": "area:site", "color": "c5def5", "description": "Static site pages (site)" },
+  { "name": "area:ci", "color": "5f6b7a", "description": "Workflows and GitHub config (.github)" },
+  { "name": "area:docs", "color": "0052cc", "description": "Top-level docs and docs/ (README, DESIGN, CLAUDE)" },
+  { "name": "area:tooling", "color": "8b5a2b", "description": "Root config, dependencies, and scripts" },
+  { "name": "type:feat", "color": "a2eeef", "description": "PR title type feat" },
+  { "name": "type:fix", "color": "d93f0b", "description": "PR title type fix" },
+  { "name": "type:docs", "color": "bfdadc", "description": "PR title type docs" },
+  { "name": "type:refactor", "color": "fbca04", "description": "PR title type refactor" },
+  { "name": "type:test", "color": "bfd4f2", "description": "PR title type test" },
+  { "name": "type:ci", "color": "ededed", "description": "PR title type ci" },
+  { "name": "type:build", "color": "f9d0c4", "description": "PR title type build" },
+  { "name": "type:perf", "color": "ff9f1c", "description": "PR title type perf" },
+  { "name": "type:chore", "color": "d4c5f9", "description": "PR title type chore" },
+  { "name": "type:style", "color": "fef2c0", "description": "PR title type style" },
+  { "name": "type:revert", "color": "e99695", "description": "PR title type revert" },
+  { "name": "breaking", "color": "000000", "description": "PR title marks a breaking change (!)" }
+]

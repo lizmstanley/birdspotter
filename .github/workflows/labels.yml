@@ -1,0 +1,55 @@
+name: PR labels
+
+on:
+  # Dependabot and fork PRs get a read-only token on pull_request. No job here checks out or runs PR code.
+  pull_request_target: # zizmor: ignore[dangerous-triggers] no checkout; reads only the event payload and the API
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+concurrency:
+  group: labels-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # The labeler replaces the whole label set from a snapshot it takes first, so the type step must run after it.
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          sync-labels: true
+      - name: Set the type label from the title
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ github.event.pull_request.title }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          pattern='^(feat|fix|docs|chore|refactor|test|ci|perf|build|style|revert)(\([a-z0-9-]+\))?(!)?: [^ ].*'
+          wanted=()
+          if [[ "$TITLE" =~ $pattern ]]; then
+            wanted+=("type:${BASH_REMATCH[1]}")
+            if [[ -n "${BASH_REMATCH[3]}" ]]; then
+              wanted+=("breaking")
+            fi
+          fi
+
+          labels_url="repos/$GITHUB_REPOSITORY/issues/$PR/labels"
+          current=$(gh api "$labels_url" --jq '.[].name')
+          while IFS= read -r label; do
+            if [[ "$label" != type:* && "$label" != "breaking" ]]; then
+              continue
+            fi
+            if [[ " ${wanted[*]} " == *" $label "* ]]; then
+              continue
+            fi
+            gh api --method DELETE "$labels_url/$(jq -rn --arg l "$label" '$l | @uri')" > /dev/null
+          done <<< "$current"
+
+          for label in "${wanted[@]}"; do
+            gh api --method POST "$labels_url" -f "labels[]=$label" > /dev/null
+          done
