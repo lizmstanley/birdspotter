@@ -1,15 +1,23 @@
 import type { ReactNode } from 'react';
+import type { DistanceUnit } from './distanceUnit.ts';
 import { EBIRD_KEY_REQUEST_URL } from './ebird.ts';
 
 interface HelpProps {
   readonly appName: string;
   /** The site's privacy page, which sits outside every app's folder. */
   readonly privacyUrl: string;
+  readonly distanceUnit: DistanceUnit;
   /** The app's own sections, after the shared ones. */
   readonly children?: ReactNode;
 }
 
-export function Help({ appName, privacyUrl, children }: HelpProps) {
+// Each matches DIRECTION_MIN_MILES in nearby.ts.
+const DIRECTION_MIN_TEXT: Readonly<Record<DistanceUnit, string>> = {
+  mi: 'a tenth of a mile',
+  km: '160 meters',
+};
+
+export function Help({ appName, privacyUrl, distanceUnit, children }: HelpProps) {
   return (
     <div className="birding-help">
       <h2>What the lists show</h2>
@@ -32,7 +40,8 @@ export function Help({ appName, privacyUrl, children }: HelpProps) {
         Tap a hotspot&apos;s species count to see which species, each linked to its eBird checklist.
       </p>
       <p>
-        Every place shows its distance from you, its direction once it&apos;s more than a tenth of a mile away, and
+        Every place shows its distance from you, its direction once it&apos;s more than{' '}
+        {DIRECTION_MIN_TEXT[distanceUnit]} away, and
         a <strong>Directions</strong> link. It opens Apple Maps on iPhone and iPad, and Google Maps everywhere else.
       </p>
 

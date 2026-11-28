@@ -1,3 +1,5 @@
+import { fromMiles, type DistanceUnit } from './distanceUnit.ts';
+
 /** [longitude, latitude] */
 export type LngLat = readonly [number, number];
 
@@ -37,7 +39,7 @@ export interface NearbyQuery {
 export const NEARBY_RADIUS_MILES = 7.5;
 
 const EARTH_RADIUS_MILES = 3958.8;
-const WHOLE_MILES_FROM = 10;
+const WHOLE_UNITS_FROM = 10;
 // Closer than this, GPS error can put the person on either side of the place.
 const DIRECTION_MIN_MILES = 0.1;
 const COMPASS_POINTS: readonly CompassPoint[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -75,10 +77,11 @@ export function directionTo(from: LngLat, to: LngLat, miles: number): CompassPoi
   return compassPoint(bearingDegrees(from, to));
 }
 
-export function formatDistance(miles: number): string {
-  const tenths = miles.toFixed(1);
-  if (Number(tenths) >= WHOLE_MILES_FROM) return `${Math.round(miles)} mi`;
-  return `${tenths} mi`;
+export function formatDistance(miles: number, unit: DistanceUnit): string {
+  const distance = fromMiles(miles, unit);
+  const tenths = distance.toFixed(1);
+  if (Number(tenths) >= WHOLE_UNITS_FROM) return `${Math.round(distance)} ${unit}`;
+  return `${tenths} ${unit}`;
 }
 
 /** @returns places in the region first, then the rest, each group nearest first */

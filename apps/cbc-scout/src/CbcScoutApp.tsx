@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import type { GeolocateControl } from 'maplibre-gl';
 import { About } from '@birdspotter/birding-core/About.tsx';
 import { BirdingBar, BirdingScreen } from '@birdspotter/birding-core/BirdingBar.tsx';
+import { localeDistanceUnit } from '@birdspotter/birding-core/distanceUnit.ts';
 import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
 import { Help } from '@birdspotter/birding-core/Help.tsx';
 import { InstallBanner } from '@birdspotter/birding-core/InstallBanner.tsx';
 import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt.ts';
 import { NearbyPanel, type GroupTitles } from '@birdspotter/birding-core/NearbyPanel.tsx';
 import type { AppScreen, Screen } from '@birdspotter/birding-core/screens.ts';
-import { readSettings, writeSettings, type BirdingSettings } from '@birdspotter/birding-core/settings.ts';
+import { writeSettings } from '@birdspotter/birding-core/settings.ts';
 import { SettingsForm } from '@birdspotter/birding-core/SettingsForm.tsx';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import { SuggestionsPanel } from '@birdspotter/birding-core/SuggestionsPanel.tsx';
@@ -19,8 +20,10 @@ import { CBC_CIRCLE_RADIUS_MILES } from '@birdspotter/cbc-manager/services/cbcCi
 import { AreaDetails, AreaPanel } from './AreaPanel.tsx';
 import { countCircle, countCircleQuery, inAreaOnly, isInAreaTest } from './areaRegion.ts';
 import type { AreaStartup } from './areaStartup.ts';
+import { EdgeCueSetting } from './EdgeCueSetting.tsx';
 import { activeSavedArea } from './savedAreas.ts';
 import { CBC_SCOUT } from './scoutIdentity.ts';
+import { readScoutSettings, type ScoutSettings } from './scoutSettings.ts';
 import { ScoutHelp } from './ScoutHelp.tsx';
 import { ScoutMap } from './ScoutMap.tsx';
 import { useOfflineMap } from './useOfflineMap.ts';
@@ -93,7 +96,9 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   const area = activeArea?.data ?? null;
   // Notes belong to an area, so with none loaded the tab is gone and Sightings shows.
   const panel = chosenPanel === 'notes' && !area ? 'sightings' : chosenPanel;
-  const [settings, setSettings] = useState(() => readSettings(storage, CBC_SCOUT.settingsStorageKey));
+  const [settings, setSettings] = useState(() =>
+    readScoutSettings(storage, CBC_SCOUT.settingsStorageKey, localeDistanceUnit(navigator.language))
+  );
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
   const circleQuery = useMemo(() => (area ? countCircleQuery(area) : null), [area]);
   // Above the tabs, so Sightings and Hotspots share one load. With no area, the search is the size of a count circle.
@@ -117,7 +122,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
   );
   const areaData = areaLists ? { ...nearby, ...areaLists } : nearby;
 
-  function changeSettings(next: BirdingSettings): void {
+  function changeSettings(next: ScoutSettings): void {
     setSettings(next);
     setIsSettingsSaved(writeSettings(storage, CBC_SCOUT.settingsStorageKey, next));
   }
@@ -144,8 +149,10 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
         data={areaData}
         onLocationControl={setLocationControl}
         storage={storage}
+        isEdgeCueOn={settings.isEdgeCueOn}
         setError={setError}
         setNotice={setNotice}
+        distanceUnit={settings.distanceUnit}
       />
       <div className="scout-tabs">
         <button type="button" aria-pressed={panel === 'sightings'} onClick={() => setPanel('sightings')}>
@@ -168,6 +175,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
           data={areaData}
           live={live}
           origin={live.position}
+          distanceUnit={settings.distanceUnit}
           backDays={settings.backDays}
           onBackDaysChange={(backDays) => changeSettings({ ...settings, backDays })}
           refreshMinutes={settings.refreshMinutes}
@@ -180,6 +188,7 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
           data={areaData}
           live={live}
           origin={live.position}
+          distanceUnit={settings.distanceUnit}
           backDays={settings.backDays}
           refreshMinutes={settings.refreshMinutes}
           onFixKey={() => setScreen('ebird-key')}
@@ -220,12 +229,17 @@ export function CbcScoutApp({ installPrompt, areaStartup, storage }: CbcScoutApp
               settings={settings}
               isSaved={isSettingsSaved}
               isRadiusShown={false}
-              onChange={changeSettings}
-            />
+              onChange={(next) => changeSettings({ ...settings, ...next })}
+            >
+              <EdgeCueSetting
+                isOn={settings.isEdgeCueOn}
+                onChange={(isEdgeCueOn) => changeSettings({ ...settings, isEdgeCueOn })}
+              />
+            </SettingsForm>
           )}
           {screen === 'help' && (
-            <Help appName={CBC_SCOUT.name} privacyUrl={PRIVACY_URL}>
-              <ScoutHelp />
+            <Help appName={CBC_SCOUT.name} privacyUrl={PRIVACY_URL} distanceUnit={settings.distanceUnit}>
+              <ScoutHelp distanceUnit={settings.distanceUnit} />
             </Help>
           )}
           {screen === 'about' && <About />}

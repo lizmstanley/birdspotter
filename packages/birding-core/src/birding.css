@@ -1,3 +1,100 @@
+:root {
+  --birding-bg: #f8fafc;
+  --birding-surface: #ffffff;
+  --birding-tab-bg: #f1f5f9;
+  --birding-text: #0f172a;
+  --birding-muted: #475569;
+  --birding-border: #cbd5e1;
+  --birding-divider: #e2e8f0;
+  --birding-accent: #15803d;
+  --birding-error-bg: #fee2e2;
+  --birding-error-text: #991b1b;
+  --birding-success-bg: #dcfce7;
+  --birding-success-text: #166534;
+  --birding-notable-bg: #fef3c7;
+  --birding-notable-text: #92400e;
+  --birding-notable-row-bg: #fffbeb;
+  --birding-confirmed-row-bg: #fde68a;
+  --birding-confirmed-accent: #166534;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --birding-bg: #0f172a;
+    --birding-surface: #1e293b;
+    --birding-tab-bg: #1e293b;
+    --birding-text: #e2e8f0;
+    --birding-muted: #94a3b8;
+    --birding-border: #475569;
+    --birding-divider: #334155;
+    --birding-accent: #4ade80;
+    --birding-error-bg: #450a0a;
+    --birding-error-text: #fca5a5;
+    --birding-success-bg: #14532d;
+    --birding-success-text: #bbf7d0;
+    --birding-notable-bg: #78350f;
+    --birding-notable-text: #fef3c7;
+    --birding-notable-row-bg: #2b1a07;
+    --birding-confirmed-row-bg: #4a2c0a;
+    --birding-confirmed-accent: #4ade80;
+  }
+
+  /* Inverting the canvas keeps the basemap's street and label contrast and the app's layer hues,
+     and needs no second style file, so a saved offline map serves both looks. */
+  .birding-map .maplibregl-canvas {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  .birding-map .maplibregl-ctrl-group,
+  .birding-map .maplibregl-ctrl-attrib.maplibregl-compact,
+  .birding-map .maplibregl-popup-content {
+    background: var(--birding-surface);
+    color: var(--birding-text);
+  }
+
+  .birding-map .maplibregl-ctrl.maplibregl-ctrl-attrib:not(.maplibregl-compact) {
+    background-color: rgb(15 23 42 / 70%);
+  }
+
+  .birding-map .maplibregl-ctrl-attrib a {
+    color: var(--birding-text);
+  }
+
+  .birding-map .maplibregl-ctrl-group button + button {
+    border-top-color: var(--birding-border);
+  }
+
+  /* The control icons are images with a fixed dark fill, so color rules do not reach them. */
+  .birding-map .maplibregl-ctrl-icon,
+  .birding-map .maplibregl-ctrl-attrib-button {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  .birding-map .maplibregl-popup-close-button {
+    color: inherit;
+  }
+
+  .birding-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+  .birding-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+  .birding-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+    border-bottom-color: var(--birding-surface);
+  }
+
+  .birding-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+  .birding-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+  .birding-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+    border-top-color: var(--birding-surface);
+  }
+
+  .birding-map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+    border-right-color: var(--birding-surface);
+  }
+
+  .birding-map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: var(--birding-surface);
+  }
+}
+
 input,
 button {
   font: inherit;
@@ -20,8 +117,8 @@ button {
   gap: 12px;
   margin: 0;
   padding: 8px 16px;
-  background: #dcfce7;
-  color: #166534;
+  background: var(--birding-success-bg);
+  color: var(--birding-success-text);
 }
 
 .birding-key {
@@ -68,7 +165,7 @@ button {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #475569;
+  color: var(--birding-muted);
   transform: translateY(-50%);
 }
 
@@ -76,7 +173,7 @@ button {
   max-height: 45dvh;
   overflow-y: auto;
   padding: 12px 16px;
-  border-top: 1px solid #cbd5e1;
+  border-top: 1px solid var(--birding-border);
 }
 
 .birding-panel h1 {
@@ -100,7 +197,7 @@ button {
 .birding-nearby h3 {
   margin: 8px 0 0;
   font-size: 0.9rem;
-  color: #475569;
+  color: var(--birding-muted);
 }
 
 .birding-nearby-days select {
@@ -133,7 +230,7 @@ button {
   align-items: flex-start;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--birding-divider);
 }
 
 .birding-nearby-place {
@@ -162,9 +259,9 @@ a.birding-nearby-place {
   min-width: 44px;
   padding: 0 12px;
   box-sizing: border-box;
-  border: 1px solid #15803d;
+  border: 1px solid var(--birding-accent);
   border-radius: 6px;
-  color: #15803d;
+  color: var(--birding-accent);
   font-weight: 600;
   text-decoration: none;
 }
@@ -172,7 +269,7 @@ a.birding-nearby-place {
 .birding-nearby-row-notable {
   padding: 8px;
   border-left: 4px solid #d97706;
-  background: #fffbeb;
+  background: var(--birding-notable-row-bg);
 }
 
 .birding-nearby-notable {
@@ -180,15 +277,16 @@ a.birding-nearby-place {
   margin-right: 6px;
   padding: 0 6px;
   border-radius: 4px;
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--birding-notable-bg);
+  color: var(--birding-notable-text);
   font-size: 0.8rem;
   font-weight: 600;
 }
 
 .birding-nearby-row-confirmed {
+  --birding-accent: var(--birding-confirmed-accent);
   border-left-color: #b45309;
-  background: #fde68a;
+  background: var(--birding-confirmed-row-bg);
 }
 
 .birding-nearby-confirmed {
@@ -204,7 +302,7 @@ a.birding-nearby-place {
 
 .birding-nearby-count,
 .birding-nearby-detail {
-  color: #475569;
+  color: var(--birding-muted);
 }
 
 .birding-nearby-detail {
@@ -213,7 +311,7 @@ a.birding-nearby-place {
 
 .birding-nearby-reason {
   font-size: 0.9rem;
-  color: #15803d;
+  color: var(--birding-accent);
 }
 
 .birding-hotspot-species summary {
@@ -223,7 +321,7 @@ a.birding-nearby-place {
 .birding-hotspot-species ul {
   margin: 4px 0 0;
   padding-left: 18px;
-  color: #0f172a;
+  color: var(--birding-text);
 }
 
 .birding-hotspot-species li {
@@ -255,17 +353,17 @@ a.birding-nearby-place {
 }
 
 .birding-nearby-error {
-  color: #991b1b;
+  color: var(--birding-error-text);
 }
 
 .birding-key-error {
-  color: #991b1b;
+  color: var(--birding-error-text);
 }
 
 .birding-nearby-credit {
   margin-top: 12px;
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--birding-muted);
 }
 
 .birding-settings {
@@ -287,11 +385,11 @@ a.birding-nearby-place {
 }
 
 .birding-settings p {
-  color: #475569;
+  color: var(--birding-muted);
 }
 
 .birding-settings .birding-settings-error {
-  color: #991b1b;
+  color: var(--birding-error-text);
 }
 
 .birding-bar {
@@ -329,9 +427,9 @@ a.birding-nearby-place {
   left: 8px;
   z-index: 3;
   min-width: 12rem;
-  background: #fff;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
+  background: var(--birding-surface);
+  color: var(--birding-text);
+  border: 1px solid var(--birding-border);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgb(15 23 42 / 0.2);
 }
@@ -354,7 +452,7 @@ a.birding-nearby-place {
   display: flex;
   flex-direction: column;
   padding: inherit;
-  background: #f8fafc;
+  background: var(--birding-bg);
 }
 
 .birding-screen-body {
@@ -421,8 +519,8 @@ a.birding-nearby-place {
   margin-left: 6px;
   padding: 0 6px;
   border-radius: 4px;
-  background: #dcfce7;
-  color: #166534;
+  background: var(--birding-success-bg);
+  color: var(--birding-success-text);
   font-size: 0.8rem;
   font-weight: 600;
 }

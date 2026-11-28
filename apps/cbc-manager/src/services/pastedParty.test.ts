@@ -25,6 +25,12 @@ const EFFORT: PartyEffort = {
   feederHours: 0,
   carMiles: 41.5,
   footMiles: 3.2,
+  route: [
+    [
+      [-93.25, 44.95],
+      [-93.24, 44.96],
+    ],
+  ],
 };
 
 const AREAS = ['1', '12A'];

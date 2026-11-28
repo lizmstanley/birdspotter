@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { DistanceUnit } from './distanceUnit.ts';
 import { ebirdChecklistUrl, type EbirdObservation } from './ebird.ts';
 import type { LngLat, RegionTest } from './nearby.ts';
 import type { LiveLocation } from './locationTracking.ts';
@@ -15,6 +16,7 @@ interface SuggestionsPanelProps {
   readonly live: LiveLocation;
   /** The point the rows are measured from, or null to show no rows yet. */
   readonly origin: LngLat | null;
+  readonly distanceUnit: DistanceUnit;
   readonly backDays: number;
   readonly refreshMinutes: RefreshMinutes;
   readonly onFixKey: () => void;
@@ -46,7 +48,16 @@ function HotspotSpecies({ species, notableSpecies }: HotspotSpeciesProps) {
 }
 
 /** Hotspots worth a stop, each with the species reported there, from the sightings and hotspots already loaded. */
-export function SuggestionsPanel({ isInRegion, data, live, origin, backDays, refreshMinutes, onFixKey }: SuggestionsPanelProps) {
+export function SuggestionsPanel({
+  isInRegion,
+  data,
+  live,
+  origin,
+  distanceUnit,
+  backDays,
+  refreshMinutes,
+  onFixKey,
+}: SuggestionsPanelProps) {
   const hotspots = useMemo(
     () => (origin ? hotspotsToVisit(data.hotspots, [...data.regular, ...data.notable], origin, isInRegion) : []),
     [data.hotspots, data.regular, data.notable, origin, isInRegion]
@@ -69,6 +80,7 @@ export function SuggestionsPanel({ isInRegion, data, live, origin, backDays, ref
                 key={row.item.locId}
                 row={row}
                 reason={<HotspotSpecies species={species} notableSpecies={notableSpecies} />}
+                distanceUnit={distanceUnit}
               />
             ))}
           </ul>

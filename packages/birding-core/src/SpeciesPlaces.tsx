@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { describeError } from './describeError.ts';
+import type { DistanceUnit } from './distanceUnit.ts';
 import type { EbirdList, EbirdObservation } from './ebird.ts';
 import { EbirdUnreachableError } from './errors.ts';
 import { latestAtEachPlace, sortNearby, type LngLat, type RegionTest } from './nearby.ts';
@@ -17,6 +18,7 @@ interface SpeciesPlacesProps {
   readonly origin: LngLat;
   readonly isInRegion: RegionTest | null;
   readonly now: Date;
+  readonly distanceUnit: DistanceUnit;
 }
 
 interface PlacesProps {
@@ -24,6 +26,7 @@ interface PlacesProps {
   readonly origin: LngLat;
   readonly isInRegion: RegionTest | null;
   readonly now: Date;
+  readonly distanceUnit: DistanceUnit;
 }
 
 type Fetched =
@@ -31,9 +34,9 @@ type Fetched =
   | { readonly status: 'failed'; readonly error: unknown };
 
 /** Every place a species was reported, opened under its row, nearest first. */
-export function SpeciesPlaces({ speciesCode, source, origin, isInRegion, now }: SpeciesPlacesProps) {
+export function SpeciesPlaces({ speciesCode, source, origin, isInRegion, now, distanceUnit }: SpeciesPlacesProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const places = { origin, isInRegion, now };
+  const places = { origin, isInRegion, now, distanceUnit };
   return (
     <details className="birding-species-places" onToggle={(event) => setIsOpen(event.currentTarget.open)}>
       <summary>Every place reported</summary>
@@ -92,14 +95,14 @@ function useFetchedPlaces(fetchPlaces: SpeciesPlacesFetcher, speciesCode: string
   return fetched;
 }
 
-function Places({ reports, origin, isInRegion, now }: PlacesProps) {
+function Places({ reports, origin, isInRegion, now, distanceUnit }: PlacesProps) {
   const rows = sortNearby(latestAtEachPlace(reports), origin, isInRegion);
   if (rows.length === 0) return <p className="birding-nearby-detail">No places reported in that time.</p>;
   if (rows.length === 1) return <p className="birding-nearby-detail">Reported at only this place in that time.</p>;
   return (
     <ul className="birding-nearby-list">
       {rows.map((row) => (
-        <SpeciesPlaceRow key={row.item.locId} row={row} now={now} />
+        <SpeciesPlaceRow key={row.item.locId} row={row} now={now} distanceUnit={distanceUnit} />
       ))}
     </ul>
   );

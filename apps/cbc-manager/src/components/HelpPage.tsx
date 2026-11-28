@@ -161,7 +161,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             CBC Scout
           </a>{' '}
           is a phone app for your field counters. It shows a counter their area on a map, where they are,
-          and what&apos;s been seen nearby, and it records the party&apos;s hours and miles.
+          and what&apos;s been seen nearby, and it records the party&apos;s hours and distance.
         </p>
         <ul className="help-list">
           <li>
@@ -194,7 +194,7 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           </li>
           <li>
             <strong>Sightings:</strong> notable sightings and recent sightings in your area, nearest first. They show once location is on. Each place has its distance,
-            its direction past a tenth of a mile, and a{' '}
+            its direction past a tenth of a mile (160 meters), and a{' '}
             <strong>Directions</strong> link to Apple Maps on iPhone and iPad, or Google Maps elsewhere.
             Notable sightings include reports still waiting for review. One an eBird reviewer has confirmed
             is marked <strong>Confirmed</strong>.
@@ -208,16 +208,20 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             <strong>Notes:</strong> the active area&apos;s name, its leaders, and your note for counters.
           </li>
           <li>
-            <strong>Party hours and miles:</strong> <strong>Start count</strong> records the route and
+            <strong>Party hours and distance:</strong> <strong>Start count</strong> records the route and
             sorts each stretch into travel by vehicle or by foot. After <strong>Stop count</strong>,{' '}
-            <strong>Share totals</strong> sends the party&apos;s line of the count sheet as text. Paste the
+            <strong>Share totals</strong> sends the party&apos;s line of the count sheet as text. Each distance
+            line names its unit, miles or km, as the counter set it in CBC Scout. The party code at the end
+            carries miles, so the web app records miles either way. Paste the
             whole message under <strong>Add Party From CBC Scout</strong> on the Awaiting Results page
             (click the Awaiting Results card), check what it read, and save it. The area&apos;s page sums the area&apos;s parties.
           </li>
           <li>
             <strong>Settings:</strong> in the menu, choose how often to check eBird for new sightings:
             every 15 minutes, half hour, hour, or 2 hours. Hotspots don&apos;t follow this setting: CBC
-            Scout uses a copy saved in the last 6 hours.
+            Scout uses a copy saved in the last 6 hours. <strong>Show distances in</strong> picks miles or
+            kilometers; until the counter changes any setting, it follows the phone&apos;s region: miles in the US,
+            kilometers everywhere else.
           </li>
           <li>
             <strong>No signal:</strong> CBC Scout opens with no signal once it has opened with a signal
@@ -252,10 +256,10 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
           is a phone app for any birder, with no count to set up. It shows a map of where you are and lists
           recent sightings, notable sightings, and eBird hotspots around you, each with its distance,
           direction, and a <strong>Directions</strong> link. <strong>Hotspots</strong> lists hotspots
-          worth a stop. It has no areas, count sessions, or hours and miles. Install it from{' '}
+          worth a stop. It has no areas, count sessions, or hours and distance. Install it from{' '}
           <code>{BIRDSPOTTER_URL}</code> the same way as CBC Scout. In <strong>Settings</strong>, choose
-          how often to check eBird and how far around you to search, from 2 to 25 miles. Its settings are
-          its own, apart from CBC Scout&apos;s.
+          how often to check eBird, miles or kilometers, and how far around you to search, from 2 to 25
+          miles (3 to 40 km). Its settings are its own, apart from CBC Scout&apos;s.
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import type { DistanceUnit } from './distanceUnit.ts';
 import type { EbirdObservation } from './ebird.ts';
 import type { LiveLocation } from './locationTracking.ts';
 import { BACK_DAY_CHOICES, type RefreshMinutes } from './settings.ts';
@@ -34,6 +35,7 @@ interface NearbyPanelProps {
   readonly live: LiveLocation;
   /** The point the rows are measured from, or null to show no rows yet. */
   readonly origin: LngLat | null;
+  readonly distanceUnit: DistanceUnit;
   readonly backDays: number;
   readonly onBackDaysChange: (backDays: number) => void;
   readonly refreshMinutes: RefreshMinutes;
@@ -65,10 +67,11 @@ interface SightingContext {
   readonly origin: LngLat;
   readonly isInRegion: RegionTest | null;
   readonly now: Date;
+  readonly distanceUnit: DistanceUnit;
 }
 
 function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean, context: SightingContext): ReactNode {
-  const { placesSource, origin, isInRegion, now } = context;
+  const { placesSource, origin, isInRegion, now, distanceUnit } = context;
   const places = placesSource && (
     <SpeciesPlaces
       speciesCode={row.item.speciesCode}
@@ -76,6 +79,7 @@ function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean, co
       origin={origin}
       isInRegion={isInRegion}
       now={now}
+      distanceUnit={distanceUnit}
     />
   );
   return (
@@ -84,6 +88,7 @@ function renderSighting(row: NearbyRow<EbirdObservation>, isNotable: boolean, co
       row={row}
       isNotable={isNotable}
       now={now}
+      distanceUnit={distanceUnit}
       places={places}
     />
   );
@@ -100,6 +105,7 @@ export function NearbyPanel({
   data,
   live,
   origin,
+  distanceUnit,
   backDays,
   onBackDaysChange,
   refreshMinutes,
@@ -148,7 +154,9 @@ export function NearbyPanel({
               <RowGroups
                 rows={shown.notable}
                 titles={groupTitles}
-                renderRow={(row) => renderSighting(row, true, { placesSource: notablePlaces, origin, isInRegion, now })}
+                renderRow={(row) =>
+                  renderSighting(row, true, { placesSource: notablePlaces, origin, isInRegion, now, distanceUnit })
+                }
               />
             </>
           )}
@@ -161,7 +169,9 @@ export function NearbyPanel({
               <RowGroups
                 rows={shown.regular}
                 titles={groupTitles}
-                renderRow={(row) => renderSighting(row, false, { placesSource: regularPlaces, origin, isInRegion, now })}
+                renderRow={(row) =>
+                  renderSighting(row, false, { placesSource: regularPlaces, origin, isInRegion, now, distanceUnit })
+                }
               />
             </>
           )}
