@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import type { AssignmentRow } from '../../db/pgliteDb';
 import { isoDay } from '../../services/countDay';
-import { writeParticipantsSheet, type SheetFormat } from './workbook';
+import { csvSafeRows, writeParticipantsSheet, type SheetFormat } from './workbook';
 
 interface Props {
   circleCode: string;
@@ -25,7 +25,8 @@ export function RosterExportCard({ circleCode, assignments, onExported }: Props)
     }));
     const dateStamp = isoDay(new Date());
     const baseName = `${circleCode.toLowerCase()}-participants-${dateStamp}`;
-    writeParticipantsSheet(XLSX.utils.json_to_sheet(exportRows), baseName, format);
+    const sheetRows = format === 'csv' ? csvSafeRows(exportRows) : exportRows;
+    writeParticipantsSheet(XLSX.utils.json_to_sheet(sheetRows), baseName, format);
     onExported(`Exported ${exportRows.length} participants to ${baseName}.${format}`);
   }
 

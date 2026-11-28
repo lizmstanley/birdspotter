@@ -43,7 +43,7 @@ Hover over a recent sighting to see the species, count, place, and date, with a 
 - **eBird scouting:** hotspots and recent sightings inside the circle, using your eBird API key. Each hotspot and sighting is listed with the count area it falls in. The web app saves results in your browser. It fetches hotspots from eBird at most once a day and sightings at most every 6 hours for the same circle and day range. CBC Scout checks for new sightings more often. See [Settings](#settings).
 - **CBC Scout:** a phone app for your field counters. It shows a counter their area, where they are, and what's been seen nearby, and records the party's hours and distance. See [CBC Scout](#cbc-scout).
 - **Birdspotter:** a phone app for any birder, with no count to set up. It shows recent sightings and eBird hotspots around you. See [Birdspotter](#birdspotter).
-- **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) and match its columns, or import the participant list you export from your Audubon circle page, which needs no setup. You can also export the roster to Excel or CSV, and export or restore a full JSON backup.
+- **Import and export:** import a participant spreadsheet (`.xlsx` or `.csv`) and match its columns, or import the participant list you export from your Audubon circle page, which needs no setup. You can also export the roster to Excel or CSV, and export or restore a full JSON backup. In the CSV, text that starts with `=`, `+`, `-`, or `@` gets a leading `'`, so a spreadsheet reads it as text rather than running it as a formula.
 
 ## Set up your eBird key
 
@@ -170,7 +170,7 @@ You import people on the **Import / Export Participants** tab.
 3. Match the columns. The app guesses each one from the header names, and you can change any guess.
    - **Email** is the only required column. Rows without a valid email are skipped. If the same email shows up again, the later row updates the same person.
    - **Name**, **Area**, **RSVP**, **Counter Type**, and **Notes** are optional.
-4. Check the value tables. For RSVP and counter type, the app lists each value it found in your file, like "Yes" or "Maybe", and what it'll be saved as. You can change any of them.
+4. Check the value tables. For RSVP and counter type, the app lists each value it found in your file, like "Yes" or "Maybe", and what it'll be saved as. A blank RSVP is saved as Confirmed, and an RSVP the app doesn't recognize as No response. You can change any of them.
 5. If your file has no RSVP column, choose the RSVP for people who are new this season. People already on this season's list keep theirs.
 6. If the file is your mailing list, tick **This file is my current list**. Possible Outreach compares the Audubon list against it.
 7. Read the preview. It shows the first 10 rows, and it warns you about rows that'll be skipped, emails that appear more than once, and area codes the circle doesn't have yet.

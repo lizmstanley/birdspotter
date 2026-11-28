@@ -29,20 +29,33 @@ export const COUNTER_OPTIONS: { value: string; label: string }[] = [
   { value: 'coordinator_only', label: 'Coordinator only' },
 ];
 
+function matchOption(options: { value: string; label: string }[], text: string): string | undefined {
+  return options.find((o) => o.value === text || o.label.toLowerCase() === text)?.value;
+}
+
+/** Reads free text loosely. Text it does not recognize is no response, never a confirmation. */
 export function normalizeRsvp(raw?: string): string {
   const t = (raw ?? '').trim().toLowerCase();
-  if (RSVP_OPTIONS.some((o) => o.value === t)) return t;
-  if (!t || t.includes('yes') || t === 'confirmed') return 'confirmed';
-  if (t.includes('undecided') || t.includes('maybe')) return 'undecided';
+  const exact = matchOption(RSVP_OPTIONS, t);
+  if (exact) return exact;
+  if (!t) return 'confirmed';
+  if (/\b(maybe|undecided|pending|tbd)\b/.test(t)) return 'undecided';
   if (t.includes('remove')) return 'declined_remove';
-  if (t.includes('no')) return 'declined_keep';
-  return 'confirmed';
+  if (/\bno[- ]?show\b/.test(t)) return 'no_show';
+  if (t.includes('cancel')) return 'cancelled';
+  if (/^(yes|y)\b/.test(t)) return 'confirmed';
+  if (/declin|\b(can|won)['’]?t\b|cannot|\bno\b|^n$/.test(t)) return 'declined_keep';
+  if (/\bnot\b/.test(t)) return 'no_response';
+  if (/\b(yes|confirmed)\b/.test(t)) return 'confirmed';
+  return 'no_response';
 }
 
 export function normalizeCounterType(raw?: string): string {
   const t = (raw ?? '').trim().toLowerCase();
+  const exact = matchOption(COUNTER_OPTIONS, t);
+  if (exact) return exact;
+  if (t.includes('both') || (t.includes('field') && t.includes('feeder'))) return 'both';
   if (t.includes('feeder')) return 'home_feeders';
-  if (t.includes('both')) return 'both';
   if (t.includes('coord')) return 'coordinator_only';
   return 'field';
 }
