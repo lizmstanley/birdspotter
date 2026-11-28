@@ -16,7 +16,8 @@
     "preview": "vite preview --mode site",
     "test": "node --test \"packages/*/src/**/*.test.ts\" \"apps/*/src/**/*.test.ts\" \"site/**/*.test.ts\"",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
-    "lint": "eslint packages apps site"
+    "lint": "eslint packages apps site scripts",
+    "screenshots": "npm run build && node scripts/screenshots/capture.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
