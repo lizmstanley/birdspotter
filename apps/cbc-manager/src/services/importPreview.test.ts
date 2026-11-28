@@ -7,6 +7,7 @@ import {
   buildRows,
   checkRows,
   distinctValues,
+  isEveryHeaderMapped,
   normalizeCounterType,
   normalizeRsvp,
   type ColumnMapping,
@@ -131,6 +132,16 @@ test('checks report skipped rows, duplicates, and new areas', () => {
   assert.equal(check.willImport, 2);
   assert.deepEqual(check.duplicateEmails, ['a@example.com']);
   assert.deepEqual(check.newAreas, ['zz9']);
+});
+
+test('a file counts as fully mapped only when every header is used and email is chosen', () => {
+  const headers = Object.values(MAPPING);
+  const shortMapping = { ...MAPPING, rsvpCol: '', typeCol: '', noteCol: '' };
+  assert.equal(isEveryHeaderMapped(headers, MAPPING), true);
+  assert.equal(isEveryHeaderMapped(['Name', 'Email', 'Area'], shortMapping), true);
+  assert.equal(isEveryHeaderMapped([...headers, 'Phone'], MAPPING), false);
+  assert.equal(isEveryHeaderMapped(headers, { ...MAPPING, areaCol: '' }), false);
+  assert.equal(isEveryHeaderMapped(['Name', 'Area'], { ...shortMapping, emailCol: '' }), false);
 });
 
 test('the sample file imports cleanly with the guessed columns', () => {

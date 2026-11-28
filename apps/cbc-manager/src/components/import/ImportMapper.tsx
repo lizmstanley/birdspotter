@@ -1,6 +1,7 @@
 import {
   COUNTER_OPTIONS,
   RSVP_OPTIONS,
+  isEveryHeaderMapped,
   normalizeCounterType,
   normalizeRsvp,
   type ColumnMapping,
@@ -30,9 +31,7 @@ export function ImportMapper({ form, isBusy, onImport }: Props) {
     <div className="mapper">
       <p>
         Loaded <strong>{form.rawRows.length}</strong> rows from <code>{form.fileName}</code>.{' '}
-        {isAudubon
-          ? 'This is an Audubon participant list. Names, emails, sectors, and notes are read automatically. New people marked Registered are confirmed; other new people have no response yet. People already on this season’s list keep their RSVP, type, and area.'
-          : 'Map your columns below:'}
+        {mapperIntro(isAudubon, isEveryHeaderMapped(form.headers, form.mapping))}
       </p>
       <ColumnSelects
         headers={form.headers}
@@ -77,6 +76,14 @@ export function ImportMapper({ form, isBusy, onImport }: Props) {
       </button>
     </div>
   );
+}
+
+function mapperIntro(isAudubon: boolean, isFullyMapped: boolean): string {
+  if (isAudubon) {
+    return 'This is an Audubon participant list. Names, emails, sectors, and notes are read automatically. New people marked Registered are confirmed; other new people have no response yet. People already on this season’s list keep their RSVP, type, and area.';
+  }
+  if (isFullyMapped) return 'Every column in your file is matched. Check them below, then import.';
+  return 'Map your columns below:';
 }
 
 interface ColumnSelectsProps {
