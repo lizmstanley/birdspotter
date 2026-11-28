@@ -15,8 +15,9 @@ One npm workspace: three browser-only apps, a shared birding core, and static si
 | `npm run typecheck` | `tsc -b`, then `tsconfig.tests.json` for tests and `scripts` |
 | `npm run lint` | ESLint on `packages`, `apps`, `site`, `scripts` |
 | `npm run screenshots` | Builds, then retakes install-sheet pictures in headless Chrome (`google-chrome` or `CHROME_PATH`). Needs network |
+| `npm run labels` | Creates or updates the PR labels in `.github/labels.json` with `gh` |
 
-CI (`ci.yml`) runs `scripts/check-maplibre-pins.ts`, lint, typecheck, test, build on every PR. The pin check fails when the workspaces name different `maplibre-gl` versions. `pr-title.yml` requires a Conventional Commits prefix (`feat:`, `fix(scope):`). `pages.yml` builds without deploying on a PR that changes it.
+CI (`ci.yml`) runs `scripts/check-maplibre-pins.ts`, lint, typecheck, test, build on every PR. The pin check fails when the workspaces name different `maplibre-gl` versions. `pr-title.yml` requires a Conventional Commits prefix (`feat:`, `fix(scope):`). `pages.yml` builds without deploying on a PR that changes it. `labels.yml` labels every PR: area from paths (`.github/labeler.yml`), one `type:` label (plus `breaking` for `!`) from the title. It runs on `pull_request_target` so Dependabot PRs get labels, and never checks out PR code. The label set is `.github/labels.json`; `npm run labels` creates or updates it in the repo. A label change edits the file, then reruns it.
 
 Dependabot (`dependabot.yml`) runs weekly with a cooldown. npm groups minor and patch updates as `react`, `maplibre`, `turf`, `lint`, `build`, and security fixes as `security`; each npm major version update gets its own PR. birding-core repeats its `maplibre-gl` peer as a dev dependency, because Dependabot rewrites a peer only next to a matching dev dependency. Actions updates, majors too, come as one `actions` PR.
 
