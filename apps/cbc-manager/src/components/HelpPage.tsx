@@ -214,7 +214,8 @@ export function HelpPage({ ebirdApiKey, onSaveEbirdKey }: Props) {
             line names its unit, miles or km, as the counter set it in CBC Scout. The party code at the end
             carries miles, so the web app records miles either way. Paste the
             whole message under <strong>Add Party From CBC Scout</strong> on the Awaiting Results page
-            (click the Awaiting Results card), check what it read, and save it. The area&apos;s page sums the area&apos;s parties.
+            (click the Awaiting Results card), check what it read, and save it. The area&apos;s page sums the area&apos;s parties,
+            and <strong>Party Routes</strong> on the Map tab draws where each party went.
           </li>
           <li>
             <strong>Settings:</strong> in the menu, choose how often to check eBird for new sightings:

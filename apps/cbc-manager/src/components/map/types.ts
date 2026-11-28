@@ -1,9 +1,17 @@
+import type { MultiLineString } from 'geojson';
 import type { GeoJsonGeometry } from '../../services/kmlParser.ts';
 
 export interface AreaBoundaryItem {
   code: string;
   label?: string | null;
   boundary_geojson: GeoJsonGeometry;
+}
+
+export interface PartyRouteItem {
+  area_code: string;
+  /** Milliseconds since the epoch */
+  start_time: number;
+  route_geojson: MultiLineString;
 }
 
 export interface ScoutTarget {

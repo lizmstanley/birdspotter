@@ -1,7 +1,8 @@
 import type { PGlite, Transaction } from '@electric-sql/pglite';
+import type { MultiLineString } from 'geojson';
 import { ensureArea } from './areas.ts';
 import { NoCurrentSeasonError } from './errors.ts';
-import type { AreaPartyTotals, Party, SeasonParty } from './types.ts';
+import type { AreaPartyTotals, Party, PartyRoute, SeasonParty } from './types.ts';
 
 const PARTY_COLUMNS = `pt.party_id, pt.area_code,
        (EXTRACT(EPOCH FROM pt.start_time) * 1000)::FLOAT8 AS start_time,
@@ -20,6 +21,23 @@ export async function getCurrentParties(db: PGlite, circleCode: string): Promise
        JOIN public.count_years cy
          ON cy.circle_code = pt.circle_code AND cy.year = pt.count_year AND cy.is_current
        WHERE pt.circle_code = $1
+       ORDER BY pt.area_code, pt.start_time, pt.party_id`,
+      [circleCode]
+    )
+  ).rows;
+}
+
+/** @returns the current season's parties that have a route, by area and then by start time */
+export async function getCurrentPartyRoutes(db: PGlite, circleCode: string): Promise<PartyRoute[]> {
+  return (
+    await db.query<PartyRoute>(
+      `SELECT pt.party_id, pt.area_code,
+              (EXTRACT(EPOCH FROM pt.start_time) * 1000)::FLOAT8 AS start_time,
+              pt.route_geojson
+       FROM public.parties pt
+       JOIN public.count_years cy
+         ON cy.circle_code = pt.circle_code AND cy.year = pt.count_year AND cy.is_current
+       WHERE pt.circle_code = $1 AND pt.route_geojson IS NOT NULL
        ORDER BY pt.area_code, pt.start_time, pt.party_id`,
       [circleCode]
     )
@@ -53,13 +71,21 @@ export async function findParty(db: PGlite, circleCode: string, partyId: string)
   return res.rows[0] ?? null;
 }
 
-async function upsertParty(tx: Transaction, circleCode: string, season: number, areaCode: string, party: Party) {
+/** A null `route` keeps the route already saved, since a party code leaves out a route too large to fit. */
+async function upsertParty(
+  tx: Transaction,
+  circleCode: string,
+  season: number,
+  areaCode: string,
+  party: Party,
+  route: MultiLineString | null
+) {
   await tx.query(
     `INSERT INTO public.parties (
         circle_code, count_year, party_id, area_code, start_time, stop_time, participants,
-        car_hours, foot_hours, feeder_hours, car_miles, foot_miles
+        car_hours, foot_hours, feeder_hours, car_miles, foot_miles, route_geojson
      )
-     VALUES ($1, $2, $3, $4, to_timestamp($5 / 1000.0), to_timestamp($6 / 1000.0), $7, $8, $9, $10, $11, $12)
+     VALUES ($1, $2, $3, $4, to_timestamp($5 / 1000.0), to_timestamp($6 / 1000.0), $7, $8, $9, $10, $11, $12, $13::jsonb)
      ON CONFLICT (circle_code, count_year, party_id) DO UPDATE SET
         area_code = EXCLUDED.area_code,
         start_time = EXCLUDED.start_time,
@@ -69,7 +95,8 @@ async function upsertParty(tx: Transaction, circleCode: string, season: number, 
         foot_hours = EXCLUDED.foot_hours,
         feeder_hours = EXCLUDED.feeder_hours,
         car_miles = EXCLUDED.car_miles,
-        foot_miles = EXCLUDED.foot_miles`,
+        foot_miles = EXCLUDED.foot_miles,
+        route_geojson = COALESCE(EXCLUDED.route_geojson, public.parties.route_geojson)`,
     [
       circleCode,
       season,
@@ -83,12 +110,13 @@ async function upsertParty(tx: Transaction, circleCode: string, season: number, 
       party.feeder_hours,
       party.car_miles,
       party.foot_miles,
+      route === null ? null : JSON.stringify(route),
     ]
   );
 }
 
 /**
- * Saves the party in the circle's current season, replacing a party with the same ID.
+ * Saves the party in the circle's current season, replacing a party with the same ID and keeping its route.
  * The area is matched to the circle's areas ignoring case, and added when the circle has none by that code.
  * @throws NoCurrentSeasonError when the circle has no current season
  */
@@ -101,18 +129,24 @@ export async function saveParty(db: PGlite, circleCode: string, party: Party): P
     const season = current.rows[0]?.year;
     if (season === undefined) throw new NoCurrentSeasonError(circleCode);
     const areaCode = await ensureArea(tx, circleCode, party.area_code);
-    await upsertParty(tx, circleCode, season, areaCode, party);
+    await upsertParty(tx, circleCode, season, areaCode, party, null);
   });
 }
 
 /**
  * Saves the party in `season` of the circle, replacing the party with the same ID in whichever season holds it.
- * A party moved from another season keeps its route.
  * The area must be one of the circle's areas and the season one of its seasons; the foreign keys refuse others.
+ * @param route replaces the party's route; null keeps the route already saved, in whichever season holds it
  */
-export async function savePartyInSeason(db: PGlite, circleCode: string, season: number, party: Party): Promise<void> {
+export async function savePartyInSeason(
+  db: PGlite,
+  circleCode: string,
+  season: number,
+  party: Party,
+  route: MultiLineString | null
+): Promise<void> {
   await db.transaction(async (tx) => {
-    await upsertParty(tx, circleCode, season, party.area_code, party);
+    await upsertParty(tx, circleCode, season, party.area_code, party, route);
     await tx.query(
       `UPDATE public.parties target
        SET route_geojson = (

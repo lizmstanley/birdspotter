@@ -9,10 +9,13 @@ interface LayerToggle {
 interface LayerLegendProps {
   readonly isScouting: boolean;
   readonly areaCount: number;
+  readonly routeCount: number;
+  readonly partyCount: number;
   readonly hotspotCount: number;
   readonly sightingCount: number;
   readonly circle: LayerToggle;
   readonly areas: LayerToggle;
+  readonly routes: LayerToggle;
   readonly hotspots: LayerToggle;
   readonly sightings: LayerToggle;
 }
@@ -24,10 +27,13 @@ function toggleClass({ isShown }: LayerToggle): string {
 export function LayerLegend({
   isScouting,
   areaCount,
+  routeCount,
+  partyCount,
   hotspotCount,
   sightingCount,
   circle,
   areas,
+  routes,
   hotspots,
   sightings,
 }: LayerLegendProps) {
@@ -53,6 +59,18 @@ export function LayerLegend({
           onClick={areas.toggle}
         >
           <span className="legend-dot dot-area" /> Imported Areas ({areaCount})
+        </button>
+      )}
+      {!isScouting && (
+        <button
+          type="button"
+          className={toggleClass(routes)}
+          aria-pressed={routes.isShown}
+          title="Show or hide where this season's parties went, from the messages pasted from CBC Scout. A party with no route draws nothing."
+          onClick={routes.toggle}
+        >
+          <span className="legend-dot dot-route" /> Party Routes ({routeCount} of {partyCount}{' '}
+          {partyCount === 1 ? 'party' : 'parties'})
         </button>
       )}
       <button

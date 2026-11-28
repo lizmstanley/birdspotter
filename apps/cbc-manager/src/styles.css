@@ -649,6 +649,11 @@ tbody tr:hover {
   background: #7c3aed;
 }
 
+.dot-route {
+  background: #0f172a;
+  box-shadow: 0 0 0 2px #fde047;
+}
+
 .area-label-pill {
   background: rgba(255, 255, 255, 0.9);
   color: #0f172a;

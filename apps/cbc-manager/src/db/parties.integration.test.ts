@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PGlite } from '@electric-sql/pglite';
+import type { MultiLineString } from 'geojson';
 import { NoCurrentSeasonError } from './errors.ts';
 import { openTestDb, scalar } from './testing/testDb.ts';
 import type { Party } from './types.ts';
@@ -150,7 +151,7 @@ test('a party saved in an earlier season stays out of the current season', async
   const season = await currentSeason(client);
   await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
 
-  await db.savePartyInSeason(CIRCLE, season, party('a', '1A', '2026-12-19T07:00:00Z'));
+  await db.savePartyInSeason(CIRCLE, season, party('a', '1A', '2026-12-19T07:00:00Z'), null);
 
   assert.deepEqual(await db.getCurrentParties(CIRCLE), []);
   assert.equal((await db.findParty(CIRCLE, 'a'))?.count_year, season);
@@ -162,7 +163,7 @@ test('saving a party in another season moves it there instead of adding it twice
   await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
   await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
 
-  await db.savePartyInSeason(CIRCLE, season + 1, party('a', '2B', '2026-12-19T07:00:00Z', { participants: 4 }));
+  await db.savePartyInSeason(CIRCLE, season + 1, party('a', '2B', '2026-12-19T07:00:00Z', { participants: 4 }), null);
 
   assert.deepEqual(
     (await db.getCurrentParties(CIRCLE)).map((p) => [p.party_id, p.area_code, p.participants]),
@@ -176,7 +177,7 @@ test('a party for a season the circle does not have is refused and the saved par
   const season = await currentSeason(client);
   await db.saveParty(CIRCLE, party('a', '1A', '2026-12-19T07:00:00Z'));
 
-  await assert.rejects(db.savePartyInSeason(CIRCLE, season + 5, party('a', '1A', '2026-12-19T07:00:00Z')));
+  await assert.rejects(db.savePartyInSeason(CIRCLE, season + 5, party('a', '1A', '2026-12-19T07:00:00Z'), null));
   assert.equal((await db.findParty(CIRCLE, 'a'))?.count_year, season);
 });
 
@@ -184,7 +185,7 @@ test('a pasted party for an area the circle does not have is refused, and no are
   const { db, client } = await dbWithCircle();
   const season = await currentSeason(client);
 
-  await assert.rejects(db.savePartyInSeason(CIRCLE, season, party('a', '9Z', '2026-12-19T07:00:00Z')));
+  await assert.rejects(db.savePartyInSeason(CIRCLE, season, party('a', '9Z', '2026-12-19T07:00:00Z'), null));
   assert.equal(await scalar(client, `SELECT COUNT(*)::INT FROM public.areas WHERE code = '9Z'`), 0);
 });
 
@@ -195,7 +196,7 @@ test('a party ID is found only in its own circle', async () => {
   assert.equal(await db.findParty('MNBL', 'a'), null);
 });
 
-const ROUTE = {
+const ROUTE: MultiLineString = {
   type: 'MultiLineString',
   coordinates: [
     [[-86.5, 39.1], [-86.49, 39.11]],
@@ -239,7 +240,7 @@ test('a party moved to another season keeps its route', async () => {
   await setRoute(client, 'a', ROUTE);
   await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
 
-  await db.savePartyInSeason(CIRCLE, season + 1, party('a', '1A', '2026-12-19T07:00:00Z'));
+  await db.savePartyInSeason(CIRCLE, season + 1, party('a', '1A', '2026-12-19T07:00:00Z'), null);
 
   assert.equal((await db.findParty(CIRCLE, 'a'))?.count_year, season + 1);
   assert.deepEqual(await routeOf(client, 'a'), ROUTE);
@@ -262,4 +263,50 @@ test('a route that is not a MultiLineString is refused', async () => {
     await assert.rejects(setRoute(client, 'a', route), /route_geojson_check/);
   }
   assert.equal(await routeOf(client, 'a'), null);
+});
+
+test('a pasted party saves its route, and the season lists it', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+
+  await db.savePartyInSeason(CIRCLE, season, party('a', '1A', '2026-12-19T07:00:00Z'), ROUTE);
+
+  assert.deepEqual(await db.getCurrentPartyRoutes(CIRCLE), [
+    { party_id: 'a', area_code: '1A', start_time: Date.parse('2026-12-19T07:00:00Z'), route_geojson: ROUTE },
+  ]);
+});
+
+test('pasting a party again with a route replaces its route', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+  const longer: MultiLineString = { type: 'MultiLineString', coordinates: [...ROUTE.coordinates, [[-86.46, 39.13], [-86.45, 39.14]]] };
+  await db.savePartyInSeason(CIRCLE, season, party('a', '1A', '2026-12-19T07:00:00Z'), ROUTE);
+
+  await db.savePartyInSeason(CIRCLE, season, party('a', '1A', '2026-12-19T07:00:00Z'), longer);
+
+  assert.deepEqual(await routeOf(client, 'a'), longer);
+});
+
+test('pasting a party again with no route keeps its route', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+  await db.savePartyInSeason(CIRCLE, season, party('a', '1A', '2026-12-19T07:00:00Z'), ROUTE);
+
+  await db.savePartyInSeason(CIRCLE, season, party('a', '1A', '2026-12-19T07:00:00Z', { car_miles: 40 }), null);
+
+  assert.deepEqual(await routeOf(client, 'a'), ROUTE);
+});
+
+test('the season routes leave out parties with no route and parties of other seasons', async () => {
+  const { db, client } = await dbWithCircle();
+  const season = await currentSeason(client);
+  await db.savePartyInSeason(CIRCLE, season, party('old', '1A', '2025-12-20T07:00:00Z'), ROUTE);
+  await db.rolloverSeason(CIRCLE, season + 1, { carryAssignments: false });
+  await db.savePartyInSeason(CIRCLE, season + 1, party('routed', '2B', '2026-12-19T07:00:00Z'), ROUTE);
+  await db.savePartyInSeason(CIRCLE, season + 1, party('by-hand', '1A', '2026-12-19T07:00:00Z'), null);
+
+  assert.deepEqual(
+    (await db.getCurrentPartyRoutes(CIRCLE)).map((r) => r.party_id),
+    ['routed']
+  );
 });

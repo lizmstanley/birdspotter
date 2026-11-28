@@ -11,12 +11,13 @@ import { HotspotsTable, SightingsTable } from './map/EbirdTables';
 import { buildMapKml } from './map/kmlExport';
 import { LayerLegend } from './map/LayerLegend';
 import { ScoutPanel } from './map/ScoutPanel';
-import type { AreaBoundaryItem, ScoutedCircleDraft } from './map/types';
+import type { AreaBoundaryItem, PartyRouteItem, ScoutedCircleDraft } from './map/types';
 import { useAreaLayer } from './map/useAreaLayer';
 import { useCircleLayer } from './map/useCircleLayer';
 import { useEbirdData } from './map/useEbirdData';
 import { useEbirdMarkers } from './map/useEbirdMarkers';
 import { useMapInstance } from './map/useMapInstance';
+import { useRouteLayer } from './map/useRouteLayer';
 import { useScouting } from './map/useScouting';
 
 export type { AreaBoundaryItem };
@@ -30,6 +31,10 @@ export interface CircleMapProps {
   areaBoundaries?: AreaBoundaryItem[];
   areaParticipantCounts?: Record<string, number>;
   notCountedAreaCodes?: string[];
+  /** The current season's parties that have a route */
+  partyRoutes?: PartyRouteItem[];
+  /** Every party in the current season, with a route or not */
+  partyCount?: number;
   onCenterChange?: (lat: number, lng: number) => void;
   onSelectArea?: (areaCode: string, label?: string | null) => void;
   onImportBoundaries?: (boundaries: ParsedAreaBoundary[]) => Promise<{ saved: number }>;
@@ -48,6 +53,8 @@ export function CircleMap({
   areaBoundaries = [],
   areaParticipantCounts = {},
   notCountedAreaCodes = [],
+  partyRoutes = [],
+  partyCount = 0,
   onCenterChange,
   onSelectArea,
   onImportBoundaries,
@@ -57,6 +64,7 @@ export function CircleMap({
 }: CircleMapProps) {
   const [showCircleOverlay, setShowCircleOverlay] = useState(true);
   const [showAreas, setShowAreas] = useState(true);
+  const [showRoutes, setShowRoutes] = useState(true);
   const [showHotspots, setShowHotspots] = useState(true);
   const [showSightings, setShowSightings] = useState(true);
   const [status, setStatus] = useState<string | null>(null);
@@ -94,6 +102,7 @@ export function CircleMap({
       circle: isCircleShown ? { lat: effectiveLat, lng: effectiveLng, radiusMiles } : null,
       areas: isScouting || !showAreas ? [] : areaBoundaries,
       notCountedAreaCodes,
+      routes: isScouting || !showRoutes ? [] : partyRoutes,
       hotspots: showHotspots ? hotspotRows : [],
       sightings: showSightings ? sightingRows : [],
     });
@@ -136,6 +145,8 @@ export function CircleMap({
     isHidden: isScouting || !showAreas,
     onSelectArea,
   });
+
+  useRouteLayer({ mapRef, mapReady, routes: partyRoutes, isHidden: isScouting || !showRoutes });
 
   useEbirdMarkers({
     mapRef,
@@ -212,10 +223,13 @@ export function CircleMap({
         <LayerLegend
           isScouting={isScouting}
           areaCount={areaBoundaries.length}
+          routeCount={partyRoutes.length}
+          partyCount={partyCount}
           hotspotCount={ebird.hotspots.length}
           sightingCount={ebird.sightings.length}
           circle={{ isShown: showCircleOverlay, toggle: () => setShowCircleOverlay((v) => !v) }}
           areas={{ isShown: showAreas, toggle: () => setShowAreas((v) => !v) }}
+          routes={{ isShown: showRoutes, toggle: () => setShowRoutes((v) => !v) }}
           hotspots={{ isShown: showHotspots, toggle: () => setShowHotspots((v) => !v) }}
           sightings={{ isShown: showSightings, toggle: () => setShowSightings((v) => !v) }}
         />
