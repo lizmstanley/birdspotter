@@ -1,12 +1,20 @@
+import { fromMiles, isDistanceUnit, toMiles, type DistanceUnit } from './distanceUnit.ts';
 import { NEARBY_RADIUS_MILES } from './nearby.ts';
 import type { KeyValueStorage } from './storage.ts';
 
 export const REFRESH_MINUTE_CHOICES = [15, 30, 60, 120] as const;
 export type RefreshMinutes = (typeof REFRESH_MINUTE_CHOICES)[number];
 
-// eBird searches at most 50 km, about 31 miles, around a point.
-export const RADIUS_MILE_CHOICES = [2, 5, NEARBY_RADIUS_MILES, 10, 15, 25] as const;
-export type RadiusMiles = (typeof RADIUS_MILE_CHOICES)[number];
+// eBird searches at most 50 km, about 31 miles, around a point. Each kilometer choice is the round value nearest a
+// mile choice, so switching units moves a radius to its match and back.
+export const RADIUS_CHOICES: Readonly<Record<DistanceUnit, readonly number[]>> = {
+  mi: [2, 5, NEARBY_RADIUS_MILES, 10, 15, 25],
+  km: [3, 8, 12, 16, 25, 40],
+};
+
+const DEFAULT_RADIUS: Readonly<Record<DistanceUnit, number>> = { mi: NEARBY_RADIUS_MILES, km: 12 };
+const DEFAULT_REFRESH_MINUTES: RefreshMinutes = 30;
+const DEFAULT_BACK_DAYS = 7;
 
 // eBird returns sightings from at most 30 days back.
 export const BACK_DAY_CHOICES: readonly number[] = Array.from({ length: 30 }, (_, index) => index + 1);
@@ -14,46 +22,77 @@ export const BACK_DAY_CHOICES: readonly number[] = Array.from({ length: 30 }, (_
 export interface BirdingSettings {
   /** How often the Sightings list checks eBird, and how old a saved eBird copy may be. */
   readonly refreshMinutes: RefreshMinutes;
-  /** How far around the person the lists look, in an app that shows the choice. */
-  readonly radiusMiles: RadiusMiles;
+  /** The unit every distance shows in. */
+  readonly distanceUnit: DistanceUnit;
+  /** How far around the person the lists look, in an app that shows the choice: one of the unit's radius choices. */
+  readonly radius: number;
   /** How many days back the Sightings list and the Hotspots ranking go. */
   readonly backDays: number;
 }
 
-export const DEFAULT_SETTINGS: BirdingSettings = {
-  refreshMinutes: 30,
-  radiusMiles: NEARBY_RADIUS_MILES,
-  backDays: 7,
-};
+export function defaultSettings(distanceUnit: DistanceUnit): BirdingSettings {
+  return {
+    refreshMinutes: DEFAULT_REFRESH_MINUTES,
+    distanceUnit,
+    radius: DEFAULT_RADIUS[distanceUnit],
+    backDays: DEFAULT_BACK_DAYS,
+  };
+}
 
 function isRefreshMinutes(value: unknown): value is RefreshMinutes {
   return REFRESH_MINUTE_CHOICES.some((choice) => choice === value);
 }
 
-function isRadiusMiles(value: unknown): value is RadiusMiles {
-  return RADIUS_MILE_CHOICES.some((choice) => choice === value);
+function isRadiusChoice(value: unknown, unit: DistanceUnit): value is number {
+  return RADIUS_CHOICES[unit].some((choice) => choice === value);
 }
 
 function isBackDays(value: unknown): value is number {
   return BACK_DAY_CHOICES.some((choice) => choice === value);
 }
 
-/** @returns the saved settings, with the default for any value that is missing, unreadable, or not a choice */
-export function readSettings(storage: KeyValueStorage | null, storageKey: string): BirdingSettings {
+function nearestRadius(radius: number, from: DistanceUnit, to: DistanceUnit): number {
+  const target = fromMiles(toMiles(radius, from), to);
+  const gap = (choice: number) => Math.abs(choice - target);
+  return RADIUS_CHOICES[to].reduce((best, choice) => (gap(choice) < gap(best) ? choice : best));
+}
+
+// A radius counts only beside the unit it was saved with, so a lost or damaged unit never turns kilometers into
+// miles. Settings saved before the unit existed hold the radius in miles as `radiusMiles`.
+function readRadius(saved: object, unit: DistanceUnit): number {
+  const savedUnit = 'distanceUnit' in saved ? saved.distanceUnit : null;
+  const radius = 'radius' in saved ? saved.radius : null;
+  if (savedUnit === unit && isRadiusChoice(radius, unit)) return radius;
+  const radiusMiles = 'radiusMiles' in saved ? saved.radiusMiles : null;
+  if (isRadiusChoice(radiusMiles, 'mi')) return nearestRadius(radiusMiles, 'mi', unit);
+  return DEFAULT_RADIUS[unit];
+}
+
+/**
+ * @param localeUnit the unit to use when none is saved
+ * @returns the saved settings, with the default for any value that is missing, unreadable, or not a choice
+ */
+export function readSettings(
+  storage: KeyValueStorage | null,
+  storageKey: string,
+  localeUnit: DistanceUnit
+): BirdingSettings {
   let saved: unknown = null;
   try {
     saved = JSON.parse(storage?.getItem(storageKey) ?? 'null');
   } catch {
-    return DEFAULT_SETTINGS;
+    return defaultSettings(localeUnit);
   }
-  if (typeof saved !== 'object' || saved === null) return DEFAULT_SETTINGS;
+  if (typeof saved !== 'object' || saved === null) return defaultSettings(localeUnit);
   const refreshMinutes = 'refreshMinutes' in saved ? saved.refreshMinutes : null;
-  const radiusMiles = 'radiusMiles' in saved ? saved.radiusMiles : null;
+  const savedUnit = 'distanceUnit' in saved ? saved.distanceUnit : null;
   const backDays = 'backDays' in saved ? saved.backDays : null;
+  const distanceUnit = isDistanceUnit(savedUnit) ? savedUnit : localeUnit;
   return {
-    refreshMinutes: isRefreshMinutes(refreshMinutes) ? refreshMinutes : DEFAULT_SETTINGS.refreshMinutes,
-    radiusMiles: isRadiusMiles(radiusMiles) ? radiusMiles : DEFAULT_SETTINGS.radiusMiles,
-    backDays: isBackDays(backDays) ? backDays : DEFAULT_SETTINGS.backDays,
+    refreshMinutes: isRefreshMinutes(refreshMinutes) ? refreshMinutes : DEFAULT_REFRESH_MINUTES,
+    distanceUnit,
+    radius: readRadius(saved, distanceUnit),
+    backDays: isBackDays(backDays) ? backDays : DEFAULT_BACK_DAYS,
   };
 }
 
@@ -66,6 +105,15 @@ export function writeSettings(storage: KeyValueStorage | null, storageKey: strin
   } catch {
     return false;
   }
+}
+
+/** @returns the settings in the unit, with the radius moved to the nearest choice in it */
+export function withDistanceUnit(settings: BirdingSettings, distanceUnit: DistanceUnit): BirdingSettings {
+  return { ...settings, distanceUnit, radius: nearestRadius(settings.radius, settings.distanceUnit, distanceUnit) };
+}
+
+export function searchRadiusMiles(settings: BirdingSettings): number {
+  return toMiles(settings.radius, settings.distanceUnit);
 }
 
 export function refreshIntervalText(minutes: RefreshMinutes): string {
@@ -85,6 +133,6 @@ export function refreshIntervalText(minutes: RefreshMinutes): string {
   }
 }
 
-export function radiusText(miles: RadiusMiles): string {
-  return `${miles} miles`;
+export function radiusText(radius: number, unit: DistanceUnit): string {
+  return unit === 'km' ? `${radius} km` : `${radius} miles`;
 }

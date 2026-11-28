@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
+import { DISTANCE_UNITS } from './distanceUnit.ts';
 import {
-  RADIUS_MILE_CHOICES,
+  RADIUS_CHOICES,
   radiusText,
   REFRESH_MINUTE_CHOICES,
   refreshIntervalText,
+  withDistanceUnit,
   type BirdingSettings,
 } from './settings.ts';
 
@@ -19,15 +21,24 @@ interface SettingsFormProps {
   readonly children?: ReactNode;
 }
 
+const UNIT_LABELS = { mi: 'Miles', km: 'Kilometers' } as const;
+
 export function SettingsForm({ appName, settings, isSaved, isRadiusShown, onChange, children }: SettingsFormProps) {
+  const radiusChoices = RADIUS_CHOICES[settings.distanceUnit];
+
   function pickRefresh(value: string): void {
     const refreshMinutes = REFRESH_MINUTE_CHOICES.find((choice) => String(choice) === value);
     if (refreshMinutes !== undefined) onChange({ ...settings, refreshMinutes });
   }
 
+  function pickUnit(value: string): void {
+    const distanceUnit = DISTANCE_UNITS.find((unit) => unit === value);
+    if (distanceUnit !== undefined) onChange(withDistanceUnit(settings, distanceUnit));
+  }
+
   function pickRadius(value: string): void {
-    const radiusMiles = RADIUS_MILE_CHOICES.find((choice) => String(choice) === value);
-    if (radiusMiles !== undefined) onChange({ ...settings, radiusMiles });
+    const radius = radiusChoices.find((choice) => String(choice) === value);
+    if (radius !== undefined) onChange({ ...settings, radius });
   }
 
   return (
@@ -41,13 +52,21 @@ export function SettingsForm({ appName, settings, isSaved, isRadiusShown, onChan
         ))}
       </select>
       <p>Checking less often uses less data and battery.</p>
+      <label htmlFor="birding-unit">Show distances in</label>
+      <select id="birding-unit" value={settings.distanceUnit} onChange={(event) => pickUnit(event.target.value)}>
+        {DISTANCE_UNITS.map((unit) => (
+          <option key={unit} value={unit}>
+            {UNIT_LABELS[unit]}
+          </option>
+        ))}
+      </select>
       {isRadiusShown && (
         <>
           <label htmlFor="birding-radius">Search radius</label>
-          <select id="birding-radius" value={settings.radiusMiles} onChange={(event) => pickRadius(event.target.value)}>
-            {RADIUS_MILE_CHOICES.map((miles) => (
-              <option key={miles} value={miles}>
-                {radiusText(miles)}
+          <select id="birding-radius" value={settings.radius} onChange={(event) => pickRadius(event.target.value)}>
+            {radiusChoices.map((radius) => (
+              <option key={radius} value={radius}>
+                {radiusText(radius, settings.distanceUnit)}
               </option>
             ))}
           </select>

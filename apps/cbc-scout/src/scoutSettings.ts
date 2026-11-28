@@ -1,3 +1,4 @@
+import type { DistanceUnit } from '@birdspotter/birding-core/distanceUnit.ts';
 import { readSettings, type BirdingSettings } from '@birdspotter/birding-core/settings.ts';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 
@@ -21,8 +22,13 @@ function readIsEdgeCueOn(storage: KeyValueStorage | null, storageKey: string): b
 
 /**
  * The core's settings and CBC Scout's own, saved together under one key; the core's `writeSettings` saves every field.
+ * @param localeUnit the unit to use when none is saved
  * @returns the saved settings, with the default for any value that is missing or unreadable
  */
-export function readScoutSettings(storage: KeyValueStorage | null, storageKey: string): ScoutSettings {
-  return { ...readSettings(storage, storageKey), isEdgeCueOn: readIsEdgeCueOn(storage, storageKey) };
+export function readScoutSettings(
+  storage: KeyValueStorage | null,
+  storageKey: string,
+  localeUnit: DistanceUnit
+): ScoutSettings {
+  return { ...readSettings(storage, storageKey, localeUnit), isEdgeCueOn: readIsEdgeCueOn(storage, storageKey) };
 }

@@ -3,7 +3,17 @@ import { describeError } from '@birdspotter/birding-core/describeError.ts';
 import { isFeederHours, isParticipantCount, type CountSession, type TravelMode } from './countSession.ts';
 import { MODE_COLORS } from './routeLayers.ts';
 import { sessionTotals, type SessionTotals, type Stretch } from './sessionStretches.ts';
-import { formatAmount, formatTime, gapNote, MODE_LABELS, sessionSummaryText, type StoppedSession } from './sessionSummary.ts';
+import { DISTANCE_UNIT_NAMES, type DistanceUnit } from '@birdspotter/birding-core/distanceUnit.ts';
+import {
+  DISTANCE_LABELS,
+  formatAmount,
+  formatDistanceAmount,
+  formatTime,
+  gapNote,
+  MODE_LABELS,
+  sessionSummaryText,
+  type StoppedSession,
+} from './sessionSummary.ts';
 
 const CLOCK_TICK_MS = 15_000;
 
@@ -20,6 +30,7 @@ interface SessionPanelProps {
   readonly onSetFeederHours: (hours: number) => void;
   readonly setError: (message: string | null) => void;
   readonly setNotice: (message: string | null) => void;
+  readonly distanceUnit: DistanceUnit;
 }
 
 function elapsedText(hours: number): string {
@@ -27,7 +38,9 @@ function elapsedText(hours: number): string {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
-function StretchList({ stretches, onSetMode }: Pick<SessionPanelProps, 'stretches' | 'onSetMode'>) {
+type StretchListProps = Pick<SessionPanelProps, 'stretches' | 'onSetMode' | 'distanceUnit'>;
+
+function StretchList({ stretches, onSetMode, distanceUnit }: StretchListProps) {
   if (stretches.length === 0) return null;
   return (
     <details className="scout-stretches">
@@ -39,7 +52,7 @@ function StretchList({ stretches, onSetMode }: Pick<SessionPanelProps, 'stretche
             <li key={stretch.startTime}>
               <span className="scout-swatch" style={{ background: MODE_COLORS[stretch.mode] }} aria-hidden="true" />
               <span>
-                {span}, {formatAmount(stretch.miles)} mi{stretch.isGap && ', gap'}
+                {span}, {formatDistanceAmount(stretch.miles, distanceUnit)} {distanceUnit}{stretch.isGap && ', gap'}
               </span>
               <select
                 aria-label={`Mode from ${span}`}
@@ -124,26 +137,32 @@ function PartyFields({ session, onSetParticipants, onSetFeederHours }: PartyFiel
   );
 }
 
-function TotalsTable({ totals, feederHours }: { readonly totals: SessionTotals; readonly feederHours: number }) {
+interface TotalsTableProps {
+  readonly totals: SessionTotals;
+  readonly feederHours: number;
+  readonly distanceUnit: DistanceUnit;
+}
+
+function TotalsTable({ totals, feederHours, distanceUnit }: TotalsTableProps) {
   return (
     <table className="scout-totals">
       <thead>
         <tr>
           <th scope="col" />
           <th scope="col">Hours</th>
-          <th scope="col">Miles</th>
+          <th scope="col">{DISTANCE_LABELS[distanceUnit]}</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <th scope="row">{MODE_LABELS.car}</th>
           <td>{formatAmount(totals.carHours)}</td>
-          <td>{formatAmount(totals.carMiles)}</td>
+          <td>{formatDistanceAmount(totals.carMiles, distanceUnit)}</td>
         </tr>
         <tr>
           <th scope="row">{MODE_LABELS.foot}</th>
           <td>{formatAmount(totals.footHours)}</td>
-          <td>{formatAmount(totals.footMiles)}</td>
+          <td>{formatDistanceAmount(totals.footMiles, distanceUnit)}</td>
         </tr>
         <tr>
           <th scope="row">Feeder watching</th>
@@ -168,7 +187,7 @@ function useClock(isTicking: boolean): number {
 
 export function SessionPanel(props: SessionPanelProps) {
   const { session, stretches, isScreenLockable, isLocationOff, onStart, onStop, onDiscard, onSetMode } = props;
-  const { onSetParticipants, onSetFeederHours, setError, setNotice } = props;
+  const { onSetParticipants, onSetFeederHours, setError, setNotice, distanceUnit } = props;
   const now = useClock(session !== null && session.stopTime === null);
 
   if (!session) {
@@ -179,7 +198,10 @@ export function SessionPanel(props: SessionPanelProps) {
             Start count
           </button>
         </div>
-        <p>Records your party's hours and miles by vehicle and by foot while CBC Scout is open.</p>
+        <p>
+          Records your party's hours and {DISTANCE_UNIT_NAMES[distanceUnit]} by vehicle and by foot while CBC Scout is
+          open.
+        </p>
       </section>
     );
   }
@@ -190,7 +212,8 @@ export function SessionPanel(props: SessionPanelProps) {
       <section className="scout-session" aria-label="Count">
         <div className="scout-actions">
           <p className="scout-session-status" role="status">
-            Count running {elapsedText(totals.totalHours)}, {formatAmount(totals.footMiles + totals.carMiles)} mi
+            Count running {elapsedText(totals.totalHours)},{' '}
+            {formatDistanceAmount(totals.footMiles + totals.carMiles, distanceUnit)} {distanceUnit}
           </p>
           <button
             type="button"
@@ -211,7 +234,7 @@ export function SessionPanel(props: SessionPanelProps) {
           onSetParticipants={onSetParticipants}
           onSetFeederHours={onSetFeederHours}
         />
-        <StretchList stretches={stretches} onSetMode={onSetMode} />
+        <StretchList stretches={stretches} onSetMode={onSetMode} distanceUnit={distanceUnit} />
       </section>
     );
   }
@@ -221,7 +244,7 @@ export function SessionPanel(props: SessionPanelProps) {
   async function handleShare(): Promise<void> {
     // iOS may not blur a field on tap, so an invalid entry would stay on screen beside the saved value that is sent.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    const text = sessionSummaryText(stopped, totals);
+    const text = sessionSummaryText(stopped, totals, distanceUnit);
     try {
       if (typeof navigator.share === 'function') {
         await navigator.share({ title: 'Count totals', text });
@@ -249,8 +272,8 @@ export function SessionPanel(props: SessionPanelProps) {
       <h2>
         Count totals, {formatTime(session.startTime)} to {formatTime(session.stopTime)}
       </h2>
-      <TotalsTable totals={totals} feederHours={session.feederHours} />
-      {totals.gapMiles > 0 && <p>{gapNote(totals.gapMiles)}</p>}
+      <TotalsTable totals={totals} feederHours={session.feederHours} distanceUnit={distanceUnit} />
+      {totals.gapMiles > 0 && <p>{gapNote(totals.gapMiles, distanceUnit)}</p>}
       <PartyFields
         key={session.startTime}
         session={session}
@@ -268,7 +291,7 @@ export function SessionPanel(props: SessionPanelProps) {
           Remove
         </button>
       </div>
-      <StretchList stretches={stretches} onSetMode={onSetMode} />
+      <StretchList stretches={stretches} onSetMode={onSetMode} distanceUnit={distanceUnit} />
     </section>
   );
 }

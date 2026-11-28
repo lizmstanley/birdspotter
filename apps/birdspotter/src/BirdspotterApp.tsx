@@ -3,6 +3,7 @@ import type { GeolocateControl, Map as MapLibreMap } from 'maplibre-gl';
 import { About } from '@birdspotter/birding-core/About.tsx';
 import { BirdingBar, BirdingScreen } from '@birdspotter/birding-core/BirdingBar.tsx';
 import { BirdingMap, type ReadyMap } from '@birdspotter/birding-core/BirdingMap.tsx';
+import { localeDistanceUnit } from '@birdspotter/birding-core/distanceUnit.ts';
 import { EbirdKeyForm } from '@birdspotter/birding-core/EbirdKeyForm.tsx';
 import { FirstRunScreen } from '@birdspotter/birding-core/FirstRunScreen.tsx';
 import { Help } from '@birdspotter/birding-core/Help.tsx';
@@ -11,7 +12,12 @@ import type { InstallPromptStore } from '@birdspotter/birding-core/installPrompt
 import type { LngLat } from '@birdspotter/birding-core/nearby.ts';
 import { NearbyPanel } from '@birdspotter/birding-core/NearbyPanel.tsx';
 import type { Screen } from '@birdspotter/birding-core/screens.ts';
-import { readSettings, writeSettings, type BirdingSettings } from '@birdspotter/birding-core/settings.ts';
+import {
+  readSettings,
+  searchRadiusMiles,
+  writeSettings,
+  type BirdingSettings,
+} from '@birdspotter/birding-core/settings.ts';
 import { SettingsForm } from '@birdspotter/birding-core/SettingsForm.tsx';
 import type { KeyValueStorage } from '@birdspotter/birding-core/storage.ts';
 import { SuggestionsPanel } from '@birdspotter/birding-core/SuggestionsPanel.tsx';
@@ -42,14 +48,16 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
   const origin = chosenPlace ?? live.position;
   const [panel, setPanel] = useState<Panel>('sightings');
   const [screen, setScreen] = useState<Screen | null>(null);
-  const [settings, setSettings] = useState(() => readSettings(storage, BIRDSPOTTER.settingsStorageKey));
+  const [settings, setSettings] = useState(() =>
+    readSettings(storage, BIRDSPOTTER.settingsStorageKey, localeDistanceUnit(navigator.language))
+  );
   const [isSettingsSaved, setIsSettingsSaved] = useState(true);
   // Above both tabs, so Sightings and Hotspots share one load.
   const nearby = useNearbyData(
     ebirdApiKey,
-    chosenPlace ? { center: chosenPlace, radiusMiles: settings.radiusMiles } : null,
+    chosenPlace ? { center: chosenPlace, radiusMiles: searchRadiusMiles(settings) } : null,
     live.position,
-    settings.radiusMiles,
+    searchRadiusMiles(settings),
     settings.backDays,
     settings.refreshMinutes * 60 * 1000
   );
@@ -92,7 +100,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
             </p>
           )}
           <div className="birdspotter-map">
-            <BirdingMap onReady={takeMap} data={nearby} origin={origin} />
+            <BirdingMap onReady={takeMap} data={nearby} origin={origin} distanceUnit={settings.distanceUnit} />
             <button type="button" className="birdspotter-look-here" disabled={!map} onClick={lookAtMapCenter}>
               Look here
             </button>
@@ -120,6 +128,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               data={nearby}
               live={live}
               origin={origin}
+              distanceUnit={settings.distanceUnit}
               backDays={settings.backDays}
               onBackDaysChange={(backDays) => changeSettings({ ...settings, backDays })}
               refreshMinutes={settings.refreshMinutes}
@@ -132,6 +141,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
               data={nearby}
               live={live}
               origin={origin}
+              distanceUnit={settings.distanceUnit}
               backDays={settings.backDays}
               refreshMinutes={settings.refreshMinutes}
               onFixKey={() => setScreen('ebird-key')}
@@ -156,7 +166,7 @@ export function BirdspotterApp({ installPrompt, storage }: BirdspotterAppProps) 
             />
           )}
           {screen === 'help' && (
-            <Help appName={BIRDSPOTTER.name} privacyUrl={PRIVACY_URL}>
+            <Help appName={BIRDSPOTTER.name} privacyUrl={PRIVACY_URL} distanceUnit={settings.distanceUnit}>
               <BirdspotterHelp />
             </Help>
           )}

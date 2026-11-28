@@ -1,5 +1,7 @@
+import { DISTANCE_UNIT_NAMES, type DistanceUnit } from '@birdspotter/birding-core/distanceUnit.ts';
+
 /** CBC Scout's own Help sections, after the ones every app shares. */
-export function ScoutHelp() {
+export function ScoutHelp({ distanceUnit }: { readonly distanceUnit: DistanceUnit }) {
   return (
     <>
       <h2>Your areas</h2>
@@ -44,9 +46,10 @@ export function ScoutHelp() {
 
       <h2>The count session</h2>
       <p>
-        Tap <strong>Start count</strong> to record your party&apos;s hours and miles. While CBC Scout stays open on
-        screen, it keeps the screen on, draws your route, and sorts each stretch into travel by vehicle or by foot. You
-        can change any stretch&apos;s mode, and enter the number of participants and any feeder watching hours.
+        Tap <strong>Start count</strong> to record your party&apos;s hours and {DISTANCE_UNIT_NAMES[distanceUnit]}.
+        While CBC Scout stays open on screen, it keeps the screen on, draws your route, and sorts each stretch into
+        travel by vehicle or by foot. You can change any stretch&apos;s mode, and enter the number of participants
+        and any feeder watching hours.
       </p>
       <p>
         After <strong>Stop count</strong>, <strong>Share totals</strong> sends your party&apos;s line of the count

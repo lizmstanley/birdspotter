@@ -1,4 +1,5 @@
 import { partyCodeLine, type PartyEffort } from '@birdspotter/cbc-manager/services/partyCode.ts';
+import { DISTANCE_UNIT_NAMES, fromMiles, type DistanceUnit } from '@birdspotter/birding-core/distanceUnit.ts';
 import type { CountSession, TravelMode } from './countSession.ts';
 import type { SessionTotals } from './sessionStretches.ts';
 
@@ -17,6 +18,13 @@ export function formatTime(time: number): string {
 
 export function formatAmount(value: number): string {
   return value.toFixed(2);
+}
+
+/** The count sheet's word for the unit, at the start of a line or a column. */
+export const DISTANCE_LABELS: Readonly<Record<DistanceUnit, string>> = { mi: 'Miles', km: 'Km' };
+
+export function formatDistanceAmount(miles: number, unit: DistanceUnit): string {
+  return formatAmount(fromMiles(miles, unit));
 }
 
 /** A phone records one party. */
@@ -38,8 +46,12 @@ function partyEffort(session: StoppedSession, totals: SessionTotals): PartyEffor
   };
 }
 
-/** @returns the totals as plain text, with the count sheet's fields in its order, then the party code */
-export function sessionSummaryText(session: StoppedSession, totals: SessionTotals): string {
+/**
+ * @param unit the unit the distance lines show and name; the party code carries miles whatever the unit
+ * @returns the totals as plain text, with the count sheet's fields in its order, then the party code
+ */
+export function sessionSummaryText(session: StoppedSession, totals: SessionTotals, unit: DistanceUnit): string {
+  const label = DISTANCE_LABELS[unit];
   return [
     'Christmas Bird Count party effort',
     ...(session.areaCode ? [`Area #: ${session.areaCode}`] : []),
@@ -50,13 +62,14 @@ export function sessionSummaryText(session: StoppedSession, totals: SessionTotal
     `Hours by vehicle: ${formatAmount(totals.carHours)}`,
     `Hours by foot: ${formatAmount(totals.footHours)}`,
     `Hours feeder watching: ${formatAmount(session.feederHours)}`,
-    `Miles by vehicle: ${formatAmount(totals.carMiles)}`,
-    `Miles by foot: ${formatAmount(totals.footMiles)}`,
-    ...(totals.gapMiles > 0 ? [gapNote(totals.gapMiles)] : []),
+    `${label} by vehicle: ${formatDistanceAmount(totals.carMiles, unit)}`,
+    `${label} by foot: ${formatDistanceAmount(totals.footMiles, unit)}`,
+    ...(totals.gapMiles > 0 ? [gapNote(totals.gapMiles, unit)] : []),
     partyCodeLine(partyEffort(session, totals)),
   ].join('\n');
 }
 
-export function gapNote(gapMiles: number): string {
-  return `${formatAmount(gapMiles)} of these miles are straight lines across gaps in the route.`;
+export function gapNote(gapMiles: number, unit: DistanceUnit): string {
+  const amount = formatDistanceAmount(gapMiles, unit);
+  return `${amount} of these ${DISTANCE_UNIT_NAMES[unit]} are straight lines across gaps in the route.`;
 }
