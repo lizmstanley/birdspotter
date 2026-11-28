@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="What Birdspotter and CBC Scout send off your phone, who gets it, and what stays on the phone." />
+    <title>Privacy: Birdspotter and CBC Scout</title>
+    <style>
+      body {
+        margin: 0 auto;
+        max-width: 40rem;
+        padding: 2rem 1rem;
+        font-family: system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
+        background: #f8fafc;
+        color: #0f172a;
+      }
+      a {
+        color: #3f6212;
+      }
+      h2 {
+        margin-top: 2.5rem;
+        font-size: 1.15rem;
+      }
+      h3 {
+        margin-top: 1.5rem;
+        font-size: 1rem;
+      }
+      code {
+        font-size: 0.95em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Privacy: Birdspotter and CBC Scout</h1>
+      <p>Last changed November 27, 2026.</p>
+      <p>
+        This page covers the two phone apps on this site, <a href="../app/">Birdspotter</a> and
+        <a href="../cbc/scout/">CBC Scout</a>. It does not cover the CBC Circle Manager, the compiler's tool; its Help
+        tab says where its data lives.
+      </p>
+      <p>
+        Neither app has an account, analytics, or a server of my own. I don't receive anything the apps send. What
+        leaves your phone goes straight to the services below.
+      </p>
+
+      <h2>What leaves your phone</h2>
+
+      <h3>eBird, at <code>api.ebird.org</code></h3>
+      <p>
+        eBird is run by the Cornell Lab of Ornithology. When the Sightings or Hotspots list needs new data, the app
+        sends eBird:
+      </p>
+      <ul>
+        <li>your eBird API key</li>
+        <li>a latitude and longitude, not rounded</li>
+        <li>a search distance</li>
+        <li>for sightings, how many days back to look</li>
+      </ul>
+      <p>
+        In Birdspotter, the place is where you are. It moves only once you are half the search radius away from the
+        last place searched. In CBC Scout with an area loaded, the place is the center of the count circle, not your
+        location. With no area loaded, it is where you are.
+      </p>
+
+      <h3>OpenFreeMap, at <code>tiles.openfreemap.org</code></h3>
+      <p>
+        While the map is on screen, the app asks OpenFreeMap for the map style, tiles, fonts, and icons for the part of
+        the map you are looking at. With location on, the map follows you, so the tiles requested show roughly where
+        you are. In CBC Scout, <strong>Save street map</strong> downloads the map style, icons, fonts, and every tile over
+        a rectangle around the active area's outline.
+      </p>
+
+      <h3>GitHub Pages, at <code>lizstanley.com</code></h3>
+      <p>
+        GitHub hosts this site. Opening an app, or the app checking for an update, asks GitHub for the app's own files.
+      </p>
+
+      <h3>Your IP address</h3>
+      <p>Every request above shows your phone's IP address to the service that answers it.</p>
+
+      <h3>Only when you tap</h3>
+      <ul>
+        <li>
+          <strong>Directions</strong> opens Apple Maps (<code>maps.apple.com</code>) on iPhone and iPad, or Google Maps
+          (<code>www.google.com</code>) everywhere else, with the place's latitude and longitude as the destination.
+        </li>
+        <li>
+          Checklist links, the eBird key request page, and the eBird.org link under the lists open eBird
+          (<code>ebird.org</code>).
+        </li>
+        <li><strong>More about me</strong> in About opens my site, <code>lizstanley.com</code>.</li>
+        <li>
+          The map's credits, behind the small <strong>i</strong> on the map, link to MapLibre
+          (<code>maplibre.org</code>), OpenFreeMap (<code>openfreemap.org</code>), OpenMapTiles
+          (<code>www.openmaptiles.org</code>), and OpenStreetMap (<code>www.openstreetmap.org</code>).
+        </li>
+        <li>In CBC Scout, a leader's phone number or email opens your phone or mail app.</li>
+        <li>
+          In CBC Scout, <strong>Share totals</strong> hands your party's totals to the phone's share sheet, or copies
+          them. They go only where you send them.
+        </li>
+      </ul>
+
+      <h2>What stays on your phone</h2>
+      <p>
+        The apps keep these in your browser's storage for this site. That storage belongs to
+        <code>lizstanley.com</code>, so every page on <code>lizstanley.com</code> shares it, the apps and the
+        circle manager included. On iPhone and iPad, an app added to the Home Screen keeps its own storage, apart from
+        Safari and the other apps.
+      </p>
+      <ul>
+        <li>your eBird key. Saving it in one app saves it for the others in the same browser.</li>
+        <li>
+          saved eBird results. The app shows a saved hotspot list for the rest of the day, and saved sightings for 6
+          hours at most. Each is saved under its request address, which holds the place searched. Older copies, with
+          their places, stay on the phone until the app next saves eBird data. That removes yesterday's copies once
+          they are 6 hours old, and every copy from earlier days.
+        </li>
+        <li>each app's settings, and whether location is on</li>
+        <li>in CBC Scout, the saved areas and which one is active</li>
+        <li>in CBC Scout, the count session, with its route: the location points recorded while counting</li>
+        <li>each app's own files, so it opens with no signal</li>
+        <li>in CBC Scout, the street maps you save</li>
+      </ul>
+      <p>
+        A saved area holds the area outline, the name, phone, and email of the area's leaders, and your compiler's note
+        for counters. That data comes in the part of the area link after the <code>#</code>, which a browser never
+        sends to a server. CBC Scout removes it from the address bar once it has read it.
+      </p>
+      <p>
+        CBC Scout's <strong>Scan QR code</strong> reads camera frames on the phone. No image leaves the phone.
+        <strong>Paste from clipboard</strong> reads the clipboard only when you tap it.
+      </p>
+      <p>
+        <strong>Remove area</strong> takes an area and its street map off the phone, and
+        <strong>Remove street map</strong> takes only the map. Clearing this site's data in your browser's settings
+        removes everything above from that browser. It also removes the circle manager's saved circles in that
+        browser, so export a backup first if you use it there.
+      </p>
+
+      <h2>The services' own policies</h2>
+      <p>This page says only what the apps send. What each service does with it is in its own terms:</p>
+      <ul>
+        <li><a href="https://www.birds.cornell.edu/home/ebird-api-terms-of-use/">eBird API Terms of Use</a></li>
+        <li><a href="https://openfreemap.org/privacy/">OpenFreeMap Privacy Policy</a></li>
+        <li>
+          <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+            >GitHub General Privacy Statement</a
+          >
+        </li>
+        <li><a href="https://www.apple.com/legal/privacy/">Apple Privacy Policy</a></li>
+        <li><a href="https://policies.google.com/privacy">Google Privacy Policy</a></li>
+      </ul>
+
+      <h2>Questions</h2>
+      <p>
+        Ask me on <a href="https://github.com/lizmstanley/birdspotter/discussions">GitHub Discussions</a>. It's
+        public, so don't post anyone's name, phone, or email there. More about me is on
+        <a href="https://lizstanley.com/about/">my About page</a>.
+      </p>
+
+      <p><a href="../">Back to Birdspotter</a></p>
+    </main>
+  </body>
+</html>

@@ -125,14 +125,17 @@ CBC Scout has no database and no server. It keeps these in the phone's browser s
 - whether location tracking is on
 - the count session and its route
 - the saved street maps
-- copies of the day's eBird results
+- its own files, so it opens with no signal
+- copies of recent eBird results
 
 It sends:
 
 - the key, the place to search, and the days back to eBird. The place is the circle's center when an area is loaded, or your location when none is.
 - map views to OpenFreeMap, for the map tiles, and the area's map tiles when you tap **Save street map**.
 
-Nothing goes to any other server. The area data sits after the `#` in the link, so it never reaches a server, and CBC Scout removes it from the address bar once it's read. **Directions** and checklist links open Apple Maps, Google Maps, or eBird only when tapped. **Share totals** goes wherever the counter sends it.
+GitHub Pages, which hosts the site, sends CBC Scout's files. eBird, OpenFreeMap, and GitHub each see the phone's IP address. Nothing goes to any other server. The area data sits after the `#` in the link, so it never reaches a server, and CBC Scout removes it from the address bar once it's read. **Directions** and checklist links open Apple Maps, Google Maps, or eBird only when tapped. **Share totals** goes wherever the counter sends it.
+
+The [privacy page](https://lizstanley.com/birdspotter/privacy/) has the full list for CBC Scout and Birdspotter. Each app's Help links to it.
 
 ## Birdspotter
 
@@ -148,7 +151,7 @@ Its first screen asks for an eBird API key. Get one as in [Set up your eBird key
 - **Directions:** every place shows its distance and direction from you, and a **Directions** link.
 - **Settings:** open the menu and tap **Settings**. **Check eBird for new sightings** works as in CBC Scout. **Search around you** sets how far the lists look: 2, 5, 7.5, 10, 15, or 25 miles. The default is 7.5 miles. The search moves with you once you're half that distance from where it started.
 
-Like CBC Scout, it saves its own files on the phone, so it opens with no signal once it has opened with a signal since its last update. With no signal it shows the map and your location, and the street map is blank. On a weak signal that doesn't answer, it opens from the saved copy within about 4 seconds, which may be the previous release; the next open with a signal loads the newest one. Like CBC Scout, it keeps the last eBird data for up to 6 hours when the signal drops. A reopened app with no signal usually finds nothing saved, because the search follows your location. It keeps the eBird key, its settings, whether location tracking is on, and copies of the day's eBird results in the phone's browser storage. It sends the key, your location, and the days back to eBird, and map views to OpenFreeMap. Its settings and tracking are its own, apart from CBC Scout's. Its menu has **Help** and **About** as in CBC Scout, and its first screen links to Help.
+Like CBC Scout, it saves its own files on the phone, so it opens with no signal once it has opened with a signal since its last update. With no signal it shows the map and your location, and the street map is blank. On a weak signal that doesn't answer, it opens from the saved copy within about 4 seconds, which may be the previous release; the next open with a signal loads the newest one. Like CBC Scout, it keeps the last eBird data for up to 6 hours when the signal drops. A reopened app with no signal usually finds nothing saved, because the search follows your location. It keeps the eBird key, its settings, whether location tracking is on, and copies of recent eBird results in the phone's browser storage. It sends the key, your location, and the days back to eBird, and map views to OpenFreeMap. GitHub Pages sends its files. Each of them sees the phone's IP address. The [privacy page](https://lizstanley.com/birdspotter/privacy/) has the full list. Its settings and tracking are its own, apart from CBC Scout's. Its menu has **Help** and **About** as in CBC Scout, and its first screen links to Help.
 
 ## Import your roster
 
@@ -173,7 +176,7 @@ Not sure how to lay out your file? Under **What columns can I use?** there's a s
 
 ## Use it online
 
-The site's home page is https://lizstanley.com/birdspotter/. It leads with Birdspotter and links to the Christmas Bird Count tools at https://lizstanley.com/birdspotter/cbc/. The circle manager is hosted at https://lizstanley.com/birdspotter/cbc/manager/. Your data stays in your browser. It isn't sent to GitHub or any server. Each address has its own browser database, so the hosted copy and a copy you run yourself don't share data. Use **Export Backup** to move data between them.
+The site's home page is https://lizstanley.com/birdspotter/. It leads with Birdspotter and links to the Christmas Bird Count tools at https://lizstanley.com/birdspotter/cbc/ and to the privacy page for the phone apps at https://lizstanley.com/birdspotter/privacy/. The circle manager is hosted at https://lizstanley.com/birdspotter/cbc/manager/. Your data stays in your browser. It isn't sent to GitHub or any server. Each address has its own browser database, so the hosted copy and a copy you run yourself don't share data. Use **Export Backup** to move data between them.
 
 **Refresh from Audubon** works only when you run the app on your own computer, because the Audubon site blocks requests from other sites. Everything else works in the hosted copy.
 
