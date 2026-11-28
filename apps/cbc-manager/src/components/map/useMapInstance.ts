@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import { BASEMAP_STYLE_URL, fallBackToBlankBasemap } from '@birdspotter/birding-core/basemap.ts';
 import { setUpMapWorker } from '@birdspotter/birding-core/mapWorker.ts';
-import { addAreaLayers, addCircleLayers } from './mapLayers.ts';
+import { addAreaLayers, addCircleLayers, addRouteLayers } from './mapLayers.ts';
 import { useLatest } from '@birdspotter/birding-core/useLatest.ts';
 
 interface MapInstanceOptions {
@@ -59,6 +59,7 @@ export function useMapInstance({ centerLat, centerLng, onPinDragged, onMapNotice
       // Layers exist before any data arrives so data updates never race with tile loading.
       addCircleLayers(map);
       addAreaLayers(map);
+      addRouteLayers(map);
       setMapReady(true);
     });
 

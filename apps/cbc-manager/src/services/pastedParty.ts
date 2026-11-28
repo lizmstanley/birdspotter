@@ -1,3 +1,4 @@
+import type { MultiLineString } from 'geojson';
 import type { Party } from '../db/types.ts';
 import {
   decodePartyCode,
@@ -91,4 +92,10 @@ export function partyFromEffort(effort: PartyEffort, areaCode: string): Party {
     car_miles: effort.carMiles,
     foot_miles: effort.footMiles,
   };
+}
+
+/** @returns the party's route as one MultiLineString, or null when the code carries none */
+export function routeFromEffort(effort: PartyEffort): MultiLineString | null {
+  if (effort.route.length === 0) return null;
+  return { type: 'MultiLineString', coordinates: effort.route.map((line) => [...line]) };
 }

@@ -1,4 +1,5 @@
 import type { PGlite } from '@electric-sql/pglite';
+import type { MultiLineString } from 'geojson';
 import * as areas from './areas.ts';
 import * as backup from './backup.ts';
 import * as circles from './circles.ts';
@@ -20,6 +21,7 @@ import type {
   ImportOptions,
   OpenAreaRow,
   Party,
+  PartyRoute,
   PersonHistory,
   PossibleOutreachRow,
   ReminderRow,
@@ -141,6 +143,10 @@ export class CbcDb {
     return parties.getCurrentParties(this.db, circleCode);
   }
 
+  getCurrentPartyRoutes(circleCode: string): Promise<PartyRoute[]> {
+    return parties.getCurrentPartyRoutes(this.db, circleCode);
+  }
+
   getCurrentPartyTotals(circleCode: string): Promise<AreaPartyTotals[]> {
     return parties.getCurrentPartyTotals(this.db, circleCode);
   }
@@ -149,8 +155,8 @@ export class CbcDb {
     return parties.saveParty(this.db, circleCode, party);
   }
 
-  savePartyInSeason(circleCode: string, season: number, party: Party): Promise<void> {
-    return parties.savePartyInSeason(this.db, circleCode, season, party);
+  savePartyInSeason(circleCode: string, season: number, party: Party, route: MultiLineString | null): Promise<void> {
+    return parties.savePartyInSeason(this.db, circleCode, season, party, route);
   }
 
   findParty(circleCode: string, partyId: string): Promise<SeasonParty | null> {

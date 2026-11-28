@@ -7,6 +7,7 @@ import type {
   LocalCbcDb,
   OpenAreaRow,
   Party,
+  PartyRoute,
   PossibleOutreachRow,
   ReminderRow,
   SavedCircle,
@@ -23,6 +24,8 @@ export interface ActiveCircleData {
   areas: AreaOption[];
   areaBoundaries: AreaBoundaryRow[];
   parties: Party[];
+  /** The current season's parties that have a route */
+  partyRoutes: PartyRoute[];
   partyTotals: AreaPartyTotals[];
   /** The circle's seasons, newest first */
   seasons: number[];
@@ -36,6 +39,7 @@ const NO_CIRCLE_DATA: ActiveCircleData = {
   areas: [],
   areaBoundaries: [],
   parties: [],
+  partyRoutes: [],
   partyTotals: [],
   seasons: [],
 };
@@ -45,7 +49,7 @@ export function pickActiveCircle(circles: readonly SavedCircle[]): SavedCircle |
 }
 
 async function loadActiveCircleData(db: LocalCbcDb, code: string): Promise<ActiveCircleData> {
-  const [assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyTotals, seasons] =
+  const [assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyRoutes, partyTotals, seasons] =
     await Promise.all([
       db.getAssignments(code),
       db.getOpenAreas(code),
@@ -54,10 +58,22 @@ async function loadActiveCircleData(db: LocalCbcDb, code: string): Promise<Activ
       db.getAreas(code),
       db.getCircleBoundaries(code),
       db.getCurrentParties(code),
+      db.getCurrentPartyRoutes(code),
       db.getCurrentPartyTotals(code),
       db.getSeasons(code),
     ]);
-  return { assignments, openAreas, reminders, outreach, areas, areaBoundaries, parties, partyTotals, seasons };
+  return {
+    assignments,
+    openAreas,
+    reminders,
+    outreach,
+    areas,
+    areaBoundaries,
+    parties,
+    partyRoutes,
+    partyTotals,
+    seasons,
+  };
 }
 
 /** @param onSettled runs after every load, whether it worked or not */
